@@ -1,22 +1,24 @@
 {
-  "name": "aichat",
+  "name": "aichat-fullstack",
   "version": "1.0.0",
-  "main": "main.js",
-  "type": "module",
+  "description": "AI Chat Fullstack Application",
   "scripts": {
-    "test": "node main.js",
-    "start": "node server.js"
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "start": "cd backend && npm start",
+    "build": "cd frontend && npm run build"
   },
-  "author": "",
-  "license": "ISC",
-  "description": "",
-  "dependencies": {
-    "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
-    "express": "^5.1.0",
-    "openai": "^6.7.0"
-  },
+  "keywords": [
+    "ai",
+    "chat",
+    "fullstack",
+    "vue",
+    "express"
+  ],
+  "author": "AI Chat Developer",
+  "license": "MIT",
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.16"
+    "concurrently": "^8.2.0"
   }
 }

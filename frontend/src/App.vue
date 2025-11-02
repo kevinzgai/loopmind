@@ -43,7 +43,7 @@
           <div class="bg-white rounded-2xl rounded-tl-none shadow-md p-4">
             <div class="font-semibold text-sm text-gray-700 mb-1">AI助手</div>
             <div 
-              class="text-gray-800 prose prose-sm max-w-none"
+              class="text-gray-800 markdown-content"
               v-html="renderMessageContent(message.content)"
             ></div>
             <div class="text-xs text-gray-500 mt-2">
@@ -59,7 +59,7 @@
         >
           <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl rounded-br-none shadow-md p-4">
             <div class="font-semibold text-sm text-white mb-1">你</div>
-            <div class="text-white prose prose-sm prose-invert max-w-none">
+            <div class="text-white">
               {{ message.content }}
             </div>
             <div class="text-xs text-indigo-200 mt-2">
@@ -131,6 +131,8 @@
 
 <script>
 import { ref, onMounted, nextTick } from 'vue'
+import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 
 export default {
   name: 'App',
@@ -171,66 +173,29 @@ export default {
       ]
     }
     
-    // 简单的Markdown到HTML转换函数
+    // 改进的Markdown到HTML转换函数
     const markdownToHtml = (markdown) => {
       if (!markdown) return ''
       
-      // 保存原始文本用于纯文本显示
-      const originalText = markdown
-      
       try {
-        // 处理代码块
-        markdown = markdown.replace(/```([\s\S]*?)```/g, '<pre class="bg-gray-100 rounded p-3 my-2 overflow-x-auto"><code>$1</code></pre>')
+        // 配置marked选项
+        marked.setOptions({
+          gfm: true,
+          breaks: true,
+          smartLists: true,
+          smartypants: true,
+        })
         
-        // 处理行内代码
-        markdown = markdown.replace(/`([^`]+)`/g, '<code class="bg-gray-100 rounded px-1 py-0.5 font-mono text-sm">$1</code>')
+        // 使用marked解析Markdown
+        let html = marked.parse(markdown)
         
-        // 处理粗体
-        markdown = markdown.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold">$1</strong>')
+        // 使用DOMPurify清理HTML以防止XSS攻击
+        html = DOMPurify.sanitize(html)
         
-        // 处理斜体
-        markdown = markdown.replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
-        
-        // 处理链接
-        markdown = markdown.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" class="text-indigo-600 hover:underline">$1</a>')
-        
-        // 处理无序列表
-        markdown = markdown.replace(/^\s*-\s+(.*)$/gm, '<li class="ml-4">$1</li>')
-        markdown = markdown.replace(/(<li class="ml-4">.*<\/li>)+/gs, '<ul class="list-disc my-2">$&</ul>')
-        
-        // 处理有序列表
-        markdown = markdown.replace(/^\s*\d+\.\s+(.*)$/gm, '<li class="ml-4">$1</li>')
-        markdown = markdown.replace(/(<li class="ml-4">.*<\/li>)+/gs, '<ol class="list-decimal my-2">$&</ol>')
-        
-        // 处理标题
-        markdown = markdown.replace(/^### (.*$)/gm, '<h3 class="text-lg font-bold my-2">$1</h3>')
-        markdown = markdown.replace(/^## (.*$)/gm, '<h2 class="text-xl font-bold my-3">$1</h2>')
-        markdown = markdown.replace(/^# (.*$)/gm, '<h1 class="text-2xl font-bold my-4">$1</h1>')
-        
-        // 处理引用
-        markdown = markdown.replace(/^> (.*$)/gm, '<blockquote class="border-l-4 border-gray-300 pl-4 text-gray-600 my-2">$1</blockquote>')
-        
-        // 只有当文本包含明显的Markdown元素时才处理段落
-        if (originalText.includes('\n\n') || 
-            originalText.includes('#') || 
-            originalText.includes('**') || 
-            originalText.includes('*') || 
-            originalText.includes('`') ||
-            originalText.includes('[') ||
-            originalText.includes('- ') ||
-            originalText.match(/^\d+\./)) {
-          // 处理段落
-          markdown = markdown.replace(/^\s*(.*?)(\n\n|$)/gm, '<p class="my-2">$1</p>')
-        }
-        
-        // 处理换行
-        markdown = markdown.replace(/\n/g, '<br>')
-        
-        return markdown
+        return html
       } catch (error) {
-        // 如果转换失败，返回原始文本
         console.warn('Markdown conversion failed:', error)
-        return originalText
+        return markdown
       }
     }
     
@@ -377,3 +342,102 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+/* Markdown内容样式 */
+.markdown-content h1 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 1rem 0;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.markdown-content h2 {
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin: 0.8rem 0;
+  padding-bottom: 0.2rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.markdown-content h3 {
+  font-size: 1.1rem;
+  font-weight: bold;
+  margin: 0.6rem 0;
+}
+
+.markdown-content p {
+  margin: 0.5rem 0;
+  line-height: 1.6;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.markdown-content li {
+  margin: 0.25rem 0;
+}
+
+.markdown-content code {
+  background-color: #f1f5f9;
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+}
+
+.markdown-content pre {
+  background-color: #f1f5f9;
+  border-radius: 0.25rem;
+  padding: 1rem;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.markdown-content pre code {
+  background-color: transparent;
+  padding: 0;
+}
+
+.markdown-content blockquote {
+  border-left: 4px solid #cbd5e1;
+  padding-left: 1rem;
+  margin: 1rem 0;
+  color: #64748b;
+}
+
+.markdown-content a {
+  color: #6366f1;
+  text-decoration: underline;
+}
+
+.markdown-content a:hover {
+  color: #4f46e5;
+}
+
+.markdown-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1rem 0;
+}
+
+.markdown-content th,
+.markdown-content td {
+  border: 1px solid #cbd5e1;
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.markdown-content th {
+  background-color: #f1f5f9;
+  font-weight: bold;
+}
+
+.markdown-content tr:nth-child(even) {
+  background-color: #f8fafc;
+}
+</style>

@@ -1,0 +1,28 @@
+{
+  "name": "aichat-backend",
+  "version": "1.0.0",
+  "description": "AI Chat Backend API",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "keywords": [
+    "ai",
+    "chat",
+    "express",
+    "api"
+  ],
+  "author": "AI Chat Developer",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "openai": "^4.20.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
