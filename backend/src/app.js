@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import chatRoutes from './routes/chatRoutes.js';
 import ttsRoutes from './routes/ttsRoutes.js';
 import voiceRoutes from './routes/voiceRoutes.js';
+import asrRoutes from './routes/asrRoutes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 // 获取__dirname的ES模块等价物
@@ -25,6 +26,7 @@ app.use(express.static(path.join(__dirname, '..', '..', 'dist')));
 app.use('/chat', chatRoutes);
 app.use('/tts', ttsRoutes);
 app.use('/voice', voiceRoutes);
+app.use('/asr', asrRoutes);
 
 // 健康检查接口
 app.get('/health', (req, res) => {

@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
+import { voiceCategories, getRecommendedVoices } from '../data/voices'
 
 const text = ref('你好，我是 AI 助手。这是一个文字转语音测试。')
-const voice = ref('alloy')
-const speed = ref(1.0)
+const voice = ref('xiaoyun')
+const speed = ref(0)
 const isConverting = ref(false)
 const isPlaying = ref(false)
 const audioUrl = ref('')
@@ -11,21 +12,28 @@ const status = ref('准备开始测试')
 const error = ref('')
 const audioElement = ref<HTMLAudioElement | null>(null)
 
-const voices = [
-  { id: 'alloy', name: 'Alloy', description: '中性、平衡的声音' },
-  { id: 'echo', name: 'Echo', description: '男性、清晰的声音' },
-  { id: 'fable', name: 'Fable', description: '英式、温暖的声音' },
-  { id: 'onyx', name: 'Onyx', description: '男性、深沉的声音' },
-  { id: 'nova', name: 'Nova', description: '女性、活泼的声音' },
-  { id: 'shimmer', name: 'Shimmer', description: '女性、柔和的声音' }
-]
+// 使用分类的音色列表
+const voices = voiceCategories
+
 
 const sampleTexts = [
   '你好，我是 AI 助手。这是一个文字转语音测试。',
   '今天天气真不错，适合出去散步。',
   '人工智能正在改变我们的生活方式。',
   '学习新知识是一件令人兴奋的事情。',
-  'Hello, this is a text-to-speech test in English.'
+  'Hello, this is a text-to-speech test in English.',
+  '多说无益不愿意相信的人就一辈子待在井底吧',
+  '于是就这样被骗了',
+  '其实我旅行的路线都规划好了',
+  '群众无小事市民满意了社会也就和谐了',
+  '它是宏观的是抽象的',
+  '如果不是有什么区别吗',
+  '阳逻不是新洲居民吗',
+  '这里每年要办好几场展销会价格非常便宜',
+  '这个妈妈也不合格这么放心把孩子让男人带啊',
+  '当面就把信撕掉了',
+  '怎么跟别人比'
+  
 ]
 
 async function convertToSpeech() {
@@ -47,7 +55,7 @@ async function convertToSpeech() {
       body: JSON.stringify({
         text: text.value,
         voice: voice.value,
-        speed: speed.value
+        speechRate: speed.value
       })
     })
 
@@ -173,27 +181,29 @@ function useSampleText(sampleText: string) {
           v-model="voice"
           class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
-          <option v-for="v in voices" :key="v.id" :value="v.id">
-            {{ v.name }} - {{ v.description }}
-          </option>
+          <optgroup v-for="category in voices" :key="category.category" :label="category.category">
+            <option v-for="v in category.voices" :key="v.id" :value="v.id">
+              {{ v.name }} - {{ v.type }} ({{ v.quality }})
+            </option>
+          </optgroup>
         </select>
       </div>
       
       <!-- 语速调节 -->
       <div>
-        <h2 class="text-lg font-semibold text-gray-800 mb-3">语速: {{ speed.toFixed(1) }}x</h2>
+        <h2 class="text-lg font-semibold text-gray-800 mb-3">语速: {{ speed > 0 ? '+' : '' }}{{ speed }}</h2>
         <input
           v-model.number="speed"
           type="range"
-          min="0.25"
-          max="4.0"
-          step="0.25"
+          min="-500"
+          max="500"
+          step="50"
           class="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer"
         />
         <div class="flex justify-between text-xs text-gray-500 mt-1">
-          <span>0.25x (慢)</span>
-          <span>1.0x (正常)</span>
-          <span>4.0x (快)</span>
+          <span>-500 (慢)</span>
+          <span>0 (正常)</span>
+          <span>+500 (快)</span>
         </div>
       </div>
     </div>
@@ -265,8 +275,8 @@ function useSampleText(sampleText: string) {
       <h2 class="text-lg font-semibold text-purple-800 mb-2">使用说明</h2>
       <ol class="list-decimal list-inside space-y-2 text-purple-700">
         <li>在文本框中输入要转换的文字（或选择示例文字）</li>
-        <li>选择喜欢的语音类型</li>
-        <li>调整语速（0.25x - 4.0x）</li>
+        <li>选择喜欢的语音类型（阿里云 TTS）</li>
+        <li>调整语速（-500 到 +500）</li>
         <li>点击「转换为语音」按钮</li>
         <li>转换完成后，点击「播放」按钮试听</li>
         <li>可以下载音频文件保存</li>
@@ -279,10 +289,23 @@ function useSampleText(sampleText: string) {
       <ul class="list-disc list-inside space-y-1 text-indigo-700">
         <li>🎯 API 端点: /tts</li>
         <li>🔊 音频格式: MP3</li>
-        <li>🎤 支持 6 种语音类型</li>
-        <li>⚡ 语速范围: 0.25x - 4.0x</li>
-        <li>🌐 支持中英文混合</li>
+        <li>🎤 支持 20+ 种中文语音</li>
+        <li>⚡ 语速范围: -500 到 +500</li>
+        <li>🌐 服务提供商: 阿里云智能语音</li>
+        <li>🇨🇳 国内服务，稳定快速</li>
       </ul>
+    </div>
+    
+    <!-- 配置说明 -->
+    <div class="mt-6 p-4 bg-yellow-50 rounded-lg">
+      <h2 class="text-lg font-semibold text-yellow-800 mb-2">⚠️ 配置说明</h2>
+      <p class="text-yellow-700 mb-2">使用前需要配置阿里云 TTS 服务：</p>
+      <ol class="list-decimal list-inside space-y-1 text-yellow-700 text-sm">
+        <li>访问 <a href="https://nls-portal.console.aliyun.com/" target="_blank" class="underline">阿里云智能语音交互</a></li>
+        <li>创建应用并获取 AccessKey ID、AccessKey Secret、AppKey</li>
+        <li>在 .env 文件中配置相关参数</li>
+        <li>重启后端服务</li>
+      </ol>
     </div>
   </div>
 </template>

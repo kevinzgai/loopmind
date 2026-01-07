@@ -7,7 +7,9 @@
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm run dev",
     "start": "cd backend && npm start",
-    "build": "cd frontend && npm run build"
+    "build": "cd frontend && npm run build",
+    "check": "node check-setup.js",
+    "test:api": "node test-api.js"
   },
   "keywords": [
     "ai",

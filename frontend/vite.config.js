@@ -23,6 +23,36 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
       },
+      '/chat': {
+        target: 'http://localhost:3000',
+        changeOrigin: true
+      },
+      '/tts': {
+        target: 'http://localhost:3000',
+        changeOrigin: true
+      },
+      '/voice': {
+        target: 'http://localhost:3000',
+        changeOrigin: true
+      },
+      // WebSocket 代理 - 必须在 /asr 之前
+      '/asr/stream': {
+        target: 'ws://localhost:3000',
+        ws: true,
+        changeOrigin: true,
+        rewrite: (path) => path
+      },
+      // HTTP 代理 - 在 WebSocket 之后
+      '/asr': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        // 明确排除 /asr/stream
+        bypass: (req) => {
+          if (req.url.startsWith('/asr/stream')) {
+            return '/asr/stream'; // 让它走 WebSocket 代理
+          }
+        }
+      },
       '/seed-asr': {
         target: 'ws://localhost:3000',
         ws: true,

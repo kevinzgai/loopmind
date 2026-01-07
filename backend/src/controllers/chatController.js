@@ -2,31 +2,33 @@ import {
     getConversationHistory, 
     addMessageToHistory, 
     callAIStream, 
-    callAI 
+    callAI,
+    getAvailableProviders
 } from '../services/aiService.js';
 
 // 处理聊天消息（支持流式响应）
 export async function handleChatMessage(req, res) {
     try {
-        const { message, userId, stream, prompt, text } = req.body;
+        const { message, userId, stream, prompt, text, provider } = req.body;
         
         const userMessage = message || prompt || text;
+        const aiProvider = provider || 'deepseek'; // 默认使用 DeepSeek
         
         if (!userMessage || !userId) {
             return res.status(400).json({ error: 'Missing message/prompt/text or userId' });
         }
         
-        console.log('📨 Received request:', { userId, message: userMessage });
+        console.log('📨 Received request:', { userId, message: userMessage, provider: aiProvider });
         
-        const conversationHistory = getConversationHistory(userId);
+        const conversationHistory = getConversationHistory(userId, aiProvider);
         
-        addMessageToHistory(userId, { role: "user", content: userMessage });
+        addMessageToHistory(userId, { role: "user", content: userMessage }, aiProvider);
         
         res.setHeader('Content-Type', 'text/plain; charset=utf-8');
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('Connection', 'keep-alive');
         
-        const streamResponse = await callAIStream(conversationHistory);
+        const streamResponse = await callAIStream(conversationHistory, aiProvider);
         
         let fullResponse = "";
         
@@ -35,11 +37,11 @@ export async function handleChatMessage(req, res) {
             if (content) {
                 fullResponse += content;
                 res.write(content);
-                console.log('📤 Streaming chunk:', content);
+                // console.log('📤 Streaming chunk:', content);
             }
         }
         
-        addMessageToHistory(userId, { role: "assistant", content: fullResponse });
+        addMessageToHistory(userId, { role: "assistant", content: fullResponse }, aiProvider);
         
         console.log('✅ Streaming response completed');
         res.end();
@@ -50,5 +52,16 @@ export async function handleChatMessage(req, res) {
         } else {
             res.end();
         }
+    }
+}
+
+// 获取可用的 AI 提供商列表
+export async function getProviders(req, res) {
+    try {
+        const providers = getAvailableProviders();
+        res.json({ providers });
+    } catch (error) {
+        console.error('❌ Error getting providers:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 }

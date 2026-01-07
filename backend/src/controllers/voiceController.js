@@ -3,7 +3,7 @@ import {
     addMessageToHistory, 
     callAI 
 } from '../services/aiService.js';
-import { textToSpeech } from '../services/ttsService.js';
+import { textToSpeech, checkConfig } from '../services/aliTtsService.js';
 
 /**
  * 处理完整的语音对话流程
@@ -11,7 +11,15 @@ import { textToSpeech } from '../services/ttsService.js';
  */
 export async function handleVoiceChat(req, res) {
     try {
-        const { message, userId, voice, speed } = req.body;
+        // 检查 TTS 配置
+        if (!checkConfig()) {
+            return res.status(500).json({ 
+                error: 'TTS service not configured',
+                message: '阿里云 TTS 服务未配置'
+            });
+        }
+
+        const { message, userId, voice, volume, speechRate } = req.body;
         
         if (!message || !userId) {
             return res.status(400).json({ error: 'Missing message or userId' });
@@ -41,7 +49,11 @@ export async function handleVoiceChat(req, res) {
         
         // 5. 将 AI 回复转为语音
         console.log('🔊 正在转换为语音...');
-        const audioBuffer = await textToSpeech(aiMessage, { voice, speed });
+        const audioBuffer = await textToSpeech(aiMessage, { 
+            voice, 
+            volume,
+            speechRate
+        });
         
         // 6. 返回 JSON 响应（包含文字和音频）
         res.json({
@@ -67,7 +79,15 @@ export async function handleVoiceChat(req, res) {
  */
 export async function handleVoiceChatStream(req, res) {
     try {
-        const { message, userId, voice, speed } = req.body;
+        // 检查 TTS 配置
+        if (!checkConfig()) {
+            return res.status(500).json({ 
+                error: 'TTS service not configured',
+                message: '阿里云 TTS 服务未配置'
+            });
+        }
+
+        const { message, userId, voice, volume, speechRate } = req.body;
         
         if (!message || !userId) {
             return res.status(400).json({ error: 'Missing message or userId' });
@@ -90,7 +110,11 @@ export async function handleVoiceChatStream(req, res) {
         addMessageToHistory(userId, { role: "assistant", content: aiMessage });
         
         // 3. 转为语音
-        const audioBuffer = await textToSpeech(aiMessage, { voice, speed });
+        const audioBuffer = await textToSpeech(aiMessage, { 
+            voice, 
+            volume,
+            speechRate
+        });
         
         // 4. 设置响应头并发送音频流
         res.setHeader('Content-Type', 'audio/mpeg');
