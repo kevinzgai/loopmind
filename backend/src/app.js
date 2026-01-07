@@ -3,6 +3,8 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import chatRoutes from './routes/chatRoutes.js';
+import ttsRoutes from './routes/ttsRoutes.js';
+import voiceRoutes from './routes/voiceRoutes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 // 获取__dirname的ES模块等价物
@@ -21,6 +23,13 @@ app.use(express.static(path.join(__dirname, '..', '..', 'dist')));
 
 // 路由
 app.use('/chat', chatRoutes);
+app.use('/tts', ttsRoutes);
+app.use('/voice', voiceRoutes);
+
+// 健康检查接口
+app.get('/health', (req, res) => {
+    res.json({ status: 'ok' });
+});
 
 // 主页路由
 app.get('/', (req, res) => {
