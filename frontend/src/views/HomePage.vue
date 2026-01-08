@@ -49,7 +49,7 @@
         <div class="feature-icon">🔊</div>
         <h2 class="feature-title">文字转语音 TTS</h2>
         <p class="feature-description">
-          阿里云 TTS，150+ 种音色，支持语速调节
+          阿里云 TTS，150+ 种音色，支持普通和流式模式
         </p>
         <div class="feature-badge">阿里云</div>
       </router-link>

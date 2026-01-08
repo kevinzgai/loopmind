@@ -1,269 +1,281 @@
-# AI Chat Application
+# 🤖 AI 智能对话语音项目
 
-一个基于Vue 3和Express.js的现代化AI聊天应用，支持与AI模型进行实时对话，并具备对话历史记忆功能。
+一个集成了 AI 对话、语音识别（ASR）和语音合成（TTS）的现代化 Web 应用。
 
-## 目录结构
+## ✨ 功能特性
 
-```
-aichat/
-├── backend/                 # 后端项目
-│   ├── src/                 # 源代码目录
-│   │   ├── app.js           # Express应用配置
-│   │   ├── server.js        # 服务器启动文件
-│   │   ├── config/          # 配置文件
-│   │   ├── controllers/     # 控制器
-│   │   ├── routes/          # 路由定义
-│   │   ├── services/        # 服务层
-│   │   ├── middleware/      # 中间件
-│   │   └── utils/           # 工具函数
-│   └── package.json         # 后端项目配置
-├── frontend/                # 前端项目
-└── package.json             # 根项目配置
-```
+### 核心功能
+- 💬 **AI 智能对话**
+  - 支持 DeepSeek 和通义千问两种 AI 模型
+  - 流式响应，实时显示 AI 回复
+  - 对话历史记忆（按模型独立存储）
+  - Markdown 渲染支持
 
-## 技术栈
+- 🎤 **语音输入（ASR）**
+  - 实时语音识别，边说边显示
+  - 支持长按录音，松手自动发送
+  - 使用阿里云流式 ASR 服务
+  - 低延迟，高准确率
+
+- 🔊 **语音播报（TTS）**
+  - AI 回复自动转语音播放
+  - 流式语音合成，边生成边播放
+  - 支持 150+ 种音色
+  - 可调节语速、音量
+  - 使用阿里云 TTS 服务
+
+### 交互特性
+- 🎨 豆包风格的语音交互界面
+- 🔄 文字/语音输入模式一键切换
+- 🔇 语音播报开关控制
+- 📱 响应式设计，支持移动端
+
+## 🛠️ 技术栈
 
 ### 前端
-- **Vue 3** - 渐进式JavaScript框架
-- **Vite** - 快速的构建工具
-- **Tailwind CSS** - 实用优先的CSS框架
-- **Marked.js** - Markdown解析器
-- **DOMPurify** - HTML清理库
+- **框架**: Vue 3 + Vite
+- **UI**: Tailwind CSS + shadcn-vue
+- **状态管理**: Vue Composition API
+- **Markdown**: marked + DOMPurify
+- **音频处理**: Web Audio API
 
 ### 后端
-- **Node.js** - JavaScript运行时
-- **Express.js** - Web应用框架
-- **OpenAI API** - AI服务接口
-- **dotenv** - 环境变量管理
+- **运行时**: Node.js
+- **框架**: Express
+- **实时通信**: WebSocket (ws)
+- **AI 服务**: OpenAI SDK (兼容 DeepSeek/通义千问)
+- **语音服务**: 阿里云智能语音交互
 
-## 功能特性
+## 📦 项目结构
 
-1. **多 AI 模型支持** - 支持 DeepSeek 和通义千问，用户可自由切换
-2. **实时对话** - 支持与AI进行实时对话
-3. **语音输入** - 按住麦克风说话，实时识别并填入输入框
-4. **流式响应** - AI回复内容逐字显示，模拟真实对话体验
-5. **对话历史** - 记住用户与AI的对话历史，实现上下文理解（每个模型独立）
-6. **语音识别（ASR）** - 集成阿里云 ASR 服务，支持普通和流式识别
-7. **文字转语音（TTS）** - 阿里云 TTS，支持 150+ 种音色，11 个场景分类
-8. **完整语音对话** - ASR → AI → TTS 端到端语音对话流程
-9. **Markdown渲染** - 支持Markdown格式的内容渲染
-10. **响应式设计** - 适配不同屏幕尺寸的现代化界面
-11. **多页面路由** - 首页、对话、TTS、ASR 等独立页面
-12. **安全性** - 使用DOMPurify清理HTML内容，防止XSS攻击
+```
+.
+├── backend/                 # 后端服务
+│   ├── src/
+│   │   ├── config/         # 配置文件
+│   │   ├── controllers/    # 控制器
+│   │   ├── routes/         # 路由
+│   │   ├── services/       # 服务层
+│   │   │   ├── aiService.js              # AI 服务（DeepSeek/通义千问）
+│   │   │   ├── aliAsrStreamService.js    # 阿里云流式 ASR
+│   │   │   ├── aliTtsService.js          # 阿里云 TTS
+│   │   │   ├── aliTtsStreamService.js    # 阿里云流式 TTS
+│   │   │   └── aliTokenService.js        # 阿里云 Token 管理
+│   │   ├── utils/          # 工具函数
+│   │   ├── app.js          # Express 应用
+│   │   └── server.js       # 服务器入口（含 WebSocket）
+│   ├── .env                # 环境变量
+│   └── package.json
+│
+├── frontend/               # 前端应用
+│   ├── src/
+│   │   ├── components/     # 组件
+│   │   │   ├── VoiceInput.vue           # 语音输入组件
+│   │   │   ├── TtsTestDemo.vue          # TTS 测试组件
+│   │   │   ├── TtsStreamDemo.vue        # 流式 TTS 测试
+│   │   │   └── ai-elements/             # AI UI 组件库
+│   │   ├── views/          # 页面
+│   │   │   ├── HomePage.vue             # 首页
+│   │   │   ├── ChatPage.vue             # AI 对话页
+│   │   │   └── TtsTestPage.vue          # TTS 测试页
+│   │   ├── router/         # 路由配置
+│   │   ├── App.vue
+│   │   └── main.js
+│   └── package.json
+│
+├── docs/                   # 文档
+│   ├── 01-配置指南/
+│   ├── 02-功能说明/
+│   └── 03-开发文档/
+│
+├── .env.example            # 环境变量示例
+└── README.md
+```
 
-## 安装与运行
+## 🚀 快速开始
 
-### 环境要求
-- Node.js >= 14.0.0
-- npm >= 6.0.0
+### 前置要求
+- Node.js >= 16
+- npm >= 8
 
-### 安装步骤
-
-1. 克隆项目仓库：
-   ```bash
-   git clone <repository-url>
-   cd aichat
-   ```
-
-2. 安装前后端依赖：
-   ```bash
-   # 安装根目录依赖
-   npm install
-   
-   # 安装后端依赖
-   cd backend
-   npm install
-   cd ..
-   
-   # 安装前端依赖
-   cd frontend
-   npm install
-   cd ..
-   ```
-
-3. 配置环境变量：
-   在项目根目录创建 `.env` 文件：
-   ```env
-   API_KEY=your_api_key_here
-   BASE_URL=https://api.deepseek.com
-   MODEL=deepseek-chat
-   PORT=3000
-   ```
-
-### 运行项目
-
-#### 开发模式
+### 1. 克隆项目
 ```bash
-# 同时启动前后端开发服务器
+git clone <repository-url>
+cd aichat
+```
+
+### 2. 配置环境变量
+
+复制环境变量示例文件：
+```bash
+cp .env.example .env
+cp .env.example backend/.env
+```
+
+编辑 `.env` 和 `backend/.env`，填入你的 API Keys：
+
+```env
+# DeepSeek AI 配置
+DEEPSEEK_API_KEY=your_deepseek_api_key
+
+# 通义千问 AI 配置（可选）
+QWEN_API_KEY=your_qwen_api_key
+
+# 阿里云语音服务配置
+ALI_TTS_ACCESS_KEY_ID=your_access_key_id
+ALI_TTS_ACCESS_KEY_SECRET=your_access_key_secret
+ALI_TTS_APP_KEY=your_app_key
+```
+
+### 3. 安装依赖
+
+**后端：**
+```bash
+cd backend
+npm install
+```
+
+**前端：**
+```bash
+cd frontend
+npm install
+```
+
+### 4. 启动服务
+
+**开发模式（推荐）：**
+
+在项目根目录运行：
+```bash
 npm run dev
-
-# 或者分别启动
-# 启动后端服务器
-npm run dev:backend
-
-# 启动前端开发服务器
-npm run dev:frontend
 ```
 
-#### 生产模式
+这会同时启动前端和后端服务。
+
+**或者分别启动：**
+
+后端（在 `backend/` 目录）：
 ```bash
-# 构建前端应用
-npm run build
-
-# 启动生产服务器
-npm start
+npm run dev
 ```
 
-## API接口
+前端（在 `frontend/` 目录）：
+```bash
+npm run dev
+```
 
-### 聊天接口
-- **URL**: `/chat`
-- **方法**: `POST`
-- **请求体**:
-  ```json
-  {
-    "message": "你的问题",
-    "userId": "用户标识符",
-    "stream": true // 是否启用流式响应
-  }
-  ```
-- **响应**:
-  - 流式响应: 逐字返回AI回复内容
-  - 非流式响应: 返回完整的JSON对象
+### 5. 访问应用
 
-### 文字转语音接口
-- **URL**: `/tts`
-- **方法**: `POST`
-- **请求体**:
-  ```json
-  {
-    "text": "要转换的文字",
-    "voice": "alloy", // 可选: alloy, echo, fable, onyx, nova, shimmer
-    "speed": 1.0 // 语速: 0.25 - 4.0
-  }
-  ```
-- **响应**: 返回 MP3 音频文件
+- 前端：http://localhost:5173
+- 后端：http://localhost:3000
+- API 健康检查：http://localhost:3000/api/health
 
-### 语音对话接口
-- **URL**: `/voice/chat`
-- **方法**: `POST`
-- **请求体**:
-  ```json
-  {
-    "message": "用户消息（来自ASR）",
-    "userId": "用户标识符",
-    "voice": "nova",
-    "speed": 1.0
-  }
-  ```
-- **响应**: 返回 JSON（包含文字和音频）
+## 📖 使用指南
 
-### WebSocket 语音识别
-- **URL**: `ws://localhost:3000/seed-asr`
-- **协议**: WebSocket
-- **功能**: 实时语音识别（Seed-ASR）
+### AI 对话
+1. 访问首页，点击"AI 对话"卡片
+2. 选择 AI 模型（DeepSeek 或通义千问）
+3. 输入消息或使用语音输入
+4. 开启语音播报开关，AI 回复会自动朗读
 
-详细 API 文档请查看 [API使用指南.md](./API使用指南.md)
+### 语音输入
+1. 点击麦克风图标切换到语音模式
+2. 长按语音按钮开始录音
+3. 松手自动识别并发送
 
-## 项目架构
+### 语音播报
+1. 点击右上角喇叭图标开启/关闭
+2. 开启后 AI 回复会自动转语音播放
+3. 支持流式播放，边生成边播放
 
-### 前端架构
-- 使用Vue 3 Composition API
-- 组件化设计，易于维护和扩展
-- Tailwind CSS实现现代化UI
-- Marked.js处理Markdown渲染
+### TTS 测试
+1. 访问首页，点击"文字转语音 TTS"卡片
+2. 选择"流式 TTS"标签页
+3. 配置音色、语速、音量
+4. 点击"建立连接"
+5. 输入文字，点击"开始合成"
 
-### 后端架构
-- 模块化设计，职责分离
-- 控制器-服务-路由三层架构
-- 统一错误处理机制
-- 环境变量配置管理
+## 🔧 配置说明
 
-## 配置说明
+### AI 模型配置
 
-### 环境变量
-| 变量名     | 描述             | 默认值                  |
-|------------|------------------|-------------------------|
-| API_KEY    | AI服务API密钥    | 无                      |
-| BASE_URL   | AI服务基础URL    | https://api.deepseek.com |
-| MODEL      | AI模型名称       | deepseek-chat           |
-| PORT       | 服务器端口       | 3000                    |
+**DeepSeek：**
+- 获取 API Key：https://platform.deepseek.com
+- 模型：deepseek-chat
+- 特点：性价比高，中文友好
 
-## 开发指南
+**通义千问：**
+- 获取 API Key：https://dashscope.aliyun.com
+- 模型：qwen-turbo
+- 特点：阿里云服务，稳定可靠
 
-### 添加新功能
-1. 在相应的目录中创建新文件
-2. 遵循现有的代码风格和架构模式
-3. 添加必要的测试
+### 阿里云语音服务配置
 
-### 代码风格
-- 使用ES6+语法
-- 遵循JavaScript Standard Style
-- 组件和函数使用描述性命名
+1. 访问：https://nls-portal.console.aliyun.com
+2. 开通智能语音交互服务
+3. 创建项目，获取 AppKey
+4. 创建 AccessKey（RAM 访问控制）
+5. 将配置填入 `.env` 文件
 
-### 测试
-- 单元测试使用Jest
-- 端到端测试使用Cypress
+详细配置指南：`docs/01-配置指南/`
 
-## 部署
+## 📝 API 文档
 
-### 部署到服务器
-1. 构建前端应用：
-   ```bash
-   npm run build
-   ```
+### REST API
 
-2. 上传代码到服务器
+- `GET /api/health` - 健康检查
+- `POST /api/chat` - AI 对话（流式）
+- `GET /api/chat/providers` - 获取可用的 AI 提供商
+- `POST /api/tts` - 文字转语音
 
-3. 安装依赖：
-   ```bash
-   npm install
-   cd backend && npm install
-   ```
+### WebSocket API
 
-4. 配置环境变量
+- `ws://localhost:3000/ws-asr-stream` - 流式语音识别
+- `ws://localhost:3000/ws-tts-stream` - 流式语音合成
 
-5. 启动服务器：
-   ```bash
-   npm start
-   ```
+详细 API 文档：`docs/03-开发文档/`
 
-## 常见问题
+## 🎨 AI 人设
 
-### 1. API密钥无效
-确保在 `.env` 文件中正确配置了API_KEY。
+当前 AI 助手配置为超级暖心、充满正能量的性格：
+- 永远积极乐观，善于发现闪光点
+- 说话温柔体贴，像最好的朋友
+- 擅长提供情绪价值
+- 彩虹屁拉满，但真诚不做作
 
-### 2. 端口被占用
-修改 `.env` 文件中的PORT变量，或终止占用端口的进程。
+可在 `backend/src/services/aiService.js` 中修改 `AI_PERSONALITY` 常量来自定义人设。
 
-### 3. 前端白屏
-检查后端服务是否正常运行，以及网络连接是否正常。
+## 🐛 常见问题
 
-### 4. 麦克风权限被拒绝
-在浏览器设置中允许麦克风权限，确保使用 HTTPS 或 localhost。
+### 1. 语音识别不工作
+- 检查麦克风权限
+- 确认阿里云配置正确
+- 查看浏览器控制台错误信息
 
-### 5. TTS 转换失败
-检查 API_KEY 是否正确，确保网络连接正常。
+### 2. TTS 请求过多错误
+- 体验版限制并发数为 2
+- 已实现请求队列控制
+- 考虑升级到正式版
 
-更多问题请查看 [快速开始指南.md](./快速开始指南.md)
+### 3. AI 回复慢
+- 检查网络连接
+- 尝试切换 AI 模型
+- 查看后端日志
 
-## 贡献
+更多问题：`docs/04-调试记录/`
 
-欢迎提交Issue和Pull Request来改进项目。
-
-## 文档
-
-- 📖 [README.md](./README.md) - 项目说明
-- 📘 [功能完善计划.md](./功能完善计划.md) - 开发计划
-- 📗 [API使用指南.md](./API使用指南.md) - API 文档
-- 📕 [快速开始指南.md](./快速开始指南.md) - 安装指南
-- 📙 [项目分析总结.md](./项目分析总结.md) - 项目分析
-- 📓 [CHANGELOG.md](./CHANGELOG.md) - 更新日志
-
-## 许可证
+## 📄 许可证
 
 MIT License
 
-## 联系方式
+## 🤝 贡献
 
-如有问题，请提交Issue或联系项目维护者。
+欢迎提交 Issue 和 Pull Request！
+
+## 📧 联系方式
+
+如有问题或建议，请通过 Issue 联系。
+
+---
+
+**享受与 AI 的智能对话体验！** 🎉

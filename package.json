@@ -1,26 +1,37 @@
 {
   "name": "aichat-fullstack",
-  "version": "1.0.0",
-  "description": "AI Chat Fullstack Application",
+  "version": "1.1.0",
+  "description": "AI 智能对话语音项目 - 集成 AI 对话、语音识别和语音合成",
   "scripts": {
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm run dev",
-    "start": "cd backend && npm start",
+    "start": "npm run dev",
     "build": "cd frontend && npm run build",
-    "check": "node check-setup.js",
-    "test:api": "node test-api.js"
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "clean": "rm -rf backend/node_modules frontend/node_modules node_modules",
+    "clean:build": "rm -rf frontend/dist"
   },
   "keywords": [
     "ai",
     "chat",
-    "fullstack",
-    "vue",
-    "express"
+    "voice",
+    "asr",
+    "tts",
+    "deepseek",
+    "qwen",
+    "aliyun",
+    "vue3",
+    "express",
+    "websocket"
   ],
-  "author": "AI Chat Developer",
+  "author": "",
   "license": "MIT",
   "devDependencies": {
     "concurrently": "^8.2.0"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
   }
 }
