@@ -1,12 +1,37 @@
 <template>
   <div id="app">
+    <nav v-if="isAuthenticated" class="navbar">
+      <div class="nav-container">
+        <div class="nav-brand">AI Chat</div>
+        <div class="nav-menu">
+          <router-link to="/" class="nav-link">首页</router-link>
+          <router-link to="/chat" class="nav-link">对话</router-link>
+          <div class="nav-user">
+            <span class="username">{{ currentUser?.username }}</span>
+            <button @click="handleLogout" class="logout-btn">登出</button>
+          </div>
+        </div>
+      </div>
+    </nav>
     <router-view />
   </div>
 </template>
 
-<script>
-export default {
-  name: 'App'
+<script setup>
+import { onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { initializeAuth, logout, isAuthenticated, currentUser } from './stores/authStore.js'
+
+const router = useRouter()
+
+onMounted(() => {
+  // 初始化认证状态
+  initializeAuth()
+})
+
+const handleLogout = async () => {
+  await logout()
+  router.push('/login')
 }
 </script>
 
@@ -28,5 +53,69 @@ body {
 #app {
   width: 100%;
   min-height: 100vh;
+}
+
+.navbar {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.nav-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 60px;
+}
+
+.nav-brand {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.nav-menu {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+}
+
+.nav-link {
+  color: white;
+  text-decoration: none;
+  font-size: 14px;
+  transition: opacity 0.3s;
+}
+
+.nav-link:hover {
+  opacity: 0.8;
+}
+
+.nav-user {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.username {
+  font-size: 14px;
+}
+
+.logout-btn {
+  padding: 6px 16px;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.logout-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 </style>

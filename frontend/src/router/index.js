@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { isAuthenticated, token } from '../stores/authStore.js'
 
 // 导入页面组件
 const ChatPage = () => import('../views/ChatPage.vue')
@@ -7,6 +8,8 @@ const TtsTestPage = () => import('../views/TtsTestPage.vue')
 const AsrTestPage = () => import('../views/AsrTestPage.vue')
 const AsrStreamPage = () => import('../views/AsrStreamPage.vue')
 const HomePage = () => import('../views/HomePage.vue')
+const LoginPage = () => import('../views/LoginPage.vue')
+const RegisterPage = () => import('../views/RegisterPage.vue')
 
 const routes = [
   {
@@ -18,11 +21,28 @@ const routes = [
     }
   },
   {
+    path: '/login',
+    name: 'Login',
+    component: LoginPage,
+    meta: {
+      title: '登录'
+    }
+  },
+  {
+    path: '/register',
+    name: 'Register',
+    component: RegisterPage,
+    meta: {
+      title: '注册'
+    }
+  },
+  {
     path: '/chat',
     name: 'Chat',
     component: ChatPage,
     meta: {
-      title: 'AI 对话'
+      title: 'AI 对话',
+      requiresAuth: true
     }
   },
   {
@@ -64,10 +84,17 @@ const router = createRouter({
   routes
 })
 
-// 路由守卫 - 更新页面标题
+// 路由守卫 - 更新页面标题和认证检查
 router.beforeEach((to, from, next) => {
   document.title = to.meta.title ? `${to.meta.title} - AI Chat` : 'AI Chat Application'
-  next()
+
+  // 检查是否需要认证
+  if (to.meta.requiresAuth && !token.value) {
+    // 需要认证但未登录，重定向到登录页
+    next('/login')
+  } else {
+    next()
+  }
 })
 
 export default router

@@ -3,6 +3,7 @@ import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
 import { PORT } from './config/config.js';
 import { SEED_ASR_CONFIG } from './config/config.js';
+import { connectDatabase, disconnectDatabase } from './config/database.js';
 import SeedASRService from './services/seedAsrService.js';
 // 使用完整版本
 import { handleStreamConnection } from './services/aliAsrStreamService.js';
@@ -181,18 +182,33 @@ wss.on('error', (error) => {
 });
 
 // 启动服务器
-httpServer.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
-    console.log(`WebSocket server is running on the same port`);
-    console.log(`Seed-ASR WebSocket service: ws://localhost:${PORT}/seed-asr`);
-    console.log(`Ali ASR Stream WebSocket service: ws://localhost:${PORT}/ws-asr-stream`);
-    console.log(`Ali TTS Stream WebSocket service: ws://localhost:${PORT}/ws-tts-stream`);
+httpServer.listen(PORT, async () => {
+    try {
+        // 连接数据库
+        await connectDatabase();
+
+        console.log(`Server running at http://localhost:${PORT}`);
+        console.log(`WebSocket server is running on the same port`);
+        console.log(`Seed-ASR WebSocket service: ws://localhost:${PORT}/seed-asr`);
+        console.log(`Ali ASR Stream WebSocket service: ws://localhost:${PORT}/ws-asr-stream`);
+        console.log(`Ali TTS Stream WebSocket service: ws://localhost:${PORT}/ws-tts-stream`);
+    } catch (error) {
+        console.error('❌ 启动服务器失败:', error);
+        process.exit(1);
+    }
 });
 
 // 处理服务器关闭
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
     console.log('正在关闭服务器...');
     seedAsrService.closeAllConnections();
+    
+    try {
+        await disconnectDatabase();
+    } catch (error) {
+        console.error('❌ 断开数据库连接失败:', error);
+    }
+    
     httpServer.close(() => {
         console.log('服务器已关闭');
         process.exit(0);
