@@ -39,14 +39,52 @@
           </div>
 
           <div class="form-group">
-            <label for="avatar">头像 URL</label>
-            <input
-              id="avatar"
-              v-model="form.avatar"
-              type="url"
-              placeholder="https://example.com/avatar.jpg"
-              :disabled="isLoading"
-            />
+            <label for="avatar">头像</label>
+            <div class="avatar-options">
+              <div class="avatar-type-selector">
+                <label class="radio-option">
+                  <input type="radio" v-model="avatarType" value="emoji" />
+                  <span>Emoji</span>
+                </label>
+                <label class="radio-option">
+                  <input type="radio" v-model="avatarType" value="url" />
+                  <span>图片链接</span>
+                </label>
+              </div>
+              
+              <!-- Emoji 选择器 -->
+              <div v-if="avatarType === 'emoji'" class="emoji-selector">
+                <div class="emoji-grid">
+                  <button
+                    v-for="emoji in emojiOptions"
+                    :key="emoji"
+                    type="button"
+                    @click="selectEmoji(emoji)"
+                    :class="{ selected: form.avatar === emoji }"
+                    class="emoji-option"
+                  >
+                    {{ emoji }}
+                  </button>
+                </div>
+              </div>
+              
+              <!-- URL 输入 -->
+              <div v-if="avatarType === 'url'">
+                <input
+                  id="avatar"
+                  v-model="form.avatar"
+                  type="url"
+                  placeholder="https://example.com/avatar.jpg"
+                  :disabled="isLoading"
+                />
+              </div>
+            </div>
+            
+            <!-- 头像预览 -->
+            <div v-if="form.avatar" class="avatar-preview">
+              <img v-if="avatarType === 'url'" :src="form.avatar" :alt="form.name" />
+              <div v-else class="emoji-preview">{{ form.avatar }}</div>
+            </div>
           </div>
         </div>
 
@@ -95,12 +133,38 @@
 
           <div class="form-group">
             <label for="voice">音色</label>
-            <select v-model="form.voice" id="voice" :disabled="isLoading">
-              <option value="xiaoxian">小贤</option>
-              <option value="xiaoyun">小云</option>
-              <option value="xiaogang">小刚</option>
-              <option value="xiaomei">小美</option>
-            </select>
+            <div class="voice-selector">
+              <select v-model="form.voice" id="voice" :disabled="isLoading">
+                <option value="xiaoxian">小仙（亲切女声）</option>
+                <option value="xiaoyun">小云（标准女声）</option>
+                <option value="xiaogang">小刚（标准男声）</option>
+                <option value="ruoxi">若兮（温柔女声）</option>
+                <option value="siqi">思琪（温柔女声）</option>
+                <option value="zhitian">知甜（甜美女声）</option>
+                <option value="xiaomei">小美（清新女声）</option>
+                <option value="aining">艾宁（知性女声）</option>
+                <option value="aiqi">艾琪（温暖女声）</option>
+                <option value="aijia">艾佳（自然女声）</option>
+                <option value="aida">艾达（成熟女声）</option>
+                <option value="ninger">宁儿（青春女声）</option>
+                <option value="ruilin">瑞琳（优雅女声）</option>
+                <option value="siyue">思悦（活泼女声）</option>
+                <option value="aixia">艾夏（清脆女声）</option>
+                <option value="yina">伊娜（磁性女声）</option>
+                <option value="sijia">思佳（温柔女声）</option>
+                <option value="xiaobei">小北（可爱女声）</option>
+                <option value="aitong">艾彤（甜美女声）</option>
+                <option value="aiyu">艾雨（清新女声）</option>
+              </select>
+              <button 
+                type="button" 
+                @click="previewVoice" 
+                :disabled="isLoading || isPreviewingVoice"
+                class="preview-btn"
+              >
+                {{ isPreviewingVoice ? '试听中...' : '🔊 试听' }}
+              </button>
+            </div>
           </div>
 
           <div class="form-group">
@@ -150,7 +214,7 @@ const router = useRouter()
 const form = ref({
   name: '',
   description: '',
-  avatar: '',
+  avatar: '🤖',
   model: 'deepseek',
   personality: '',
   initialMemory: '',
@@ -158,8 +222,62 @@ const form = ref({
   speechRate: 150
 })
 
+const avatarType = ref('emoji')
+const emojiOptions = [
+  '🤖', '👨‍💻', '👩‍💻', '🧠', '💡', '⚡', '🔥', '✨', 
+  '🎯', '🚀', '💎', '🌟', '🎨', '📚', '🔬', '🎵',
+  '🐱', '🐶', '🦊', '🐼', '🦄', '🐸', '🦋', '🌸',
+  '😊', '😎', '🤓', '😇', '🥳', '🤗', '😋', '🤔'
+]
+
 const isLoading = ref(false)
+const isPreviewingVoice = ref(false)
 const error = ref(null)
+
+const selectEmoji = (emoji) => {
+  form.value.avatar = emoji
+}
+
+const previewVoice = async () => {
+  try {
+    isPreviewingVoice.value = true
+    
+    const response = await fetch('/api/tts', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        text: `你好，我是${form.value.voice}，很高兴为你服务！`,
+        voice: form.value.voice,
+        speechRate: form.value.speechRate
+      })
+    })
+    
+    if (!response.ok) {
+      throw new Error('试听失败')
+    }
+    
+    const blob = await response.blob()
+    const audioUrl = URL.createObjectURL(blob)
+    const audio = new Audio(audioUrl)
+    
+    audio.onended = () => {
+      isPreviewingVoice.value = false
+      URL.revokeObjectURL(audioUrl)
+    }
+    
+    audio.onerror = () => {
+      isPreviewingVoice.value = false
+      URL.revokeObjectURL(audioUrl)
+    }
+    
+    await audio.play()
+  } catch (err) {
+    console.error('❌ 试听失败:', err.message)
+    isPreviewingVoice.value = false
+  }
+}
 
 const handleCreateAgent = async () => {
   try {
@@ -305,6 +423,119 @@ const handleCreateAgent = async () => {
   text-align: right;
   font-weight: 500;
   color: #667eea;
+}
+
+.avatar-options {
+  margin-top: 0.5rem;
+}
+
+.avatar-type-selector {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.radio-option input[type="radio"] {
+  margin: 0;
+}
+
+.emoji-selector {
+  margin-bottom: 1rem;
+}
+
+.emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 0.5rem;
+  max-width: 400px;
+}
+
+.emoji-option {
+  width: 40px;
+  height: 40px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emoji-option:hover {
+  border-color: #667eea;
+  transform: scale(1.1);
+}
+
+.emoji-option.selected {
+  border-color: #667eea;
+  background: #f0f4ff;
+  transform: scale(1.1);
+}
+
+.avatar-preview {
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.avatar-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.emoji-preview {
+  font-size: 48px;
+}
+
+.voice-selector {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.voice-selector select {
+  flex: 1;
+}
+
+.preview-btn {
+  padding: 8px 16px;
+  background: #e8f5e8;
+  color: #2f855a;
+  border: 1px solid #c6f6d5;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.preview-btn:hover:not(:disabled) {
+  background: #c6f6d5;
+  border-color: #9ae6b4;
+}
+
+.preview-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .error-message {

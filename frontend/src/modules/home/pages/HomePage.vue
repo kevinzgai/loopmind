@@ -71,8 +71,11 @@
         <div v-for="agent in displayedAgents" :key="agent.id" class="agent-item">
           <div class="agent-card">
             <div class="agent-header">
-              <img v-if="agent.avatar" :src="agent.avatar" :alt="agent.name" class="agent-avatar" />
-              <div v-else class="agent-avatar-placeholder">🤖</div>
+              <div class="agent-avatar-container">
+                <img v-if="agent.avatar && (agent.avatar.startsWith('http') || agent.avatar.startsWith('data:'))" 
+                     :src="agent.avatar" :alt="agent.name" class="agent-avatar" />
+                <div v-else class="agent-avatar-placeholder">{{ agent.avatar || '🤖' }}</div>
+              </div>
               <div class="agent-meta">
                 <h3 class="agent-name">{{ agent.name }}</h3>
                 <p class="agent-creator">by {{ agent.creatorName }}</p>

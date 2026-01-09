@@ -10,7 +10,8 @@ import {
   handleDeleteAgent,
   handleGetMemory
 } from '../controllers/agentController.js';
-import { authenticateToken } from '../../../shared/middleware/authMiddleware.js';
+import { handleAgentChat } from '../controllers/agentChatController.js';
+import { authenticateToken, optionalAuthenticateToken } from '../../../shared/middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -45,6 +46,12 @@ router.get('/my-agents', authenticateToken, handleGetUserAgents);
  * 获取用户与智能体的记忆
  */
 router.get('/:agentId/memory', authenticateToken, handleGetMemory);
+
+/**
+ * POST /api/agent/:agentId/chat
+ * 智能体对话
+ */
+router.post('/:agentId/chat', optionalAuthenticateToken, handleAgentChat);
 
 /**
  * GET /api/agent/:agentId

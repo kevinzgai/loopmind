@@ -47,15 +47,50 @@
           </div>
 
           <div class="form-group">
-            <label for="avatar">头像 URL</label>
-            <input
-              id="avatar"
-              v-model="form.avatar"
-              type="url"
-              placeholder="输入头像 URL"
-            />
+            <label for="avatar">头像</label>
+            <div class="avatar-options">
+              <div class="avatar-type-selector">
+                <label class="radio-option">
+                  <input type="radio" v-model="avatarType" value="emoji" />
+                  <span>Emoji</span>
+                </label>
+                <label class="radio-option">
+                  <input type="radio" v-model="avatarType" value="url" />
+                  <span>图片链接</span>
+                </label>
+              </div>
+              
+              <!-- Emoji 选择器 -->
+              <div v-if="avatarType === 'emoji'" class="emoji-selector">
+                <div class="emoji-grid">
+                  <button
+                    v-for="emoji in emojiOptions"
+                    :key="emoji"
+                    type="button"
+                    @click="selectEmoji(emoji)"
+                    :class="{ selected: form.avatar === emoji }"
+                    class="emoji-option"
+                  >
+                    {{ emoji }}
+                  </button>
+                </div>
+              </div>
+              
+              <!-- URL 输入 -->
+              <div v-if="avatarType === 'url'">
+                <input
+                  id="avatar"
+                  v-model="form.avatar"
+                  type="url"
+                  placeholder="输入头像 URL"
+                />
+              </div>
+            </div>
+            
+            <!-- 头像预览 -->
             <div v-if="form.avatar" class="avatar-preview">
-              <img :src="form.avatar" :alt="form.name" />
+              <img v-if="avatarType === 'url'" :src="form.avatar" :alt="form.name" />
+              <div v-else class="emoji-preview">{{ form.avatar }}</div>
             </div>
           </div>
         </div>
@@ -94,11 +129,38 @@
 
           <div class="form-group">
             <label for="voice">语音</label>
-            <select id="voice" v-model="form.voice">
-              <option value="xiaoxian">小仙</option>
-              <option value="xiaogang">小刚</option>
-              <option value="xiaohui">小慧</option>
-            </select>
+            <div class="voice-selector">
+              <select id="voice" v-model="form.voice">
+                <option value="xiaoxian">小仙（亲切女声）</option>
+                <option value="xiaoyun">小云（标准女声）</option>
+                <option value="xiaogang">小刚（标准男声）</option>
+                <option value="ruoxi">若兮（温柔女声）</option>
+                <option value="siqi">思琪（温柔女声）</option>
+                <option value="zhitian">知甜（甜美女声）</option>
+                <option value="xiaomei">小美（清新女声）</option>
+                <option value="aining">艾宁（知性女声）</option>
+                <option value="aiqi">艾琪（温暖女声）</option>
+                <option value="aijia">艾佳（自然女声）</option>
+                <option value="aida">艾达（成熟女声）</option>
+                <option value="ninger">宁儿（青春女声）</option>
+                <option value="ruilin">瑞琳（优雅女声）</option>
+                <option value="siyue">思悦（活泼女声）</option>
+                <option value="aixia">艾夏（清脆女声）</option>
+                <option value="yina">伊娜（磁性女声）</option>
+                <option value="sijia">思佳（温柔女声）</option>
+                <option value="xiaobei">小北（可爱女声）</option>
+                <option value="aitong">艾彤（甜美女声）</option>
+                <option value="aiyu">艾雨（清新女声）</option>
+              </select>
+              <button 
+                type="button" 
+                @click="previewVoice" 
+                :disabled="isSubmitting || isPreviewingVoice"
+                class="preview-btn"
+              >
+                {{ isPreviewingVoice ? '试听中...' : '🔊 试听' }}
+              </button>
+            </div>
           </div>
 
           <div class="form-group">
@@ -168,18 +230,72 @@ const agent = ref(null)
 const isLoading = ref(false)
 const isSubmitting = ref(false)
 const isUnpublishing = ref(false)
+const isPreviewingVoice = ref(false)
 const error = ref(null)
+
+const avatarType = ref('emoji')
+const emojiOptions = [
+  '🤖', '👨‍💻', '👩‍💻', '🧠', '💡', '⚡', '🔥', '✨', 
+  '🎯', '🚀', '💎', '🌟', '🎨', '📚', '🔬', '🎵',
+  '🐱', '🐶', '🦊', '🐼', '🦄', '🐸', '🦋', '🌸',
+  '😊', '😎', '🤓', '😇', '🥳', '🤗', '😋', '🤔'
+]
 
 const form = reactive({
   name: '',
   description: '',
-  avatar: '',
+  avatar: '🤖',
   model: 'deepseek',
   personality: '',
   initialMemory: '',
   voice: 'xiaoxian',
   speechRate: 150
 })
+
+const selectEmoji = (emoji) => {
+  form.avatar = emoji
+}
+
+const previewVoice = async () => {
+  try {
+    isPreviewingVoice.value = true
+    
+    const response = await fetch('/api/tts', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        text: `你好，我是${form.voice}，很高兴为你服务！`,
+        voice: form.voice,
+        speechRate: form.speechRate
+      })
+    })
+    
+    if (!response.ok) {
+      throw new Error('试听失败')
+    }
+    
+    const blob = await response.blob()
+    const audioUrl = URL.createObjectURL(blob)
+    const audio = new Audio(audioUrl)
+    
+    audio.onended = () => {
+      isPreviewingVoice.value = false
+      URL.revokeObjectURL(audioUrl)
+    }
+    
+    audio.onerror = () => {
+      isPreviewingVoice.value = false
+      URL.revokeObjectURL(audioUrl)
+    }
+    
+    await audio.play()
+  } catch (err) {
+    console.error('❌ 试听失败:', err.message)
+    isPreviewingVoice.value = false
+  }
+}
 
 const loadAgent = async () => {
   try {
@@ -192,12 +308,22 @@ const loadAgent = async () => {
     // 填充表单
     form.name = result.name
     form.description = result.description || ''
-    form.avatar = result.avatar || ''
+    form.avatar = result.avatar || '🤖'
     form.model = result.model || 'deepseek'
     form.personality = result.personality || ''
     form.initialMemory = result.initialMemory || ''
     form.voice = result.voice || 'xiaoxian'
     form.speechRate = result.speechRate || 150
+
+    // 判断头像类型
+    if (result.avatar && (result.avatar.startsWith('http') || result.avatar.startsWith('data:'))) {
+      avatarType.value = 'url'
+    } else {
+      avatarType.value = 'emoji'
+      if (!result.avatar) {
+        form.avatar = '🤖'
+      }
+    }
   } catch (err) {
     error.value = err.message
     console.error('❌ 加载智能体失败:', err.message)
@@ -230,6 +356,27 @@ const handleSubmit = async () => {
     console.error('❌ 更新智能体失败:', err.message)
   } finally {
     isSubmitting.value = false
+  }
+}
+
+const handleUnpublish = async () => {
+  if (!confirm('确定要下架这个智能体吗？下架后将从广场中移除。')) {
+    return
+  }
+
+  try {
+    isUnpublishing.value = true
+    error.value = null
+
+    const updatedAgent = await unpublishAgent(agentId, token.value)
+    agent.value = updatedAgent
+
+    console.log('✅ 智能体下架成功')
+  } catch (err) {
+    error.value = err.message
+    console.error('❌ 下架智能体失败:', err.message)
+  } finally {
+    isUnpublishing.value = false
   }
 }
 
@@ -361,6 +508,106 @@ onMounted(() => {
   object-fit: cover;
 }
 
+.avatar-options {
+  margin-top: 0.5rem;
+}
+
+.avatar-type-selector {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.radio-option input[type="radio"] {
+  margin: 0;
+}
+
+.emoji-selector {
+  margin-bottom: 1rem;
+}
+
+.emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 0.5rem;
+  max-width: 400px;
+}
+
+.emoji-option {
+  width: 40px;
+  height: 40px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emoji-option:hover {
+  border-color: #667eea;
+  transform: scale(1.1);
+}
+
+.emoji-option.selected {
+  border-color: #667eea;
+  background: #f0f4ff;
+  transform: scale(1.1);
+}
+
+.emoji-preview {
+  font-size: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.voice-selector {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.voice-selector select {
+  flex: 1;
+}
+
+.preview-btn {
+  padding: 8px 16px;
+  background: #e8f5e8;
+  color: #2f855a;
+  border: 1px solid #c6f6d5;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.preview-btn:hover:not(:disabled) {
+  background: #c6f6d5;
+  border-color: #9ae6b4;
+}
+
+.preview-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .status-info {
   padding: 1rem;
   background: #f9f9f9;
@@ -375,6 +622,41 @@ onMounted(() => {
 .draft-status {
   color: #ed8936;
   margin: 0;
+}
+
+.unpublish-section {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 6px;
+}
+
+.unpublish-tip {
+  margin: 0 0 1rem;
+  color: #856404;
+  font-size: 14px;
+}
+
+.unpublish-btn {
+  padding: 8px 16px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.unpublish-btn:hover:not(:disabled) {
+  background: #c82333;
+}
+
+.unpublish-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .form-actions {

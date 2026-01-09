@@ -312,6 +312,7 @@ export async function incrementUsageCount(agentId) {
       { _id: agentId },
       { $inc: { usageCount: 1 } }
     );
+    console.log(`📊 智能体使用次数 +1: ${agentId}`);
   } catch (error) {
     console.error('❌ 增加使用次数失败:', error.message);
   }

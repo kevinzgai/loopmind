@@ -13,6 +13,7 @@ const RegisterPage = () => import('@/modules/auth/pages/RegisterPage.vue')
 const CreateAgentPage = () => import('@/modules/agent/pages/CreateAgentPage.vue')
 const EditAgentPage = () => import('@/modules/agent/pages/EditAgentPage.vue')
 const MyAgentsPage = () => import('@/modules/agent/pages/MyAgentsPage.vue')
+const AgentChatPage = () => import('@/modules/agent/pages/AgentChatPage.vue')
 
 const routes = [
   {
@@ -96,6 +97,14 @@ const routes = [
     meta: {
       title: '编辑智能体',
       requiresAuth: true
+    }
+  },
+  {
+    path: '/agent/:agentId/chat',
+    name: 'AgentChat',
+    component: AgentChatPage,
+    meta: {
+      title: '智能体对话'
     }
   },
   {

@@ -9,7 +9,7 @@ import {
 // 处理聊天消息（支持流式响应）
 export async function handleChatMessage(req, res) {
     try {
-        const { message, userId, stream, prompt, text, provider } = req.body;
+        const { message, userId, stream, prompt, text, provider, systemPrompt } = req.body;
         
         const userMessage = message || prompt || text;
         const aiProvider = provider || 'deepseek'; // 默认使用 DeepSeek
@@ -18,9 +18,14 @@ export async function handleChatMessage(req, res) {
             return res.status(400).json({ error: 'Missing message/prompt/text or userId' });
         }
         
-        console.log('📨 Received request:', { userId, message: userMessage, provider: aiProvider });
+        console.log('📨 Received request:', { userId, message: userMessage, provider: aiProvider, hasSystemPrompt: !!systemPrompt });
         
         const conversationHistory = getConversationHistory(userId, aiProvider);
+        
+        // 如果有系统提示词且对话历史为空，添加系统消息
+        if (systemPrompt && conversationHistory.length === 0) {
+            addMessageToHistory(userId, { role: "system", content: systemPrompt }, aiProvider);
+        }
         
         addMessageToHistory(userId, { role: "user", content: userMessage }, aiProvider);
         

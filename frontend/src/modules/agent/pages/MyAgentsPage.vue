@@ -31,8 +31,11 @@
     <div v-else class="agents-grid">
       <div v-for="agent in agents" :key="agent.id" class="agent-card">
         <div class="agent-header">
-          <img v-if="agent.avatar" :src="agent.avatar" :alt="agent.name" class="agent-avatar" />
-          <div v-else class="agent-avatar-placeholder">🤖</div>
+          <div class="agent-avatar-container">
+            <img v-if="agent.avatar && (agent.avatar.startsWith('http') || agent.avatar.startsWith('data:'))" 
+                 :src="agent.avatar" :alt="agent.name" class="agent-avatar" />
+            <div v-else class="agent-avatar-placeholder">{{ agent.avatar || '🤖' }}</div>
+          </div>
           <div class="agent-info">
             <h3 class="agent-name">{{ agent.name }}</h3>
             <p class="agent-model">{{ getModelName(agent.model) }}</p>
@@ -61,6 +64,9 @@
         </div>
 
         <div class="agent-actions">
+          <router-link :to="`/agent/${agent.id}/chat`" class="action-btn chat-btn">
+            对话
+          </router-link>
           <router-link :to="`/agent/${agent.id}/edit`" class="action-btn edit-btn">
             编辑
           </router-link>
@@ -71,6 +77,14 @@
             :disabled="publishingId === agent.id"
           >
             {{ publishingId === agent.id ? '发布中...' : '发布' }}
+          </button>
+          <button
+            v-if="agent.isPublished"
+            @click="handleUnpublish(agent.id)"
+            class="action-btn unpublish-btn"
+            :disabled="unpublishingId === agent.id"
+          >
+            {{ unpublishingId === agent.id ? '下架中...' : '下架' }}
           </button>
           <button
             @click="handleDelete(agent.id)"
@@ -109,7 +123,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { token } from '@/modules/auth/stores/authStore.js'
-import { getUserAgents, publishAgent, deleteAgent } from '../services/agentService.js'
+import { getUserAgents, publishAgent, unpublishAgent, deleteAgent } from '../services/agentService.js'
 
 const agents = ref([])
 const isLoading = ref(false)
@@ -119,6 +133,7 @@ const limit = ref(10)
 const total = ref(0)
 const pages = ref(0)
 const publishingId = ref(null)
+const unpublishingId = ref(null)
 const deletingId = ref(null)
 
 const getModelName = (model) => {
@@ -157,6 +172,24 @@ const handlePublish = async (agentId) => {
     console.error('❌ 发布智能体失败:', err.message)
   } finally {
     publishingId.value = null
+  }
+}
+
+const handleUnpublish = async (agentId) => {
+  if (!confirm('确定要下架这个智能体吗？下架后将从广场中移除。')) {
+    return
+  }
+
+  try {
+    unpublishingId.value = agentId
+    await unpublishAgent(agentId, token.value)
+    console.log('✅ 智能体下架成功')
+    await loadAgents()
+  } catch (err) {
+    error.value = err.message
+    console.error('❌ 下架智能体失败:', err.message)
+  } finally {
+    unpublishingId.value = null
   }
 }
 
@@ -408,6 +441,20 @@ onMounted(() => {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s;
+  text-decoration: none;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chat-btn {
+  background: #e8f5e8;
+  color: #2f855a;
+}
+
+.chat-btn:hover {
+  background: #c6f6d5;
 }
 
 .edit-btn {
@@ -426,6 +473,15 @@ onMounted(() => {
 
 .publish-btn:hover:not(:disabled) {
   background: #e1bee7;
+}
+
+.unpublish-btn {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.unpublish-btn:hover:not(:disabled) {
+  background: #ffcdd2;
 }
 
 .delete-btn {
