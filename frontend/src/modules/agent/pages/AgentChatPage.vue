@@ -265,7 +265,7 @@ async function textToSpeech(text) {
     try {
       console.log('🔊 开始 TTS 请求:', text.substring(0, 20) + '...')
       
-      const response = await fetch('/api/tts', {
+      const response = await fetch('http://localhost:3000/api/tts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -339,7 +339,7 @@ async function sendMessageToAI(text) {
     isLoading.value = true
 
     // 使用智能体专用聊天接口
-    const response = await fetch(`/api/agent/${agentId}/chat`, {
+    const response = await fetch(`http://localhost:3000/api/agent/${agentId}/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -434,7 +434,7 @@ const renderMessageContent = (content) => {
 onMounted(() => {
   loadAgent()
   
-  fetch('/api/health')
+  fetch('http://localhost:3000/api/health')
     .then(res => res.json())
     .then(() => {
       isOnline.value = true

@@ -105,7 +105,7 @@ const MAX_CONCURRENT_TTS = 1  // 体验版限制，最多同时 1 个请求
 // 加载可用的 AI 提供商
 async function loadProviders() {
   try {
-    const response = await fetch('/api/chat/providers')
+    const response = await fetch('http://localhost:3000/api/chat/providers')
     const data = await response.json()
     if (data.providers && data.providers.length > 0) {
       providers.value = data.providers
@@ -203,7 +203,7 @@ async function textToSpeech(text) {
     try {
       console.log('🔊 开始 TTS 请求:', text.substring(0, 20) + '...')
       
-      const response = await fetch('/api/tts', {
+      const response = await fetch('http://localhost:3000/api/tts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -279,7 +279,7 @@ async function sendMessageToAI(text) {
     
     isLoading.value = true
 
-    const response = await fetch('/api/chat', {
+    const response = await fetch('http://localhost:3000/api/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -373,7 +373,7 @@ const renderMessageContent = (content) => {
 onMounted(() => {
   loadProviders()
   
-  fetch('/api/health')
+  fetch('http://localhost:3000/api/health')
     .then(res => res.json())
     .then(() => {
       isOnline.value = true

@@ -260,7 +260,7 @@ const previewVoice = async () => {
   try {
     isPreviewingVoice.value = true
     
-    const response = await fetch('/api/tts', {
+    const response = await fetch('http://localhost:3000/api/tts', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
