@@ -7,7 +7,7 @@ import {
   handleGetCurrentUser,
   handleChangePassword
 } from '../controllers/authController.js';
-import { authenticateToken } from '../middleware/authMiddleware.js';
+import { authenticateToken } from '../shared/middleware/authMiddleware.js';
 
 const router = express.Router();
 

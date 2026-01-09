@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import AsrTestDemo from '../components/AsrTestDemo.vue'
+import AsrTestDemo from '@/components/AsrTestDemo.vue'
 </script>
 
 <template>

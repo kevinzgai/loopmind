@@ -104,9 +104,10 @@ export async function handleLogin(req, res, next) {
 export async function handleLogout(req, res, next) {
   try {
     const userId = req.user.userId;
+    const token = req.token;
 
     // 登出用户
-    logout(userId);
+    await logout(userId, token);
 
     res.status(200).json({
       message: '登出成功'

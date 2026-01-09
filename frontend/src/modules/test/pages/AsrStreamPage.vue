@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import AsrStreamDemo from '../components/AsrStreamDemo.vue'
+import AsrStreamDemo from '@/components/AsrStreamDemo.vue'
 </script>
 
 <template>

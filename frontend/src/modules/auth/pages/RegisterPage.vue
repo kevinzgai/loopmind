@@ -1,12 +1,12 @@
 <template>
-  <div class="login-container">
-    <div class="login-card">
-      <div class="login-header">
-        <h1>登录</h1>
-        <p>欢迎回来</p>
+  <div class="register-container">
+    <div class="register-card">
+      <div class="register-header">
+        <h1>注册</h1>
+        <p>创建新账户</p>
       </div>
 
-      <form @submit.prevent="handleLogin" class="login-form">
+      <form @submit.prevent="handleRegister" class="register-form">
         <!-- 用户名输入 -->
         <div class="form-group">
           <label for="username">用户名</label>
@@ -15,6 +15,19 @@
             v-model="form.username"
             type="text"
             placeholder="请输入用户名"
+            required
+            :disabled="isLoading"
+          />
+        </div>
+
+        <!-- 邮箱输入 -->
+        <div class="form-group">
+          <label for="email">邮箱</label>
+          <input
+            id="email"
+            v-model="form.email"
+            type="email"
+            placeholder="请输入邮箱"
             required
             :disabled="isLoading"
           />
@@ -33,20 +46,33 @@
           />
         </div>
 
+        <!-- 确认密码输入 -->
+        <div class="form-group">
+          <label for="confirmPassword">确认密码</label>
+          <input
+            id="confirmPassword"
+            v-model="form.confirmPassword"
+            type="password"
+            placeholder="请再次输入密码"
+            required
+            :disabled="isLoading"
+          />
+        </div>
+
         <!-- 错误提示 -->
         <div v-if="error" class="error-message">
           {{ error }}
         </div>
 
-        <!-- 登录按钮 -->
+        <!-- 注册按钮 -->
         <button type="submit" class="submit-btn" :disabled="isLoading">
-          {{ isLoading ? '登录中...' : '登录' }}
+          {{ isLoading ? '注册中...' : '注册' }}
         </button>
       </form>
 
-      <!-- 注册链接 -->
-      <div class="login-footer">
-        <p>还没有账户？<router-link to="/register">立即注册</router-link></p>
+      <!-- 登录链接 -->
+      <div class="register-footer">
+        <p>已有账户？<router-link to="/login">立即登录</router-link></p>
       </div>
     </div>
   </div>
@@ -55,29 +81,31 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { login, isLoading, error } from '../stores/authStore.js'
+import { register, isLoading, error } from '@/modules/auth/stores/authStore.js'
 
 const router = useRouter()
 
 const form = ref({
   username: '',
-  password: ''
+  email: '',
+  password: '',
+  confirmPassword: ''
 })
 
-const handleLogin = async () => {
+const handleRegister = async () => {
   try {
-    await login(form.username, form.password)
-    // 登录成功，跳转到首页
-    router.push('/')
+    await register(form.value.username, form.value.email, form.value.password, form.value.confirmPassword)
+    // 注册成功，跳转到登录页
+    router.push('/login')
   } catch (err) {
     // 错误已在 authStore 中处理
-    console.error('登录失败:', err)
+    console.error('注册失败:', err)
   }
 }
 </script>
 
 <style scoped>
-.login-container {
+.register-container {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -86,7 +114,7 @@ const handleLogin = async () => {
   padding: 20px;
 }
 
-.login-card {
+.register-card {
   background: white;
   border-radius: 12px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
@@ -95,23 +123,23 @@ const handleLogin = async () => {
   padding: 40px;
 }
 
-.login-header {
+.register-header {
   text-align: center;
   margin-bottom: 30px;
 }
 
-.login-header h1 {
+.register-header h1 {
   font-size: 28px;
   color: #333;
   margin-bottom: 8px;
 }
 
-.login-header p {
+.register-header p {
   color: #999;
   font-size: 14px;
 }
 
-.login-form {
+.register-form {
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -179,21 +207,21 @@ const handleLogin = async () => {
   cursor: not-allowed;
 }
 
-.login-footer {
+.register-footer {
   text-align: center;
   margin-top: 20px;
   font-size: 14px;
   color: #666;
 }
 
-.login-footer a {
+.register-footer a {
   color: #667eea;
   text-decoration: none;
   font-weight: 500;
   transition: color 0.3s;
 }
 
-.login-footer a:hover {
+.register-footer a:hover {
   color: #764ba2;
 }
 </style>

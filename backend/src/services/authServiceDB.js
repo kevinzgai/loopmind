@@ -1,13 +1,11 @@
 import crypto from 'crypto';
 import User from '../models/UserSchema.js';
+import Token from '../models/TokenSchema.js';
 
 /**
  * 认证服务（MongoDB 版本）
  * 处理用户注册、登录、Token 管理等
  */
-
-// Token 存储（userId -> token）
-const tokenStore = new Map();
 
 // Token 过期时间（24 小时）
 const TOKEN_EXPIRY = 24 * 60 * 60 * 1000;
@@ -119,14 +117,15 @@ export async function login(username, password) {
 
     // 生成 Token
     const token = generateToken();
-    const expiryTime = Date.now() + TOKEN_EXPIRY;
+    const expiryTime = new Date(Date.now() + TOKEN_EXPIRY);
 
-    // 存储 Token
-    tokenStore.set(user._id.toString(), {
+    // 存储 Token 到 MongoDB
+    const tokenDoc = new Token({
+      userId: user._id,
       token,
-      expiryTime,
-      createdAt: new Date()
+      expiryTime
     });
+    await tokenDoc.save();
 
     console.log(`✅ 用户登录成功: ${username}`);
     
@@ -134,7 +133,7 @@ export async function login(username, password) {
     return {
       user: userJson,
       token,
-      expiryTime
+      expiryTime: expiryTime.getTime()
     };
   } catch (error) {
     console.error('❌ 登录失败:', error.message);
@@ -145,9 +144,14 @@ export async function login(username, password) {
 /**
  * 用户登出
  */
-export function logout(userId) {
-  tokenStore.delete(userId);
-  console.log(`✅ 用户登出成功: ${userId}`);
+export async function logout(userId, token) {
+  try {
+    await Token.deleteOne({ userId, token });
+    console.log(`✅ 用户登出成功: ${userId}`);
+  } catch (error) {
+    console.error('❌ 登出失败:', error.message);
+    throw error;
+  }
 }
 
 /**
@@ -155,31 +159,31 @@ export function logout(userId) {
  */
 export async function verifyToken(token) {
   try {
-    // 查找 Token
-    for (const [userId, tokenData] of tokenStore.entries()) {
-      if (tokenData.token === token) {
-        // 检查是否过期
-        if (Date.now() > tokenData.expiryTime) {
-          tokenStore.delete(userId);
-          throw new Error('Token 已过期');
-        }
+    // 从 MongoDB 查找 Token
+    const tokenDoc = await Token.findOne({ token }).populate('userId');
 
-        // 获取用户信息
-        const user = await User.findById(userId);
-        if (!user) {
-          tokenStore.delete(userId);
-          throw new Error('用户不存在');
-        }
-
-        return {
-          userId: user._id.toString(),
-          username: user.username,
-          email: user.email
-        };
-      }
+    if (!tokenDoc) {
+      throw new Error('Token 无效');
     }
 
-    throw new Error('Token 无效');
+    // 检查是否过期
+    if (Date.now() > tokenDoc.expiryTime.getTime()) {
+      await Token.deleteOne({ _id: tokenDoc._id });
+      throw new Error('Token 已过期');
+    }
+
+    // 获取用户信息
+    const user = tokenDoc.userId;
+    if (!user) {
+      await Token.deleteOne({ _id: tokenDoc._id });
+      throw new Error('用户不存在');
+    }
+
+    return {
+      userId: user._id.toString(),
+      username: user.username,
+      email: user.email
+    };
   } catch (error) {
     console.error('❌ Token 验证失败:', error.message);
     throw error;
@@ -194,21 +198,25 @@ export async function refreshToken(token) {
     // 验证旧 Token
     const userInfo = await verifyToken(token);
 
+    // 删除旧 Token
+    await Token.deleteOne({ token });
+
     // 生成新 Token
     const newToken = generateToken();
-    const expiryTime = Date.now() + TOKEN_EXPIRY;
+    const expiryTime = new Date(Date.now() + TOKEN_EXPIRY);
 
-    // 更新 Token 存储
-    tokenStore.set(userInfo.userId, {
+    // 存储新 Token 到 MongoDB
+    const tokenDoc = new Token({
+      userId: userInfo.userId,
       token: newToken,
-      expiryTime,
-      createdAt: new Date()
+      expiryTime
     });
+    await tokenDoc.save();
 
     console.log(`✅ Token 刷新成功: ${userInfo.username}`);
     return {
       token: newToken,
-      expiryTime
+      expiryTime: expiryTime.getTime()
     };
   } catch (error) {
     console.error('❌ Token 刷新失败:', error.message);
@@ -268,26 +276,35 @@ export async function getUserInfo(userId) {
 /**
  * 获取 Token 信息（仅用于调试）
  */
-export function getTokenInfo(token) {
-  for (const [userId, tokenData] of tokenStore.entries()) {
-    if (tokenData.token === token) {
-      return {
-        userId,
-        createdAt: tokenData.createdAt,
-        expiryTime: tokenData.expiryTime,
-        isExpired: Date.now() > tokenData.expiryTime
-      };
+export async function getTokenInfo(token) {
+  try {
+    const tokenDoc = await Token.findOne({ token });
+    if (!tokenDoc) {
+      return null;
     }
+    return {
+      userId: tokenDoc.userId.toString(),
+      createdAt: tokenDoc.createdAt,
+      expiryTime: tokenDoc.expiryTime,
+      isExpired: Date.now() > tokenDoc.expiryTime.getTime()
+    };
+  } catch (error) {
+    console.error('❌ 获取 Token 信息失败:', error.message);
+    return null;
   }
-  return null;
 }
 
 /**
  * 清空所有 Token（仅用于测试）
  */
-export function clearAllTokens() {
-  tokenStore.clear();
-  console.log('🗑️  所有 Token 已清空');
+export async function clearAllTokens() {
+  try {
+    await Token.deleteMany({});
+    console.log('🗑️  所有 Token 已清空');
+  } catch (error) {
+    console.error('❌ 清空 Token 失败:', error.message);
+    throw error;
+  }
 }
 
 export default {

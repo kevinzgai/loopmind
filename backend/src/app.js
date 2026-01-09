@@ -7,8 +7,9 @@ import chatRoutes from './routes/chatRoutes.js';
 import ttsRoutes from './routes/ttsRoutes.js';
 import voiceRoutes from './routes/voiceRoutes.js';
 import asrRoutes from './routes/asrRoutes.js';
-import { errorHandler } from './middleware/errorHandler.js';
-import { errorHandler as authErrorHandler } from './middleware/authMiddleware.js';
+import agentRoutes from './modules/agent/routes/agentRoutes.js';
+import { errorHandler } from './shared/middleware/errorHandler.js';
+import { errorHandler as authErrorHandler } from './shared/middleware/authMiddleware.js';
 
 // 获取__dirname的ES模块等价物
 const __filename = fileURLToPath(import.meta.url);
@@ -26,6 +27,7 @@ app.use(express.static(path.join(__dirname, '..', '..', 'dist')));
 
 // 路由
 app.use('/api/auth', authRoutes);
+app.use('/api/agent', agentRoutes);
 app.use('/chat', chatRoutes);
 app.use('/tts', ttsRoutes);
 app.use('/voice', voiceRoutes);

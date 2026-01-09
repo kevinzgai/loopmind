@@ -1,15 +1,18 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { isAuthenticated, token } from '../stores/authStore.js'
+import { isAuthenticated, token } from '@/modules/auth/stores/authStore.js'
 
 // 导入页面组件
-const ChatPage = () => import('../views/ChatPage.vue')
-const AudioTestPage = () => import('../views/AudioTestPage.vue')
-const TtsTestPage = () => import('../views/TtsTestPage.vue')
-const AsrTestPage = () => import('../views/AsrTestPage.vue')
-const AsrStreamPage = () => import('../views/AsrStreamPage.vue')
-const HomePage = () => import('../views/HomePage.vue')
-const LoginPage = () => import('../views/LoginPage.vue')
-const RegisterPage = () => import('../views/RegisterPage.vue')
+const ChatPage = () => import('@/modules/chat/pages/ChatPage.vue')
+const AudioTestPage = () => import('@/modules/test/pages/AudioTestPage.vue')
+const TtsTestPage = () => import('@/modules/test/pages/TtsTestPage.vue')
+const AsrTestPage = () => import('@/modules/test/pages/AsrTestPage.vue')
+const AsrStreamPage = () => import('@/modules/test/pages/AsrStreamPage.vue')
+const HomePage = () => import('@/modules/home/pages/HomePage.vue')
+const LoginPage = () => import('@/modules/auth/pages/LoginPage.vue')
+const RegisterPage = () => import('@/modules/auth/pages/RegisterPage.vue')
+const CreateAgentPage = () => import('@/modules/agent/pages/CreateAgentPage.vue')
+const EditAgentPage = () => import('@/modules/agent/pages/EditAgentPage.vue')
+const MyAgentsPage = () => import('@/modules/agent/pages/MyAgentsPage.vue')
 
 const routes = [
   {
@@ -75,6 +78,33 @@ const routes = [
     component: AsrStreamPage,
     meta: {
       title: '实时语音识别'
+    }
+  },
+  {
+    path: '/agent/create',
+    name: 'CreateAgent',
+    component: CreateAgentPage,
+    meta: {
+      title: '创建智能体',
+      requiresAuth: true
+    }
+  },
+  {
+    path: '/agent/:agentId/edit',
+    name: 'EditAgent',
+    component: EditAgentPage,
+    meta: {
+      title: '编辑智能体',
+      requiresAuth: true
+    }
+  },
+  {
+    path: '/agent/my-agents',
+    name: 'MyAgents',
+    component: MyAgentsPage,
+    meta: {
+      title: '我的智能体',
+      requiresAuth: true
     }
   }
 ]

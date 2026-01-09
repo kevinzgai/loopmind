@@ -73,7 +73,7 @@ import DOMPurify from 'dompurify'
 import { Conversation, ConversationContent } from '@/components/ai-elements/conversation'
 import { Message, MessageContent } from '@/components/ai-elements/message'
 import { Loader } from '@/components/ai-elements/loader'
-import VoiceInput from '@/components/VoiceInput.vue'
+import VoiceInput from '@/modules/chat/components/VoiceInput.vue'
 
 const userId = 'user_' + Math.random().toString(36).substr(2, 9)
 const isOnline = ref(true)

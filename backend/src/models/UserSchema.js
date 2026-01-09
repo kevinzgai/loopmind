@@ -63,20 +63,11 @@ userSchema.virtual('id').get(function () {
 userSchema.set('toJSON', {
   virtuals: true,
   transform: (doc, ret) => {
-    ret.id = doc._id.toString();
     delete ret._id;
     delete ret.__v;
     delete ret.passwordHash;
-    return {
-      id: ret.id,
-      username: ret.username,
-      email: ret.email,
-      isActive: ret.isActive,
-      profile: ret.profile,
-      lastLoginAt: ret.lastLoginAt,
-      createdAt: ret.createdAt,
-      updatedAt: ret.updatedAt
-    };
+    ret.id = doc._id.toString();
+    return ret;
   }
 });
 

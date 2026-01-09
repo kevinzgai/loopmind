@@ -6,14 +6,14 @@ import { ref, computed } from 'vue'
  */
 
 // 状态
-const user = ref(null)
-const token = ref(localStorage.getItem('token') || null)
-const isLoading = ref(false)
-const error = ref(null)
+export const user = ref(null)
+export const token = ref(localStorage.getItem('token') || null)
+export const isLoading = ref(false)
+export const error = ref(null)
 
 // 计算属性
-const isAuthenticated = computed(() => !!token.value && !!user.value)
-const currentUser = computed(() => user.value)
+export const isAuthenticated = computed(() => !!token.value && !!user.value)
+export const currentUser = computed(() => user.value)
 
 /**
  * 注册
@@ -217,24 +217,4 @@ export function initializeAuth() {
       localStorage.removeItem('user')
     }
   }
-}
-
-export default {
-  // 状态
-  user,
-  token,
-  isLoading,
-  error,
-
-  // 计算属性
-  isAuthenticated,
-  currentUser,
-
-  // 方法
-  register,
-  login,
-  logout,
-  getCurrentUser,
-  refreshToken,
-  initializeAuth
 }
