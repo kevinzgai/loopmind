@@ -36,8 +36,9 @@ export async function handleAgentChat(req, res) {
         // 获取对话历史
         const conversationHistory = getConversationHistory(conversationId, agent.model);
         
-        // 如果是新对话，添加系统提示词
-        if (conversationHistory.length === 0) {
+        // 如果是新对话（没有系统提示词），添加系统提示词
+        const hasSystemPrompt = conversationHistory.some(msg => msg.role === 'system');
+        if (!hasSystemPrompt) {
             let systemPrompt = `你是 ${agent.name}`;
             
             if (agent.personality) {

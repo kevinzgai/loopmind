@@ -14,8 +14,7 @@ const agentMemorySchema = new mongoose.Schema(
       index: true
     },
     userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      type: String,  // 改为 String 类型，支持游客用户
       required: true,
       index: true
     },
