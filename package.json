@@ -3,12 +3,12 @@
   "version": "1.1.0",
   "description": "AI 智能对话语音项目 - 集成 AI 对话、语音识别和语音合成",
   "scripts": {
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:backend": "cd backend && npm run dev",
-    "dev:frontend": "cd frontend && npm run dev",
-    "start": "npm run dev",
-    "build": "cd frontend && npm run build",
-    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "dev": "concurrently \"pnpm run dev:backend\" \"pnpm run dev:frontend\"",
+    "dev:backend": "cd backend && pnpm run dev",
+    "dev:frontend": "cd frontend && pnpm run dev",
+    "start": "pnpm run dev",
+    "build": "cd frontend && pnpm run build",
+    "install:all": "pnpm install && cd backend && pnpm install && cd ../frontend && pnpm install",
     "clean": "rm -rf backend/node_modules frontend/node_modules node_modules",
     "clean:build": "rm -rf frontend/dist"
   },
@@ -32,6 +32,7 @@
   },
   "engines": {
     "node": ">=16.0.0",
-    "npm": ">=8.0.0"
-  }
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.0.0"
 }

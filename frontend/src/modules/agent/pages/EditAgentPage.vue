@@ -219,11 +219,12 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { token } from '@/modules/auth/stores/authStore.js'
 import { getAgent, updateAgent, unpublishAgent } from '../services/agentService.js'
 
 const route = useRoute()
+const router = useRouter()
 const agentId = route.params.agentId
 
 const agent = ref(null)
@@ -354,6 +355,12 @@ const handleSubmit = async () => {
   } catch (err) {
     error.value = err.message
     console.error('❌ 更新智能体失败:', err.message)
+    
+    // 检查是否为登录失效错误
+    if (err.message.includes('登录已失效')) {
+      // 重定向到登录页面
+      router.push('/login')
+    }
   } finally {
     isSubmitting.value = false
   }
@@ -375,6 +382,12 @@ const handleUnpublish = async () => {
   } catch (err) {
     error.value = err.message
     console.error('❌ 下架智能体失败:', err.message)
+    
+    // 检查是否为登录失效错误
+    if (err.message.includes('登录已失效')) {
+      // 重定向到登录页面
+      router.push('/login')
+    }
   } finally {
     isUnpublishing.value = false
   }

@@ -1,4 +1,5 @@
 import { ref, computed } from 'vue'
+import apiService from '../../../services/apiService.js'
 
 /**
  * 认证状态管理
@@ -23,27 +24,15 @@ export async function register(username, email, password, confirmPassword) {
     isLoading.value = true
     error.value = null
 
-    const response = await fetch('http://localhost:3000/api/auth/register', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        username,
-        email,
-        password,
-        confirmPassword
-      })
+    const response = await apiService.post('/auth/register', {
+      username,
+      email,
+      password,
+      confirmPassword
     })
 
-    const data = await response.json()
-
-    if (!response.ok) {
-      throw new Error(data.error?.message || '注册失败')
-    }
-
     console.log('✅ 注册成功')
-    return data.user
+    return response.user
   } catch (err) {
     error.value = err.message
     console.error('❌ 注册失败:', err.message)
@@ -61,31 +50,19 @@ export async function login(username, password) {
     isLoading.value = true
     error.value = null
 
-    const response = await fetch('http://localhost:3000/api/auth/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        username,
-        password
-      })
+    const response = await apiService.post('/auth/login', {
+      username,
+      password
     })
 
-    const data = await response.json()
-
-    if (!response.ok) {
-      throw new Error(data.error?.message || '登录失败')
-    }
-
     // 保存 token 和用户信息
-    token.value = data.token
-    user.value = data.user
-    localStorage.setItem('token', data.token)
-    localStorage.setItem('user', JSON.stringify(data.user))
+    token.value = response.token
+    user.value = response.user
+    localStorage.setItem('token', response.token)
+    localStorage.setItem('user', JSON.stringify(response.user))
 
     console.log('✅ 登录成功')
-    return data
+    return response
   } catch (err) {
     error.value = err.message
     console.error('❌ 登录失败:', err.message)
@@ -103,12 +80,7 @@ export async function logout() {
     isLoading.value = true
 
     if (token.value) {
-      await fetch('http://localhost:3000/api/auth/logout', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token.value}`
-        }
-      })
+      await apiService.post('/auth/logout')
     }
 
     // 清除本地数据
@@ -134,26 +106,10 @@ export async function getCurrentUser() {
       return null
     }
 
-    const response = await fetch('http://localhost:3000/api/auth/me', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token.value}`
-      }
-    })
-
-    const data = await response.json()
-
-    if (!response.ok) {
-      // Token 无效，清除本地数据
-      token.value = null
-      user.value = null
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
-      return null
-    }
-
-    user.value = data.user
-    return data.user
+    const response = await apiService.get('/auth/me')
+    
+    user.value = response.user
+    return response.user
   } catch (err) {
     console.error('❌ 获取用户信息失败:', err.message)
     return null
@@ -169,24 +125,13 @@ export async function refreshToken() {
       return null
     }
 
-    const response = await fetch('http://localhost:3000/api/auth/refresh', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token.value}`
-      }
-    })
-
-    const data = await response.json()
-
-    if (!response.ok) {
-      throw new Error(data.error?.message || 'Token 刷新失败')
-    }
-
-    token.value = data.token
-    localStorage.setItem('token', data.token)
+    const response = await apiService.post('/auth/refresh')
+    
+    token.value = response.token
+    localStorage.setItem('token', response.token)
 
     console.log('✅ Token 刷新成功')
-    return data.token
+    return response.token
   } catch (err) {
     console.error('❌ Token 刷新失败:', err.message)
     // Token 刷新失败，清除本地数据

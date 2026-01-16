@@ -115,6 +115,11 @@ const routes = [
       title: '我的智能体',
       requiresAuth: true
     }
+  },
+  // 404 路由
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/'
   }
 ]
 

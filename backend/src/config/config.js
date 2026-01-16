@@ -6,8 +6,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 config({ path: path.resolve(__dirname, '..', '..', '.env') });
-
-export const PORT = process.env.PORT || 3000;
+// 端口配置
+export const PORT = process.env.PORT || 3001;
 
 // DeepSeek 配置
 export const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;

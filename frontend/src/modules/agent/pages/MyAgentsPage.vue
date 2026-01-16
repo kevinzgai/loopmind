@@ -122,8 +122,11 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { token } from '@/modules/auth/stores/authStore.js'
 import { getUserAgents, publishAgent, unpublishAgent, deleteAgent } from '../services/agentService.js'
+
+const router = useRouter()
 
 const agents = ref([])
 const isLoading = ref(false)
@@ -156,6 +159,12 @@ const loadAgents = async () => {
   } catch (err) {
     error.value = err.message
     console.error('❌ 加载智能体列表失败:', err.message)
+    
+    // 检查是否为登录失效错误
+    if (err.message.includes('登录已失效')) {
+      // 重定向到登录页面
+      router.push('/login')
+    }
   } finally {
     isLoading.value = false
   }
@@ -170,6 +179,12 @@ const handlePublish = async (agentId) => {
   } catch (err) {
     error.value = err.message
     console.error('❌ 发布智能体失败:', err.message)
+    
+    // 检查是否为登录失效错误
+    if (err.message.includes('登录已失效')) {
+      // 重定向到登录页面
+      router.push('/login')
+    }
   } finally {
     publishingId.value = null
   }
@@ -188,6 +203,12 @@ const handleUnpublish = async (agentId) => {
   } catch (err) {
     error.value = err.message
     console.error('❌ 下架智能体失败:', err.message)
+    
+    // 检查是否为登录失效错误
+    if (err.message.includes('登录已失效')) {
+      // 重定向到登录页面
+      router.push('/login')
+    }
   } finally {
     unpublishingId.value = null
   }
@@ -206,6 +227,12 @@ const handleDelete = async (agentId) => {
   } catch (err) {
     error.value = err.message
     console.error('❌ 删除智能体失败:', err.message)
+    
+    // 检查是否为登录失效错误
+    if (err.message.includes('登录已失效')) {
+      // 重定向到登录页面
+      router.push('/login')
+    }
   } finally {
     deletingId.value = null
   }

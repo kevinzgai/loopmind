@@ -396,6 +396,12 @@ const handleCreateAgent = async () => {
   } catch (err) {
     error.value = err.message
     console.error('❌ 创建智能体失败:', err.message)
+    
+    // 检查是否为登录失效错误
+    if (err.message.includes('登录已失效')) {
+      // 重定向到登录页面
+      router.push('/login')
+    }
   } finally {
     isLoading.value = false
   }
