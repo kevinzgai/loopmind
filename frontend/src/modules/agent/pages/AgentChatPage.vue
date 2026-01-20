@@ -99,7 +99,7 @@ import { Message, MessageContent } from '@/components/ai-elements/message'
 import { Loader } from '@/components/ai-elements/loader'
 import VoiceInput from '@/modules/chat/components/VoiceInput.vue'
 import { token } from '@/modules/auth/stores/authStore.js'
-import { getAgent, getMemory } from '../services/agentService.js'
+import { getAgent, getMemory, getAgentChatHistory } from '../services/agentService.js'
 
 const route = useRoute()
 const agentId = route.params.agentId
@@ -111,7 +111,17 @@ const agentError = ref(null)
 const memory = ref(null)
 
 // 聊天相关状态
-const userId = 'user_' + Math.random().toString(36).substr(2, 9)
+// 尝试从 localStorage 获取匿名用户 ID，如果没有则生成并保存
+const getAnonymousUserId = () => {
+  let id = localStorage.getItem('anonymous_user_id')
+  if (!id) {
+    id = 'user_' + Math.random().toString(36).substr(2, 9)
+    localStorage.setItem('anonymous_user_id', id)
+  }
+  return id
+}
+
+const userId = getAnonymousUserId()
 const isOnline = ref(true)
 const messages = ref([])
 const inputText = ref('')
@@ -142,7 +152,7 @@ const loadAgent = async () => {
 
     // 获取智能体信息
     const agentData = await getAgent(agentId)
-    agent.value = agentData
+    agent.value = agentData.agent
 
     // 如果用户已登录，获取记忆
     if (token.value) {
@@ -165,21 +175,47 @@ const loadAgent = async () => {
   }
 }
 
-// 初始化对话
-const initializeChat = () => {
-  const welcomeMessage = agent.value.personality 
-    ? `你好！我是 ${agent.value.name}。${agent.value.personality}`
-    : `你好！我是 ${agent.value.name}，很高兴与你对话！`
-
-  messages.value = [
-    {
-      id: Date.now(),
-      role: 'assistant',
-      content: welcomeMessage
+// 加载历史对话
+const loadHistory = async () => {
+  try {
+    const userIdParam = token.value ? null : userId
+    const data = await getAgentChatHistory(agentId, userIdParam)
+    
+    if (data.history && data.history.length > 0) {
+      messages.value = data.history.map((msg, index) => ({
+        id: Date.now() - (data.history.length - index) * 1000,
+        role: msg.role,
+        content: msg.content
+      }))
+      return true
     }
-  ]
+  } catch (e) {
+    console.error('Failed to load history', e)
+  }
+  return false
+}
 
-  // 如果有记忆，可以在这里加载历史对话
+// 初始化对话
+const initializeChat = async () => {
+  // 尝试加载历史记录
+  const hasHistory = await loadHistory()
+  
+  // 如果没有历史记录，显示欢迎语
+  if (!hasHistory) {
+    const welcomeMessage = agent.value.personality 
+      ? `你好！我是 ${agent.value.name}。${agent.value.personality}`
+      : `你好！我是 ${agent.value.name}，很高兴与你对话！`
+
+    messages.value = [
+      {
+        id: Date.now(),
+        role: 'assistant',
+        content: welcomeMessage
+      }
+    ]
+  }
+
+  // 如果有记忆，可以在这里加载用户记忆摘要（可选，目前后端已在系统提示词中处理）
   if (memory.value && memory.value.content) {
     console.log('📝 加载用户记忆:', memory.value.content.substring(0, 100) + '...')
   }
@@ -265,7 +301,7 @@ async function textToSpeech(text) {
     try {
       console.log('🔊 开始 TTS 请求:', text.substring(0, 20) + '...')
       
-      const response = await fetch('http://localhost:3000/api/tts', {
+      const response = await fetch('/api/tts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -339,7 +375,7 @@ async function sendMessageToAI(text) {
     isLoading.value = true
 
     // 使用智能体专用聊天接口
-    const response = await fetch(`http://localhost:3000/api/agent/${agentId}/chat`, {
+    const response = await fetch(`/api/agent/${agentId}/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -434,7 +470,7 @@ const renderMessageContent = (content) => {
 onMounted(() => {
   loadAgent()
   
-  fetch('http://localhost:3000/api/health')
+  fetch('/api/health')
     .then(res => res.json())
     .then(() => {
       isOnline.value = true

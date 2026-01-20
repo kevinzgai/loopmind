@@ -1,13 +1,54 @@
 import { 
-    getConversationHistory, 
-    addMessageToHistory, 
-    callAIStream
+    callAIStream,
+    getConversationHistory,
+    addMessageToHistory
 } from '../../../services/aiService.js';
 import { getAgent, getOrCreateMemory, updateMemory, incrementUsageCount } from '../services/agentService.js';
+import { getAgentConversationMessages, appendAgentConversationMessages } from '../../../services/conversationService.js';
 
 /**
  * 智能体聊天控制器
  */
+
+/**
+ * 获取智能体对话历史
+ * GET /api/agent/:agentId/history
+ */
+export async function handleGetAgentChatHistory(req, res) {
+    try {
+        const { agentId } = req.params;
+        const { userId } = req.query; // 用于匿名用户的 history
+        
+        const dbUserId = req.user ? req.user.userId : null;
+        const effectiveUserId = dbUserId || userId;
+
+        if (!effectiveUserId) {
+             return res.status(200).json({ message: 'No user identified', history: [] });
+        }
+
+        let history = [];
+        
+        if (dbUserId) {
+            // 已登录用户，从数据库获取
+            history = await getAgentConversationMessages(dbUserId, agentId);
+        } else {
+            // 匿名用户，从内存获取
+            // 使用 agent_前缀作为 provider key 区分普通对话
+            history = getConversationHistory(effectiveUserId, `agent_${agentId}`);
+        }
+        
+        // 过滤掉系统提示词，只返回用户和助手的对话
+        const filteredHistory = history.filter(msg => msg.role !== 'system');
+
+        res.status(200).json({
+            message: '获取对话历史成功',
+            history: filteredHistory
+        });
+    } catch (error) {
+        console.error('❌ 获取对话历史失败:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+}
 
 /**
  * 处理智能体聊天消息（支持流式响应）
@@ -18,11 +59,14 @@ export async function handleAgentChat(req, res) {
         const { agentId } = req.params;
         const { message, userId } = req.body;
         
-        if (!message || !userId) {
+        const dbUserId = req.user ? req.user.userId : null;
+        const effectiveUserId = dbUserId || userId;
+
+        if (!message || !effectiveUserId) {
             return res.status(400).json({ error: 'Missing message or userId' });
         }
         
-        console.log('🤖 智能体对话请求:', { agentId, userId, message: message.substring(0, 50) + '...' });
+        console.log('🤖 智能体对话请求:', { agentId, userId: effectiveUserId, message: message.substring(0, 50) + '...', isAuth: !!dbUserId });
         
         // 获取智能体信息
         const agent = await getAgent(agentId);
@@ -30,11 +74,17 @@ export async function handleAgentChat(req, res) {
             return res.status(404).json({ error: '智能体不存在' });
         }
 
-        // 构建对话 ID（智能体 + 用户）
-        const conversationId = `agent_${agentId}_${userId}`;
+        let conversationHistory;
+        let newMessages = [];
         
-        // 获取对话历史
-        const conversationHistory = getConversationHistory(conversationId, agent.model);
+        if (dbUserId) {
+            // 已登录：从数据库加载历史
+            const dbHistory = await getAgentConversationMessages(dbUserId, agentId);
+            conversationHistory = [...dbHistory]; // Copy to avoid mutation issues if any
+        } else {
+            // 未登录：从内存加载历史
+            conversationHistory = getConversationHistory(effectiveUserId, `agent_${agentId}`);
+        }
         
         // 如果是新对话（没有系统提示词），添加系统提示词
         const hasSystemPrompt = conversationHistory.some(msg => msg.role === 'system');
@@ -51,20 +101,41 @@ export async function handleAgentChat(req, res) {
             
             // 获取用户记忆（如果存在）
             try {
-                const memory = await getOrCreateMemory(agentId, userId);
+                // 只有登录用户才有持久化记忆？ getOrCreateMemory 需要 userId 吗？
+                // 假设 memoryService 也依赖 userId。如果是匿名用户，可能没有记忆或使用临时ID。
+                // 暂时尝试获取，失败忽略。
+                const memory = await getOrCreateMemory(agentId, effectiveUserId);
                 if (memory && memory.content) {
                     systemPrompt += `\n\n与用户的历史记忆：${memory.content}`;
                 }
             } catch (error) {
-                console.warn('获取用户记忆失败:', error.message);
+                // console.warn('获取用户记忆失败 (可能是匿名用户):', error.message);
             }
             
-            addMessageToHistory(conversationId, { role: "system", content: systemPrompt }, agent.model);
-            console.log('📝 系统提示词已设置:', systemPrompt.substring(0, 100) + '...');
+            const systemMsg = { role: "system", content: systemPrompt };
+            
+            if (dbUserId) {
+                newMessages.push(systemMsg);
+            } else {
+                addMessageToHistory(effectiveUserId, systemMsg, `agent_${agentId}`);
+            }
+            // 确保 memory context 在 conversationHistory 中
+            if (!conversationHistory.some(msg => msg.role === 'system')) {
+                 conversationHistory.push(systemMsg);
+            }
+            
+            console.log('📝 系统提示词已设置');
         }
         
-        // 添加用户消息到历史
-        addMessageToHistory(conversationId, { role: "user", content: message }, agent.model);
+        // 添加用户消息
+        const userMsg = { role: "user", content: message };
+        conversationHistory.push(userMsg);
+        
+        if (dbUserId) {
+            newMessages.push(userMsg);
+        } else {
+            addMessageToHistory(effectiveUserId, userMsg, `agent_${agentId}`);
+        }
         
         // 设置流式响应头
         res.setHeader('Content-Type', 'text/plain; charset=utf-8');
@@ -84,20 +155,31 @@ export async function handleAgentChat(req, res) {
             }
         }
         
-        // 添加 AI 回复到历史
-        addMessageToHistory(conversationId, { role: "assistant", content: fullResponse }, agent.model);
+        // 添加 AI 回复
+        const assistantMsg = { role: "assistant", content: fullResponse };
+        
+        if (dbUserId) {
+            newMessages.push(assistantMsg);
+            // 批量保存到数据库
+            await appendAgentConversationMessages(dbUserId, agentId, newMessages);
+        } else {
+            addMessageToHistory(effectiveUserId, assistantMsg, `agent_${agentId}`);
+        }
         
         // 更新智能体使用次数
         try {
             await incrementUsageCount(agentId);
         } catch (error) {
-            console.warn('更新使用统计失败:', error.message);
+            // console.warn('更新使用统计失败:', error.message);
         }
         
         // 更新用户记忆（异步处理，不阻塞响应）
-        updateUserMemory(agentId, userId, message, fullResponse).catch(error => {
-            console.warn('更新用户记忆失败:', error.message);
-        });
+        // 仅对登录用户更新记忆？或者匿名用户也更新（存疑，因为 getOrCreateMemory 可能失败）
+        if (dbUserId) {
+            updateUserMemory(agentId, dbUserId, message, fullResponse).catch(error => {
+                console.warn('更新用户记忆失败:', error.message);
+            });
+        }
         
         console.log('✅ 智能体对话完成');
         res.end();

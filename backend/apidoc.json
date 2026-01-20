@@ -1,0 +1,7 @@
+{
+  "name": "AI Chat Backend API",
+  "version": "1.0.0",
+  "description": "AI Chat 后端 API 文档",
+  "title": "AI Chat API",
+  "url": "http://localhost:3002/api"
+}

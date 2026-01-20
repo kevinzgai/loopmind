@@ -96,7 +96,8 @@ async function startRecording() {
     const source = audioContext.createMediaStreamSource(mediaStream)
     
     // 建立 WebSocket 连接
-    const wsUrl = 'ws://localhost:3000/ws-asr-stream'
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    const wsUrl = `${protocol}//${window.location.host}/ws-asr-stream`
     ws.value = new WebSocket(wsUrl)
     
     ws.value.onopen = () => {

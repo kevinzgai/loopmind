@@ -58,8 +58,7 @@ async function startStreaming() {
 
     // 建立 WebSocket 连接 - 使用相对路径，让 Vite 代理处理
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    // const wsUrl = `${protocol}//${window.location.host}/asr/stream`
-    const wsUrl = 'ws://localhost:3000/ws-asr-stream'
+    const wsUrl = `${protocol}//${window.location.host}/ws-asr-stream`
     console.log('🔗 连接到:', wsUrl)
     
     ws = new WebSocket(wsUrl)

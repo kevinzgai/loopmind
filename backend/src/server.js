@@ -25,7 +25,7 @@ wss.on('connection', (ws, req) => {
     const path = req.url;
     console.log('📞 收到 WebSocket 连接请求，路径:', path);
     
-    if (path === '/seed-asr') {
+    if (path === '/ws-seed-asr') {
         const clientId = uuidv4();
         console.log(`✅ Seed-ASR 客户端已连接，ID: ${clientId}`);
         seedAsrService.handleConnection(ws, clientId);
@@ -189,7 +189,7 @@ httpServer.listen(PORT, async () => {
 
         console.log(`Server running at http://localhost:${PORT}`);
         console.log(`WebSocket server is running on the same port`);
-        console.log(`Seed-ASR WebSocket service: ws://localhost:${PORT}/seed-asr`);
+        console.log(`Seed-ASR WebSocket service: ws://localhost:${PORT}/ws-seed-asr`);
         console.log(`Ali ASR Stream WebSocket service: ws://localhost:${PORT}/ws-asr-stream`);
         console.log(`Ali TTS Stream WebSocket service: ws://localhost:${PORT}/ws-tts-stream`);
     } catch (error) {

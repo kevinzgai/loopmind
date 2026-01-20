@@ -24,17 +24,19 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // 静态文件服务
 app.use(express.static(path.join(__dirname, '..', '..', 'dist')));
+// apidoc 文档
+app.use('/apidoc', express.static(path.join(__dirname, '..', 'docs', 'apidoc')));
 
 // 路由
 app.use('/api/auth', authRoutes);
 app.use('/api/agent', agentRoutes);
-app.use('/chat', chatRoutes);
-app.use('/tts', ttsRoutes);
-app.use('/voice', voiceRoutes);
-app.use('/asr', asrRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/tts', ttsRoutes);
+app.use('/api/voice', voiceRoutes);
+app.use('/api/asr', asrRoutes);
 
 // 健康检查接口
-app.get('/health', (req, res) => {
+app.get('/api/health', (req, res) => {
     res.json({ status: 'ok' });
 });
 

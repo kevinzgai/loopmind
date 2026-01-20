@@ -185,7 +185,8 @@ async function connect() {
     isConnecting.value = true
     addLog('正在建立 WebSocket 连接...', 'info')
 
-    const wsUrl = `ws://localhost:3000/ws-tts-stream?voice=${selectedVoice.value}&speechRate=${speechRate.value}&volume=${volume.value}`
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    const wsUrl = `${protocol}//${window.location.host}/ws-tts-stream?voice=${selectedVoice.value}&speechRate=${speechRate.value}&volume=${volume.value}`
     ws = new WebSocket(wsUrl)
 
     // 初始化音频上下文

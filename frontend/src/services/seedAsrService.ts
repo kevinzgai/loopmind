@@ -63,9 +63,9 @@ export class SeedASRClient {
       let wsUrl = '';
       if (typeof window !== 'undefined') {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        wsUrl = `${protocol}//${window.location.host}/seed-asr`;
+        wsUrl = `${protocol}//${window.location.host}/ws-seed-asr`;
       } else {
-        wsUrl = 'ws://localhost:3000/seed-asr';
+        wsUrl = 'ws://localhost:3002/ws-seed-asr';
       }
       this.ws = new WebSocket(wsUrl);
       

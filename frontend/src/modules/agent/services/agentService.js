@@ -111,3 +111,16 @@ export async function getMemory(agentId, token) {
     throw error
   }
 }
+
+/**
+ * 获取智能体对话历史
+ */
+export async function getAgentChatHistory(agentId, userId) {
+  try {
+    const params = userId ? { userId } : {};
+    return await apiService.get(`${API_BASE}/${agentId}/history`, params);
+  } catch (error) {
+    // 错误已经在 apiService 中处理
+    throw error
+  }
+}

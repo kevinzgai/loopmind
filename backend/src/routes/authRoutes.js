@@ -12,40 +12,66 @@ import { authenticateToken } from '../shared/middleware/authMiddleware.js';
 const router = express.Router();
 
 /**
- * 认证路由
- */
-
-// 公开路由（不需要认证）
-
-/**
- * POST /api/auth/register
- * 用户注册
+ * @api {post} /auth/register 用户注册
+ * @apiName Register
+ * @apiGroup Auth
+ * @apiDescription 注册新用户
+ *
+ * @apiBody {String} username 用户名
+ * @apiBody {String} password 密码
+ * @apiBody {String} email 邮箱
+ *
+ * @apiSuccess {String} message 注册成功消息
+ * @apiSuccess {Object} user 用户信息
  */
 router.post('/register', handleRegister);
 
 /**
- * POST /api/auth/login
- * 用户登录
+ * @api {post} /auth/login 用户登录
+ * @apiName Login
+ * @apiGroup Auth
+ * @apiDescription 用户登录获取 Token
+ *
+ * @apiBody {String} username 用户名
+ * @apiBody {String} password 密码
+ *
+ * @apiSuccess {String} token 访问 Token
+ * @apiSuccess {Object} user 用户信息
  */
 router.post('/login', handleLogin);
 
 /**
- * POST /api/auth/refresh
- * 刷新 Token（需要有效的 Token）
+ * @api {post} /auth/refresh 刷新 Token
+ * @apiName RefreshToken
+ * @apiGroup Auth
+ * @apiDescription 刷新访问 Token
+ * @apiHeader {String} Authorization Bearer Token
+ *
+ * @apiSuccess {String} token 新的访问 Token
  */
 router.post('/refresh', authenticateToken, handleRefreshToken);
 
 // 受保护路由（需要认证）
 
 /**
- * GET /api/auth/me
- * 获取当前用户信息
+ * @api {get} /auth/me 获取当前用户信息
+ * @apiName GetCurrentUser
+ * @apiGroup Auth
+ * @apiDescription 获取当前登录用户的详细信息
+ * @apiHeader {String} Authorization Bearer Token
+ *
+ * @apiSuccess {Object} user 用户信息
  */
 router.get('/me', authenticateToken, handleGetCurrentUser);
 
 /**
- * POST /api/auth/logout
- * 用户登出
+ * @api {post} /auth/logout 用户登出
+ * @apiName Logout
+ * @apiGroup Auth
+ * @apiDescription 用户登出，失效 Token
+ * @apiHeader {String} Authorization Bearer Token
+ *
+ * @apiSuccess {String} message 登出成功消息
  */
 router.post('/logout', authenticateToken, handleLogout);
 

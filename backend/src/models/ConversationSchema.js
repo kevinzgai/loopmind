@@ -32,11 +32,14 @@ const conversationSchema = new mongoose.Schema(
       ref: 'User',
       required: true
     },
+    agentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Agent'
+    },
     provider: {
       type: String,
       enum: ['deepseek', 'qwen'],
-      default: 'deepseek',
-      required: true
+      default: 'deepseek'
     },
     title: {
       type: String,

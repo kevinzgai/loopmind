@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js"
+    "dev": "nodemon src/server.js",
+    "docs": "apidoc -i src -o docs/apidoc"
   },
   "keywords": [
     "ai",
@@ -31,6 +32,8 @@
     "ws": "^8.14.2"
   },
   "devDependencies": {
+    "apidoc": "^1.2.0",
+    "jsdoc": "^4.0.5",
     "nodemon": "^3.0.2"
   },
   "packageManager": "pnpm@8.0.0"

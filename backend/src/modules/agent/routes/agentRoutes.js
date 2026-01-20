@@ -10,77 +10,160 @@ import {
   handleDeleteAgent,
   handleGetMemory
 } from '../controllers/agentController.js';
-import { handleAgentChat } from '../controllers/agentChatController.js';
+import { handleAgentChat, handleGetAgentChatHistory } from '../controllers/agentChatController.js';
 import { authenticateToken, optionalAuthenticateToken } from '../../../shared/middleware/authMiddleware.js';
 
 const router = express.Router();
 
-/**
- * 智能体路由
- */
-
 // 公开路由
 
 /**
- * GET /api/agent/published
- * 获取已发布的智能体列表（广场）
+ * @api {get} /agent/published 获取已发布的智能体
+ * @apiName GetPublishedAgents
+ * @apiGroup Agent
+ * @apiDescription 获取广场上已发布的智能体列表
+ *
+ * @apiSuccess {Array} agents 智能体列表
  */
 router.get('/published', handleGetPublishedAgents);
 
 // 受保护路由
 
 /**
- * POST /api/agent/create
- * 创建智能体
+ * @api {post} /agent/create 创建智能体
+ * @apiName CreateAgent
+ * @apiGroup Agent
+ * @apiDescription 创建新的智能体
+ * @apiHeader {String} Authorization Bearer Token
+ *
+ * @apiBody {String} name 智能体名称
+ * @apiBody {String} [description] 描述
+ * @apiBody {String} [systemPrompt] 系统提示词
+ * @apiBody {String} [model] 模型名称
+ * @apiBody {String} [voice] 语音名称
+ *
+ * @apiSuccess {Object} agent 创建的智能体信息
  */
 router.post('/create', authenticateToken, handleCreateAgent);
 
 /**
- * GET /api/agent/my-agents
- * 获取用户的智能体列表
+ * @api {get} /agent/my-agents 获取我的智能体
+ * @apiName GetMyAgents
+ * @apiGroup Agent
+ * @apiDescription 获取当前用户创建的智能体列表
+ * @apiHeader {String} Authorization Bearer Token
+ *
+ * @apiSuccess {Array} agents 智能体列表
  */
 router.get('/my-agents', authenticateToken, handleGetUserAgents);
 
 /**
- * GET /api/agent/:agentId/memory
- * 获取用户与智能体的记忆
+ * @api {get} /agent/:agentId/memory 获取智能体记忆
+ * @apiName GetAgentMemory
+ * @apiGroup Agent
+ * @apiDescription 获取用户与指定智能体的对话记忆
+ * @apiHeader {String} Authorization Bearer Token
+ *
+ * @apiParam {String} agentId 智能体ID
+ *
+ * @apiSuccess {Object} memory 记忆信息
  */
 router.get('/:agentId/memory', authenticateToken, handleGetMemory);
 
 /**
- * POST /api/agent/:agentId/chat
- * 智能体对话
+ * @api {get} /agent/:agentId 获取智能体详情
+ * @apiName GetAgent
+ * @apiGroup Agent
+ * @apiDescription 获取指定智能体的详细信息
+ * @apiHeader {String} [Authorization] Bearer Token (可选)
+ *
+ * @apiParam {String} agentId 智能体ID
+ *
+ * @apiSuccess {Object} agent 智能体详情
  */
-router.post('/:agentId/chat', optionalAuthenticateToken, handleAgentChat);
+router.get('/:agentId', optionalAuthenticateToken, handleGetAgent);
 
 /**
- * GET /api/agent/:agentId
- * 获取智能体详情
- */
-router.get('/:agentId', handleGetAgent);
-
-/**
- * PUT /api/agent/:agentId
- * 更新智能体
+ * @api {put} /agent/:agentId 更新智能体
+ * @apiName UpdateAgent
+ * @apiGroup Agent
+ * @apiDescription 更新智能体信息
+ * @apiHeader {String} Authorization Bearer Token
+ *
+ * @apiParam {String} agentId 智能体ID
+ * @apiBody {String} [name] 名称
+ * @apiBody {String} [description] 描述
+ * @apiBody {String} [systemPrompt] 系统提示词
+ *
+ * @apiSuccess {Object} agent 更新后的智能体信息
  */
 router.put('/:agentId', authenticateToken, handleUpdateAgent);
 
 /**
- * POST /api/agent/:agentId/publish
- * 发布智能体
+ * @api {delete} /agent/:agentId 删除智能体
+ * @apiName DeleteAgent
+ * @apiGroup Agent
+ * @apiDescription 删除指定的智能体
+ * @apiHeader {String} Authorization Bearer Token
+ *
+ * @apiParam {String} agentId 智能体ID
+ *
+ * @apiSuccess {String} message 删除成功消息
+ */
+router.delete('/:agentId', authenticateToken, handleDeleteAgent);
+
+/**
+ * @api {post} /agent/:agentId/publish 发布智能体
+ * @apiName PublishAgent
+ * @apiGroup Agent
+ * @apiDescription 将智能体发布到广场
+ * @apiHeader {String} Authorization Bearer Token
+ *
+ * @apiParam {String} agentId 智能体ID
+ *
+ * @apiSuccess {Object} agent 更新后的智能体信息
  */
 router.post('/:agentId/publish', authenticateToken, handlePublishAgent);
 
 /**
- * POST /api/agent/:agentId/unpublish
- * 下架智能体
+ * @api {post} /agent/:agentId/unpublish 下架智能体
+ * @apiName UnpublishAgent
+ * @apiGroup Agent
+ * @apiDescription 将智能体从广场下架
+ * @apiHeader {String} Authorization Bearer Token
+ *
+ * @apiParam {String} agentId 智能体ID
+ *
+ * @apiSuccess {Object} agent 更新后的智能体信息
  */
 router.post('/:agentId/unpublish', authenticateToken, handleUnpublishAgent);
 
 /**
- * DELETE /api/agent/:agentId
- * 删除智能体
+ * @api {post} /agent/:agentId/chat 智能体对话
+ * @apiName ChatWithAgent
+ * @apiGroup Agent
+ * @apiDescription 与指定智能体进行对话
+ * @apiHeader {String} [Authorization] Bearer Token (可选)
+ *
+ * @apiParam {String} agentId 智能体ID
+ * @apiBody {String} message 用户消息
+ *
+ * @apiSuccess {String} reply AI回复内容
  */
-router.delete('/:agentId', authenticateToken, handleDeleteAgent);
+router.post('/:agentId/chat', optionalAuthenticateToken, handleAgentChat);
+
+/**
+ * @api {get} /agent/:agentId/history 获取智能体对话历史
+ * @apiName GetAgentChatHistory
+ * @apiGroup Agent
+ * @apiDescription 获取用户与智能体的对话历史
+ * @apiHeader {String} [Authorization] Bearer Token (可选)
+ *
+ * @apiParam {String} agentId 智能体ID
+ * @apiQuery {String} [userId] 匿名用户的ID
+ *
+ * @apiSuccess {Array} history 对话历史列表
+ */
+router.get('/:agentId/history', optionalAuthenticateToken, handleGetAgentChatHistory);
 
 export default router;

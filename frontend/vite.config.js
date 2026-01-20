@@ -22,40 +22,19 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: 'http://localhost:3002',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
-      },
-      '/chat': {
-        target: 'http://localhost:3002',
         changeOrigin: true
       },
-      '/tts': {
-        target: 'http://localhost:3002',
-        changeOrigin: true
-      },
-      '/voice': {
-        target: 'http://localhost:3002',
-        changeOrigin: true
-      },
-      // WebSocket 代理 - 必须在 /asr 之前
-      '/asr/stream': {
+      '/ws-seed-asr': {
         target: 'ws://localhost:3002',
         ws: true,
-        changeOrigin: true,
-        rewrite: (path) => path
+        changeOrigin: true
       },
-      // HTTP 代理 - 在 WebSocket 之后
-      '/asr': {
-        target: 'http://localhost:3002',
-        changeOrigin: true,
-        // 明确排除 /asr/stream
-        bypass: (req) => {
-          if (req.url.startsWith('/asr/stream')) {
-            return '/asr/stream'; // 让它走 WebSocket 代理
-          }
-        }
+      '/ws-asr-stream': {
+        target: 'ws://localhost:3002',
+        ws: true,
+        changeOrigin: true
       },
-      '/seed-asr': {
+      '/ws-tts-stream': {
         target: 'ws://localhost:3002',
         ws: true,
         changeOrigin: true
