@@ -22,6 +22,12 @@ const userSchema = new mongoose.Schema(
       match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, '邮箱格式不正确'],
       index: true
     },
+    role: {
+      type: String,
+      enum: ['user', 'admin'],
+      default: 'user',
+      index: true
+    },
     passwordHash: {
       type: String,
       required: [true, '密码不能为空'],

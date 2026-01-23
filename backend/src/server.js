@@ -9,6 +9,8 @@ import SeedASRService from './services/seedAsrService.js';
 import { handleStreamConnection } from './services/aliAsrStreamService.js';
 import { createTTSStream, sendTextWithStart, sendComplete, parseMessage } from './services/aliTtsStreamService.js';
 import { v4 as uuidv4 } from 'uuid';
+import User from './models/UserSchema.js';
+import crypto from 'crypto';
 
 // 创建 HTTP 服务器
 const httpServer = createServer(app);
@@ -186,6 +188,17 @@ httpServer.listen(PORT, async () => {
     try {
         // 连接数据库
         await connectDatabase();
+
+        const adminExists = await User.findOne({ role: 'admin' });
+        if (!adminExists) {
+            const username = process.env.ADMIN_USERNAME || 'admin';
+            const email = process.env.ADMIN_EMAIL || 'admin@example.com';
+            const password = process.env.ADMIN_PASSWORD || 'admin@123';
+            const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
+            const user = new User({ username, email, passwordHash, role: 'admin' });
+            await user.save();
+            console.log('✅ 默认管理员已创建');
+        }
 
         console.log(`Server running at http://localhost:${PORT}`);
         console.log(`WebSocket server is running on the same port`);

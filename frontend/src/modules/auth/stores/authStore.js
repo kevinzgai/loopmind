@@ -15,6 +15,7 @@ export const error = ref(null)
 // 计算属性
 export const isAuthenticated = computed(() => !!token.value && !!user.value)
 export const currentUser = computed(() => user.value)
+export const isAdmin = computed(() => !!token.value && !!user.value && user.value.role === 'admin')
 
 /**
  * 注册

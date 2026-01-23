@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { isAuthenticated, token } from '@/modules/auth/stores/authStore.js'
+import { isAdmin } from '@/modules/auth/stores/authStore.js'
 
 // 导入页面组件
 const ChatPage = () => import('@/modules/chat/pages/ChatPage.vue')
@@ -14,6 +15,7 @@ const CreateAgentPage = () => import('@/modules/agent/pages/CreateAgentPage.vue'
 const EditAgentPage = () => import('@/modules/agent/pages/EditAgentPage.vue')
 const MyAgentsPage = () => import('@/modules/agent/pages/MyAgentsPage.vue')
 const AgentChatPage = () => import('@/modules/agent/pages/AgentChatPage.vue')
+const AdminSystemPage = () => import('@/modules/admin/pages/AdminSystemPage.vue')
 
 const routes = [
   {
@@ -82,6 +84,16 @@ const routes = [
     }
   },
   {
+    path: '/admin/system',
+    name: 'AdminSystem',
+    component: AdminSystemPage,
+    meta: {
+      title: '系统配置',
+      requiresAuth: true,
+      requiresAdmin: true
+    }
+  },
+  {
     path: '/agent/create',
     name: 'CreateAgent',
     component: CreateAgentPage,
@@ -136,6 +148,8 @@ router.beforeEach((to, from, next) => {
   if (to.meta.requiresAuth && !token.value) {
     // 需要认证但未登录，重定向到登录页
     next('/login')
+  } else if (to.meta.requiresAdmin && !isAdmin.value) {
+    next('/')
   } else {
     next()
   }

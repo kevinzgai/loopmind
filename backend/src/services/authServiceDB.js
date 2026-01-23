@@ -182,7 +182,8 @@ export async function verifyToken(token) {
     return {
       userId: user._id.toString(),
       username: user.username,
-      email: user.email
+      email: user.email,
+      role: user.role
     };
   } catch (error) {
     console.error('❌ Token 验证失败:', error.message);

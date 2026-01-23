@@ -159,3 +159,28 @@ export default {
   optionalAuthenticateToken,
   errorHandler
 };
+
+/**
+ * 管理员鉴权中间件
+ * 需要先通过 authenticateToken 设置 req.user
+ */
+export async function authorizeAdmin(req, res, next) {
+  try {
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({
+        error: {
+          message: '拒绝访问：需要管理员权限',
+          code: 'FORBIDDEN'
+        }
+      });
+    }
+    next();
+  } catch (err) {
+    return res.status(403).json({
+      error: {
+        message: '拒绝访问：需要管理员权限',
+        code: 'FORBIDDEN'
+      }
+    });
+  }
+}
