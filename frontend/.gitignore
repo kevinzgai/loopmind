@@ -15,6 +15,10 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# Lock files - ignore npm lock file as we use pnpm
+package-lock.json
+yarn.lock
+
 # Editor directories and files
 .vscode/*
 !.vscode/settings.json

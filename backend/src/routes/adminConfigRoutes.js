@@ -1,13 +1,13 @@
 import express from 'express';
 import { authenticateToken } from '../shared/middleware/authMiddleware.js';
 import { authorizeAdmin } from '../shared/middleware/authMiddleware.js';
-import { getConfigMasked, updateConfig } from '../services/configService.js';
+import { getConfigUnmasked, updateConfig } from '../services/configService.js';
 
 const router = express.Router();
 
 router.get('/config', authenticateToken, authorizeAdmin, async (req, res) => {
   try {
-    const cfg = await getConfigMasked();
+    const cfg = await getConfigUnmasked();
     res.json({ message: '获取系统配置成功', config: cfg });
   } catch (err) {
     console.error('❌ 获取系统配置失败:', err.message);

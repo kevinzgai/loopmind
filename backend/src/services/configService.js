@@ -70,6 +70,32 @@ export async function getConfigMasked() {
   };
 }
 
+export async function getConfigUnmasked() {
+  const cfg = await ensureConfigInitialized();
+  return {
+    provider: cfg.provider,
+    deepseek: {
+      apiKey: cfg.deepseek.apiKey,
+      baseURL: cfg.deepseek.baseURL,
+      model: cfg.deepseek.model
+    },
+    qwen: {
+      apiKey: cfg.qwen.apiKey,
+      baseURL: cfg.qwen.baseURL,
+      model: cfg.qwen.model
+    },
+    seedAsr: {
+      appId: cfg.seedAsr.appId,
+      apiKey: cfg.seedAsr.apiKey,
+      apiSecret: cfg.seedAsr.apiSecret,
+      apiUrl: cfg.seedAsr.apiUrl,
+      resourceId: cfg.seedAsr.resourceId,
+      audioConfig: cfg.seedAsr.audioConfig
+    },
+    updatedAt: cfg.updatedAt
+  };
+}
+
 export async function updateConfig(payload) {
   const cfg = await ensureConfigInitialized();
   if (payload.provider) cfg.provider = payload.provider;

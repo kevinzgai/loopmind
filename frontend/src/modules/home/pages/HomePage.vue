@@ -248,7 +248,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { isAuthenticated } from '@/modules/auth/stores/authStore.js'
+import { isAuthenticated, isAdmin } from '@/modules/auth/stores/authStore.js'
 import { getPublishedAgents } from '@/modules/agent/services/agentService.js'
 
 const agents = ref([])
