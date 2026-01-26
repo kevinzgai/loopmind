@@ -33,6 +33,46 @@
           <span class="icon">🐼</span>
           通义千问
         </div>
+        <div 
+          class="nav-item" 
+          :class="{ active: activeTab === 'doubao' }"
+          @click="activeTab = 'doubao'"
+        >
+          <span class="icon">🍲</span>
+          火山引擎
+        </div>
+        <div 
+          class="nav-item" 
+          :class="{ active: activeTab === 'glm' }"
+          @click="activeTab = 'glm'"
+        >
+          <span class="icon">🤖</span>
+          智谱GLM
+        </div>
+        <div 
+          class="nav-item" 
+          :class="{ active: activeTab === 'moonshot' }"
+          @click="activeTab = 'moonshot'"
+        >
+          <span class="icon">🌙</span>
+          Kimi (Moonshot)
+        </div>
+        <div 
+          class="nav-item" 
+          :class="{ active: activeTab === 'modelscope' }"
+          @click="activeTab = 'modelscope'"
+        >
+          <span class="icon">🔮</span>
+          ModelScope (魔搭)
+        </div>
+        <div 
+          class="nav-item" 
+          :class="{ active: activeTab === 'minimax' }"
+          @click="activeTab = 'minimax'"
+        >
+          <span class="icon">🐚</span>
+          MiniMax
+        </div>
         <div class="nav-divider">语音服务</div>
         <div 
           class="nav-item" 
@@ -58,6 +98,11 @@
               <select v-model="form.provider" class="select-input">
                 <option value="deepseek">DeepSeek</option>
                 <option value="qwen">通义千问</option>
+                <option value="doubao">火山引擎</option>
+                <option value="glm">智谱GLM</option>
+                <option value="moonshot">Kimi (Moonshot)</option>
+                <option value="modelscope">ModelScope (魔搭)</option>
+                <option value="minimax">MiniMax</option>
               </select>
               <p class="help-text">选择系统默认使用的对话模型服务商</p>
             </div>
@@ -134,6 +179,191 @@
                 </option>
               </select>
               <p class="help-text">选择通义千问模型版本</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 豆包设置 -->
+        <div v-show="activeTab === 'doubao'" class="config-section">
+          <div class="section-header">
+            <h2>火山引擎配置</h2>
+            <p>配置字节跳动火山引擎豆包 API 参数</p>
+          </div>
+          <div class="card">
+            <div class="field">
+              <label>API Key</label>
+              <div class="input-group">
+                <input 
+                  :type="showDoubaoKey ? 'text' : 'password'" 
+                  v-model="form.doubao.apiKey" 
+                  placeholder="请输入 API Key"
+                  autocomplete="new-password"
+                />
+                <button class="toggle-btn" @click="showDoubaoKey = !showDoubaoKey">
+                  {{ showDoubaoKey ? '隐藏' : '显示' }}
+                </button>
+              </div>
+            </div>
+            <div class="field">
+              <label>Base URL</label>
+              <input type="text" v-model="form.doubao.baseURL" placeholder="例如: https://ark.cn-beijing.volces.com/api/v3" />
+            </div>
+            <div class="field">
+              <label>Model</label>
+              <select v-model="form.doubao.model" class="select-input">
+                <option v-for="model in doubaoModels" :key="model.value" :value="model.value">
+                  {{ model.label }}
+                </option>
+              </select>
+              <p class="help-text">选择火山引擎模型版本</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 智谱GLM设置 -->
+        <div v-show="activeTab === 'glm'" class="config-section">
+          <div class="section-header">
+            <h2>智谱GLM配置</h2>
+            <p>配置智谱AI GLM大模型 API 参数</p>
+          </div>
+          <div class="card">
+            <div class="field">
+              <label>API Key</label>
+              <div class="input-group">
+                <input 
+                  :type="showGlmKey ? 'text' : 'password'" 
+                  v-model="form.glm.apiKey" 
+                  placeholder="请输入 API Key"
+                  autocomplete="new-password"
+                />
+                <button class="toggle-btn" @click="showGlmKey = !showGlmKey">
+                  {{ showGlmKey ? '隐藏' : '显示' }}
+                </button>
+              </div>
+            </div>
+            <div class="field">
+              <label>Base URL</label>
+              <input type="text" v-model="form.glm.baseURL" placeholder="例如: https://open.bigmodel.cn/api/paas/v4" />
+            </div>
+            <div class="field">
+              <label>Model</label>
+              <select v-model="form.glm.model" class="select-input">
+                <option v-for="model in glmModels" :key="model.value" :value="model.value">
+                  {{ model.label }}
+                </option>
+              </select>
+              <p class="help-text">选择GLM模型版本</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Moonshot (Kimi) 设置 -->
+        <div v-show="activeTab === 'moonshot'" class="config-section">
+          <div class="section-header">
+            <h2>Kimi (Moonshot) 配置</h2>
+            <p>配置月之暗面 Kimi 大模型 API 参数</p>
+          </div>
+          <div class="card">
+            <div class="field">
+              <label>API Key</label>
+              <div class="input-group">
+                <input 
+                  :type="showMoonshotKey ? 'text' : 'password'" 
+                  v-model="form.moonshot.apiKey" 
+                  placeholder="请输入 API Key"
+                  autocomplete="new-password"
+                />
+                <button class="toggle-btn" @click="showMoonshotKey = !showMoonshotKey">
+                  {{ showMoonshotKey ? '隐藏' : '显示' }}
+                </button>
+              </div>
+            </div>
+            <div class="field">
+              <label>Base URL</label>
+              <input type="text" v-model="form.moonshot.baseURL" placeholder="例如: https://api.moonshot.cn/v1" />
+            </div>
+            <div class="field">
+              <label>Model</label>
+              <select v-model="form.moonshot.model" class="select-input">
+                <option v-for="model in moonshotModels" :key="model.value" :value="model.value">
+                  {{ model.label }}
+                </option>
+              </select>
+              <p class="help-text">选择Moonshot模型版本</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ModelScope (魔搭) 设置 -->
+        <div v-show="activeTab === 'modelscope'" class="config-section">
+          <div class="section-header">
+            <h2>ModelScope (魔搭) 配置</h2>
+            <p>配置阿里魔搭 ModelScope 大模型 API 参数</p>
+          </div>
+          <div class="card">
+            <div class="field">
+              <label>API Key</label>
+              <div class="input-group">
+                <input 
+                  :type="showModelscopeKey ? 'text' : 'password'" 
+                  v-model="form.modelscope.apiKey" 
+                  placeholder="请输入 API Key"
+                  autocomplete="new-password"
+                />
+                <button class="toggle-btn" @click="showModelscopeKey = !showModelscopeKey">
+                  {{ showModelscopeKey ? '隐藏' : '显示' }}
+                </button>
+              </div>
+            </div>
+            <div class="field">
+              <label>Base URL</label>
+              <input type="text" v-model="form.modelscope.baseURL" placeholder="例如: https://api-inference.modelscope.cn/v1" />
+            </div>
+            <div class="field">
+              <label>Model</label>
+              <select v-model="form.modelscope.model" class="select-input">
+                <option v-for="model in modelscopeModels" :key="model.value" :value="model.value">
+                  {{ model.label }}
+                </option>
+              </select>
+              <p class="help-text">选择ModelScope模型版本</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- MiniMax 设置 -->
+        <div v-show="activeTab === 'minimax'" class="config-section">
+          <div class="section-header">
+            <h2>MiniMax 配置</h2>
+            <p>配置 MiniMax 大模型 API 参数</p>
+          </div>
+          <div class="card">
+            <div class="field">
+              <label>API Key</label>
+              <div class="input-group">
+                <input 
+                  :type="showMinimaxKey ? 'text' : 'password'" 
+                  v-model="form.minimax.apiKey" 
+                  placeholder="请输入 API Key"
+                  autocomplete="new-password"
+                />
+                <button class="toggle-btn" @click="showMinimaxKey = !showMinimaxKey">
+                  {{ showMinimaxKey ? '隐藏' : '显示' }}
+                </button>
+              </div>
+            </div>
+            <div class="field">
+              <label>Base URL</label>
+              <input type="text" v-model="form.minimax.baseURL" placeholder="例如: https://api.minimax.chat/v1" />
+            </div>
+            <div class="field">
+              <label>Model</label>
+              <select v-model="form.minimax.model" class="select-input">
+                <option v-for="model in minimaxModels" :key="model.value" :value="model.value">
+                  {{ model.label }}
+                </option>
+              </select>
+              <p class="help-text">选择MiniMax模型版本</p>
             </div>
           </div>
         </div>
@@ -215,6 +445,11 @@ const form = ref({
   provider: 'deepseek',
   deepseek: { apiKey: '', baseURL: '', model: 'deepseek-chat' },
   qwen: { apiKey: '', baseURL: '', model: 'qwen-turbo' },
+  doubao: { apiKey: '', baseURL: '', model: 'doubao-pro-4k' },
+  glm: { apiKey: '', baseURL: '', model: 'glm-4-flash' },
+  moonshot: { apiKey: '', baseURL: '', model: 'moonshot-v1-8k' },
+  modelscope: { apiKey: '', baseURL: '', model: 'Qwen/Qwen2.5-72B-Instruct' },
+  minimax: { apiKey: '', baseURL: '', model: 'abab6.5s-chat' },
   seedAsr: { appId: '', apiKey: '', apiSecret: '', apiUrl: '', resourceId: '', audioConfig: {} }
 })
 
@@ -230,8 +465,48 @@ const qwenModels = [
   { label: 'Qwen-Long', value: 'qwen-long' }
 ]
 
+const doubaoModels = [
+  { label: 'Doubao-Pro-4k', value: 'doubao-pro-4k' },
+  { label: 'Doubao-Pro-32k', value: 'doubao-pro-32k' },
+  { label: 'Doubao-Pro-128k', value: 'doubao-pro-128k' },
+  { label: 'Doubao-Lite-4k', value: 'doubao-lite-4k' },
+  { label: 'Doubao-Lite-32k', value: 'doubao-lite-32k' },
+  { label: 'Doubao-Lite-128k', value: 'doubao-lite-128k' }
+]
+
+const glmModels = [
+  { label: 'GLM-4-Flash', value: 'glm-4-flash' },
+  { label: 'GLM-4-Plus', value: 'glm-4-plus' },
+  { label: 'GLM-4-Air', value: 'glm-4-air' },
+  { label: 'GLM-4', value: 'glm-4' }
+]
+
+const moonshotModels = [
+  { label: 'Moonshot-v1-8k', value: 'moonshot-v1-8k' },
+  { label: 'Moonshot-v1-32k', value: 'moonshot-v1-32k' },
+  { label: 'Moonshot-v1-128k', value: 'moonshot-v1-128k' }
+]
+
+const modelscopeModels = [
+  { label: 'Qwen 2.5 72B Instruct', value: 'Qwen/Qwen2.5-72B-Instruct' },
+  { label: 'Qwen 2.5 7B Instruct', value: 'Qwen/Qwen2.5-7B-Instruct' },
+  { label: 'Qwen 2.5 Coder 32B Instruct', value: 'Qwen/Qwen2.5-Coder-32B-Instruct' },
+  { label: 'DeepSeek R1 Distill Qwen 32B', value: 'deepseek-ai/DeepSeek-R1-Distill-Qwen-32B' }
+]
+
+const minimaxModels = [
+  { label: 'Abab 6.5s Chat', value: 'abab6.5s-chat' },
+  { label: 'Abab 6.5 Chat', value: 'abab6.5-chat' },
+  { label: 'Abab 6.5g Chat', value: 'abab6.5g-chat' }
+]
+
 const showDeepseekKey = ref(false)
 const showQwenKey = ref(false)
+const showDoubaoKey = ref(false)
+const showGlmKey = ref(false)
+const showMoonshotKey = ref(false)
+const showModelscopeKey = ref(false)
+const showMinimaxKey = ref(false)
 const showSeedAsrKey = ref(false)
 const showSeedAsrSecret = ref(false)
 const loading = ref(false)
@@ -247,8 +522,35 @@ async function load() {
       form.value.provider = res.config.provider
       form.value.deepseek.baseURL = res.config.deepseek.baseURL
       form.value.deepseek.model = res.config.deepseek.model
+      form.value.deepseek.apiKey = res.config.deepseek.apiKey || ''
       form.value.qwen.baseURL = res.config.qwen.baseURL
       form.value.qwen.model = res.config.qwen.model
+      form.value.qwen.apiKey = res.config.qwen.apiKey || ''
+      if (res.config.doubao) {
+        form.value.doubao.baseURL = res.config.doubao.baseURL
+        form.value.doubao.model = res.config.doubao.model
+        form.value.doubao.apiKey = res.config.doubao.apiKey || ''
+      }
+      if (res.config.glm) {
+        form.value.glm.baseURL = res.config.glm.baseURL
+        form.value.glm.model = res.config.glm.model
+        form.value.glm.apiKey = res.config.glm.apiKey || ''
+      }
+      if (res.config.moonshot) {
+        form.value.moonshot.baseURL = res.config.moonshot.baseURL
+        form.value.moonshot.model = res.config.moonshot.model
+        form.value.moonshot.apiKey = res.config.moonshot.apiKey || ''
+      }
+      if (res.config.modelscope) {
+        form.value.modelscope.baseURL = res.config.modelscope.baseURL
+        form.value.modelscope.model = res.config.modelscope.model
+        form.value.modelscope.apiKey = res.config.modelscope.apiKey || ''
+      }
+      if (res.config.minimax) {
+        form.value.minimax.baseURL = res.config.minimax.baseURL
+        form.value.minimax.model = res.config.minimax.model
+        form.value.minimax.apiKey = res.config.minimax.apiKey || ''
+      }
       form.value.seedAsr = res.config.seedAsr || form.value.seedAsr
     }
   } catch (e) {
@@ -262,14 +564,15 @@ async function save() {
     message.value = ''
     error.value = ''
     await apiService.put('/admin/config', form.value)
+    
+    await load()
+
     message.value = '配置已成功保存'
     
     // 3秒后清除成功消息
     setTimeout(() => {
       message.value = ''
     }, 3000)
-    
-    await load()
   } catch (e) {
     error.value = e.message || '保存失败'
   } finally {

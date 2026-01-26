@@ -6,6 +6,21 @@ import {
   QWEN_API_KEY,
   QWEN_BASE_URL,
   QWEN_MODEL,
+  DOUBAO_API_KEY,
+  DOUBAO_BASE_URL,
+  DOUBAO_MODEL,
+  GLM_API_KEY,
+  GLM_BASE_URL,
+  GLM_MODEL,
+  MOONSHOT_API_KEY,
+  MOONSHOT_BASE_URL,
+  MOONSHOT_MODEL,
+  MODELSCOPE_API_KEY,
+  MODELSCOPE_BASE_URL,
+  MODELSCOPE_MODEL,
+  MINIMAX_API_KEY,
+  MINIMAX_BASE_URL,
+  MINIMAX_MODEL,
   DEFAULT_AI_PROVIDER,
   SEED_ASR_CONFIG
 } from '../config/config.js';
@@ -30,6 +45,31 @@ export async function ensureConfigInitialized() {
       apiKey: QWEN_API_KEY || '',
       baseURL: QWEN_BASE_URL || '',
       model: QWEN_MODEL || ''
+    },
+    doubao: {
+      apiKey: DOUBAO_API_KEY || '',
+      baseURL: DOUBAO_BASE_URL || '',
+      model: DOUBAO_MODEL || ''
+    },
+    glm: {
+      apiKey: GLM_API_KEY || '',
+      baseURL: GLM_BASE_URL || '',
+      model: GLM_MODEL || ''
+    },
+    moonshot: {
+      apiKey: MOONSHOT_API_KEY || '',
+      baseURL: MOONSHOT_BASE_URL || '',
+      model: MOONSHOT_MODEL || ''
+    },
+    modelscope: {
+      apiKey: MODELSCOPE_API_KEY || '',
+      baseURL: MODELSCOPE_BASE_URL || '',
+      model: MODELSCOPE_MODEL || ''
+    },
+    minimax: {
+      apiKey: MINIMAX_API_KEY || '',
+      baseURL: MINIMAX_BASE_URL || '',
+      model: MINIMAX_MODEL || ''
     },
     seedAsr: {
       appId: SEED_ASR_CONFIG.appId || '',
@@ -58,6 +98,31 @@ export async function getConfigMasked() {
       baseURL: cfg.qwen.baseURL,
       model: cfg.qwen.model
     },
+    doubao: {
+      apiKey: mask(cfg.doubao?.apiKey),
+      baseURL: cfg.doubao?.baseURL,
+      model: cfg.doubao?.model
+    },
+    glm: {
+      apiKey: mask(cfg.glm?.apiKey),
+      baseURL: cfg.glm?.baseURL,
+      model: cfg.glm?.model
+    },
+    moonshot: {
+      apiKey: mask(cfg.moonshot?.apiKey),
+      baseURL: cfg.moonshot?.baseURL,
+      model: cfg.moonshot?.model
+    },
+    modelscope: {
+      apiKey: mask(cfg.modelscope?.apiKey),
+      baseURL: cfg.modelscope?.baseURL,
+      model: cfg.modelscope?.model
+    },
+    minimax: {
+      apiKey: mask(cfg.minimax?.apiKey),
+      baseURL: cfg.minimax?.baseURL,
+      model: cfg.minimax?.model
+    },
     seedAsr: {
       appId: cfg.seedAsr.appId,
       apiKey: mask(cfg.seedAsr.apiKey),
@@ -84,6 +149,31 @@ export async function getConfigUnmasked() {
       baseURL: cfg.qwen.baseURL,
       model: cfg.qwen.model
     },
+    doubao: {
+      apiKey: cfg.doubao?.apiKey,
+      baseURL: cfg.doubao?.baseURL,
+      model: cfg.doubao?.model
+    },
+    glm: {
+      apiKey: cfg.glm?.apiKey,
+      baseURL: cfg.glm?.baseURL,
+      model: cfg.glm?.model
+    },
+    moonshot: {
+      apiKey: cfg.moonshot?.apiKey,
+      baseURL: cfg.moonshot?.baseURL,
+      model: cfg.moonshot?.model
+    },
+    modelscope: {
+      apiKey: cfg.modelscope?.apiKey,
+      baseURL: cfg.modelscope?.baseURL,
+      model: cfg.modelscope?.model
+    },
+    minimax: {
+      apiKey: cfg.minimax?.apiKey,
+      baseURL: cfg.minimax?.baseURL,
+      model: cfg.minimax?.model
+    },
     seedAsr: {
       appId: cfg.seedAsr.appId,
       apiKey: cfg.seedAsr.apiKey,
@@ -108,6 +198,36 @@ export async function updateConfig(payload) {
     cfg.qwen.apiKey = payload.qwen.apiKey ?? cfg.qwen.apiKey;
     cfg.qwen.baseURL = payload.qwen.baseURL ?? cfg.qwen.baseURL;
     cfg.qwen.model = payload.qwen.model ?? cfg.qwen.model;
+  }
+  if (payload.doubao) {
+    if (!cfg.doubao) cfg.doubao = {};
+    cfg.doubao.apiKey = payload.doubao.apiKey ?? cfg.doubao.apiKey;
+    cfg.doubao.baseURL = payload.doubao.baseURL ?? cfg.doubao.baseURL;
+    cfg.doubao.model = payload.doubao.model ?? cfg.doubao.model;
+  }
+  if (payload.glm) {
+    if (!cfg.glm) cfg.glm = {};
+    cfg.glm.apiKey = payload.glm.apiKey ?? cfg.glm.apiKey;
+    cfg.glm.baseURL = payload.glm.baseURL ?? cfg.glm.baseURL;
+    cfg.glm.model = payload.glm.model ?? cfg.glm.model;
+  }
+  if (payload.moonshot) {
+    if (!cfg.moonshot) cfg.moonshot = {};
+    cfg.moonshot.apiKey = payload.moonshot.apiKey ?? cfg.moonshot.apiKey;
+    cfg.moonshot.baseURL = payload.moonshot.baseURL ?? cfg.moonshot.baseURL;
+    cfg.moonshot.model = payload.moonshot.model ?? cfg.moonshot.model;
+  }
+  if (payload.modelscope) {
+    if (!cfg.modelscope) cfg.modelscope = {};
+    cfg.modelscope.apiKey = payload.modelscope.apiKey ?? cfg.modelscope.apiKey;
+    cfg.modelscope.baseURL = payload.modelscope.baseURL ?? cfg.modelscope.baseURL;
+    cfg.modelscope.model = payload.modelscope.model ?? cfg.modelscope.model;
+  }
+  if (payload.minimax) {
+    if (!cfg.minimax) cfg.minimax = {};
+    cfg.minimax.apiKey = payload.minimax.apiKey ?? cfg.minimax.apiKey;
+    cfg.minimax.baseURL = payload.minimax.baseURL ?? cfg.minimax.baseURL;
+    cfg.minimax.model = payload.minimax.model ?? cfg.minimax.model;
   }
   if (payload.seedAsr) {
     cfg.seedAsr.appId = payload.seedAsr.appId ?? cfg.seedAsr.appId;

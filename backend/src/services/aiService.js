@@ -9,6 +9,26 @@ async function getProviderConfig(provider) {
         const client = new OpenAI({ apiKey: cfg.qwen.apiKey, baseURL: cfg.qwen.baseURL });
         return { client, model: cfg.qwen.model || 'qwen-turbo', name: '通义千问' };
     }
+    if (p === 'doubao') {
+        const client = new OpenAI({ apiKey: cfg.doubao.apiKey, baseURL: cfg.doubao.baseURL });
+        return { client, model: cfg.doubao.model || 'doubao-pro-4k', name: '火山引擎' };
+    }
+    if (p === 'glm') {
+        const client = new OpenAI({ apiKey: cfg.glm.apiKey, baseURL: cfg.glm.baseURL });
+        return { client, model: cfg.glm.model || 'glm-4-flash', name: '智谱GLM' };
+    }
+    if (p === 'moonshot') {
+        const client = new OpenAI({ apiKey: cfg.moonshot.apiKey, baseURL: cfg.moonshot.baseURL });
+        return { client, model: cfg.moonshot.model || 'moonshot-v1-8k', name: 'Kimi (Moonshot)' };
+    }
+    if (p === 'modelscope') {
+        const client = new OpenAI({ apiKey: cfg.modelscope.apiKey, baseURL: cfg.modelscope.baseURL });
+        return { client, model: cfg.modelscope.model || 'Qwen/Qwen2.5-72B-Instruct', name: 'ModelScope (魔搭)' };
+    }
+    if (p === 'minimax') {
+        const client = new OpenAI({ apiKey: cfg.minimax.apiKey, baseURL: cfg.minimax.baseURL });
+        return { client, model: cfg.minimax.model || 'abab6.5s-chat', name: 'MiniMax' };
+    }
     const client = new OpenAI({ apiKey: cfg.deepseek.apiKey, baseURL: cfg.deepseek.baseURL });
     return { client, model: cfg.deepseek.model || 'deepseek-chat', name: 'DeepSeek' };
 }
@@ -64,6 +84,11 @@ export async function callAI(conversationHistory, provider = DEFAULT_AI_PROVIDER
 export function getAvailableProviders() {
     return [
         { id: 'deepseek', name: 'DeepSeek', model: 'deepseek-chat' },
-        { id: 'qwen', name: '通义千问', model: 'qwen-turbo' }
+        { id: 'qwen', name: '通义千问', model: 'qwen-turbo' },
+        { id: 'doubao', name: '火山引擎', model: 'doubao-pro-4k' },
+        { id: 'glm', name: '智谱GLM', model: 'glm-4-flash' },
+        { id: 'moonshot', name: 'Kimi (Moonshot)', model: 'moonshot-v1-8k' },
+        { id: 'modelscope', name: 'ModelScope (魔搭)', model: 'Qwen/Qwen2.5-72B-Instruct' },
+        { id: 'minimax', name: 'MiniMax', model: 'abab6.5s-chat' }
     ];
 }
