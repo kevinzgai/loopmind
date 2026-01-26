@@ -1,15 +1,24 @@
 <template>
   <div id="app">
-    <nav v-if="isAuthenticated" class="navbar">
+    <nav class="navbar">
       <div class="nav-container">
-        <div class="nav-brand">AI Chat</div>
+        <router-link to="/" class="nav-brand" style="text-decoration: none; color: white;">AI Chat</router-link>
         <div class="nav-menu">
           <router-link to="/" class="nav-link">首页</router-link>
-          <router-link to="/chat" class="nav-link">对话</router-link>
-          <div class="nav-user">
-            <span class="username">{{ currentUser?.username }}</span>
-            <button @click="handleLogout" class="logout-btn">登出</button>
-          </div>
+          
+          <template v-if="isAuthenticated">
+            <router-link to="/chat" class="nav-link">对话</router-link>
+            <router-link v-if="isAdmin" to="/admin/system" class="nav-link">系统配置</router-link>
+            <div class="nav-user">
+              <span class="username">{{ currentUser?.username }}</span>
+              <button @click="handleLogout" class="nav-btn">登出</button>
+            </div>
+          </template>
+          
+          <template v-else>
+            <router-link to="/register" class="nav-link">注册</router-link>
+            <router-link to="/login" class="nav-btn">登录</router-link>
+          </template>
         </div>
       </div>
     </nav>
@@ -20,7 +29,7 @@
 <script setup>
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { initializeAuth, logout, isAuthenticated, currentUser } from '@/modules/auth/stores/authStore.js'
+import { initializeAuth, logout, isAuthenticated, currentUser, isAdmin } from '@/modules/auth/stores/authStore.js'
 
 const router = useRouter()
 
@@ -104,7 +113,7 @@ body {
   font-size: 14px;
 }
 
-.logout-btn {
+.nav-btn {
   padding: 6px 16px;
   background: rgba(255, 255, 255, 0.2);
   color: white;
@@ -113,9 +122,13 @@ body {
   font-size: 14px;
   cursor: pointer;
   transition: background 0.3s;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.logout-btn:hover {
+.nav-btn:hover {
   background: rgba(255, 255, 255, 0.3);
 }
 </style>

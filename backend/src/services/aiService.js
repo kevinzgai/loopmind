@@ -29,6 +29,10 @@ async function getProviderConfig(provider) {
         const client = new OpenAI({ apiKey: cfg.minimax.apiKey, baseURL: cfg.minimax.baseURL });
         return { client, model: cfg.minimax.model || 'abab6.5s-chat', name: 'MiniMax' };
     }
+    if (p === 'ollama') {
+        const client = new OpenAI({ apiKey: (cfg.ollama.apiKey || 'ollama'), baseURL: cfg.ollama.baseURL || 'http://localhost:11434/v1' });
+        return { client, model: cfg.ollama.model || 'llama3.1:8b', name: 'Ollama 本地' };
+    }
     const client = new OpenAI({ apiKey: cfg.deepseek.apiKey, baseURL: cfg.deepseek.baseURL });
     return { client, model: cfg.deepseek.model || 'deepseek-chat', name: 'DeepSeek' };
 }
@@ -89,6 +93,7 @@ export function getAvailableProviders() {
         { id: 'glm', name: '智谱GLM', model: 'glm-4-flash' },
         { id: 'moonshot', name: 'Kimi (Moonshot)', model: 'moonshot-v1-8k' },
         { id: 'modelscope', name: 'ModelScope (魔搭)', model: 'Qwen/Qwen2.5-72B-Instruct' },
-        { id: 'minimax', name: 'MiniMax', model: 'abab6.5s-chat' }
+        { id: 'minimax', name: 'MiniMax', model: 'abab6.5s-chat' },
+        { id: 'ollama', name: 'Ollama 本地', model: 'llama3.1:8b' }
     ];
 }

@@ -21,6 +21,9 @@ import {
   MINIMAX_API_KEY,
   MINIMAX_BASE_URL,
   MINIMAX_MODEL,
+  OLLAMA_API_KEY,
+  OLLAMA_BASE_URL,
+  OLLAMA_MODEL,
   DEFAULT_AI_PROVIDER,
   SEED_ASR_CONFIG
 } from '../config/config.js';
@@ -70,6 +73,11 @@ export async function ensureConfigInitialized() {
       apiKey: MINIMAX_API_KEY || '',
       baseURL: MINIMAX_BASE_URL || '',
       model: MINIMAX_MODEL || ''
+    },
+    ollama: {
+      apiKey: OLLAMA_API_KEY || '',
+      baseURL: OLLAMA_BASE_URL || '',
+      model: OLLAMA_MODEL || ''
     },
     seedAsr: {
       appId: SEED_ASR_CONFIG.appId || '',
@@ -123,6 +131,11 @@ export async function getConfigMasked() {
       baseURL: cfg.minimax?.baseURL,
       model: cfg.minimax?.model
     },
+    ollama: {
+      apiKey: mask(cfg.ollama?.apiKey),
+      baseURL: cfg.ollama?.baseURL,
+      model: cfg.ollama?.model
+    },
     seedAsr: {
       appId: cfg.seedAsr.appId,
       apiKey: mask(cfg.seedAsr.apiKey),
@@ -173,6 +186,11 @@ export async function getConfigUnmasked() {
       apiKey: cfg.minimax?.apiKey,
       baseURL: cfg.minimax?.baseURL,
       model: cfg.minimax?.model
+    },
+    ollama: {
+      apiKey: cfg.ollama?.apiKey,
+      baseURL: cfg.ollama?.baseURL,
+      model: cfg.ollama?.model
     },
     seedAsr: {
       appId: cfg.seedAsr.appId,
@@ -228,6 +246,12 @@ export async function updateConfig(payload) {
     cfg.minimax.apiKey = payload.minimax.apiKey ?? cfg.minimax.apiKey;
     cfg.minimax.baseURL = payload.minimax.baseURL ?? cfg.minimax.baseURL;
     cfg.minimax.model = payload.minimax.model ?? cfg.minimax.model;
+  }
+  if (payload.ollama) {
+    if (!cfg.ollama) cfg.ollama = {};
+    cfg.ollama.apiKey = payload.ollama.apiKey ?? cfg.ollama.apiKey;
+    cfg.ollama.baseURL = payload.ollama.baseURL ?? cfg.ollama.baseURL;
+    cfg.ollama.model = payload.ollama.model ?? cfg.ollama.model;
   }
   if (payload.seedAsr) {
     cfg.seedAsr.appId = payload.seedAsr.appId ?? cfg.seedAsr.appId;

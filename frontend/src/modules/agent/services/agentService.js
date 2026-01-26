@@ -124,3 +124,36 @@ export async function getAgentChatHistory(agentId, userId) {
     throw error
   }
 }
+
+/**
+ * 列出用户与智能体的会话列表（需登录）
+ */
+export async function listAgentConversations(agentId) {
+  try {
+    return await apiService.get(`${API_BASE}/${agentId}/conversations`)
+  } catch (error) {
+    throw error
+  }
+}
+
+/**
+ * 创建新的智能体会话（需登录）
+ */
+export async function createAgentConversation(agentId, title = '新对话') {
+  try {
+    return await apiService.post(`${API_BASE}/${agentId}/conversations`, { title })
+  } catch (error) {
+    throw error
+  }
+}
+
+/**
+ * 获取指定会话的消息（需登录）
+ */
+export async function getAgentConversationMessages(agentId, conversationId) {
+  try {
+    return await apiService.get(`${API_BASE}/${agentId}/conversations/${conversationId}`)
+  } catch (error) {
+    throw error
+  }
+}

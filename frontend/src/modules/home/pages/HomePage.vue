@@ -105,19 +105,6 @@
               <div class="quick-arrow">→</div>
             </div>
           </router-link>
-          <router-link v-if="isAdmin" to="/admin/system" class="quick-card">
-            <div class="quick-card-bg"></div>
-            <div class="quick-card-content">
-              <div class="quick-icon-wrapper">
-                <span class="quick-icon">⚙️</span>
-              </div>
-              <div class="quick-text">
-                <div class="quick-title">系统配置</div>
-                <div class="quick-desc">系统设置与模型管理</div>
-              </div>
-              <div class="quick-arrow">→</div>
-            </div>
-          </router-link>
         </div>
       </div>
 

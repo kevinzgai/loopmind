@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onUnmounted, computed } from 'vue'
+import { ref, onUnmounted, computed, nextTick } from 'vue'
 import { Mic, MicOff, Send } from 'lucide-vue-next'
 
 interface Props {
@@ -21,6 +21,7 @@ const isConnecting = ref(false)
 const recognizedText = ref('')
 const intermediateText = ref('')
 const audioLevel = ref(0)
+const textareaRef = ref<HTMLTextAreaElement | null>(null)
 
 let ws: WebSocket | null = null
 let audioContext: AudioContext | null = null
@@ -282,6 +283,16 @@ function handleSubmit() {
 onUnmounted(() => {
   stopRecording()
 })
+
+async function focusTextInput() {
+  inputMode.value = 'text'
+  await nextTick()
+  textareaRef.value?.focus()
+}
+
+defineExpose({
+  focusTextInput
+})
 </script>
 
 <template>
@@ -296,6 +307,7 @@ onUnmounted(() => {
         placeholder="输入消息..."
         class="text-input"
         rows="1"
+        ref="textareaRef"
       />
 
       <!-- 语音输入按钮（替换文本框位置） -->
@@ -381,16 +393,22 @@ onUnmounted(() => {
 /* 文字输入框 */
 .text-input {
   flex: 1;
-  min-height: 44px;
+  min-height: 52px;
   max-height: 200px;
   padding: 12px;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 16px;
+  line-height: 1.7;
+  color: #1f2937;
   resize: none;
   outline: none;
   transition: border-color 0.2s;
+}
+
+.text-input::placeholder {
+  color: #4b5563;
+  opacity: 1;
 }
 
 .text-input:focus {
@@ -512,8 +530,8 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border: none;
   border-radius: 8px;
   cursor: pointer;

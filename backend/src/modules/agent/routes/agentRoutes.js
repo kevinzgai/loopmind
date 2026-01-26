@@ -10,7 +10,14 @@ import {
   handleDeleteAgent,
   handleGetMemory
 } from '../controllers/agentController.js';
-import { handleAgentChat, handleGetAgentChatHistory } from '../controllers/agentChatController.js';
+import { 
+  handleAgentChat, 
+  handleGetAgentChatHistory,
+  handleListAgentConversations,
+  handleCreateAgentConversation,
+  handleGetAgentConversationMessages,
+  handleAgentChatInConversation
+} from '../controllers/agentChatController.js';
 import { authenticateToken, optionalAuthenticateToken } from '../../../shared/middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -165,5 +172,59 @@ router.post('/:agentId/chat', optionalAuthenticateToken, handleAgentChat);
  * @apiSuccess {Array} history 对话历史列表
  */
 router.get('/:agentId/history', optionalAuthenticateToken, handleGetAgentChatHistory);
+
+/**
+ * @api {get} /agent/:agentId/conversations 会话列表
+ * @apiName ListAgentConversations
+ * @apiGroup Agent
+ * @apiDescription 列出用户与该智能体的会话列表（需登录）
+ * @apiHeader {String} Authorization Bearer Token
+ *
+ * @apiParam {String} agentId 智能体ID
+ *
+ * @apiSuccess {Array} conversations 会话列表
+ */
+router.get('/:agentId/conversations', authenticateToken, handleListAgentConversations);
+
+/**
+ * @api {post} /agent/:agentId/conversations 创建会话
+ * @apiName CreateAgentConversation
+ * @apiGroup Agent
+ * @apiDescription 创建新的智能体会话（需登录）
+ * @apiHeader {String} Authorization Bearer Token
+ *
+ * @apiParam {String} agentId 智能体ID
+ * @apiBody {String} [title] 会话标题
+ *
+ * @apiSuccess {Object} conversation 新建的会话
+ */
+router.post('/:agentId/conversations', authenticateToken, handleCreateAgentConversation);
+
+/**
+ * @api {get} /agent/:agentId/conversations/:conversationId 获取会话消息
+ * @apiName GetAgentConversationMessages
+ * @apiGroup Agent
+ * @apiDescription 获取指定会话的消息（需登录）
+ * @apiHeader {String} Authorization Bearer Token
+ *
+ * @apiParam {String} agentId 智能体ID
+ * @apiParam {String} conversationId 会话ID
+ *
+ * @apiSuccess {Array} messages 消息列表
+ */
+router.get('/:agentId/conversations/:conversationId', authenticateToken, handleGetAgentConversationMessages);
+
+/**
+ * @api {post} /agent/:agentId/conversations/:conversationId/chat 会话内对话
+ * @apiName ChatWithAgentInConversation
+ * @apiGroup Agent
+ * @apiDescription 在指定会话内与智能体对话（需登录，流式）
+ * @apiHeader {String} Authorization Bearer Token
+ *
+ * @apiParam {String} agentId 智能体ID
+ * @apiParam {String} conversationId 会话ID
+ * @apiBody {String} message 用户消息
+ */
+router.post('/:agentId/conversations/:conversationId/chat', authenticateToken, handleAgentChatInConversation);
 
 export default router;

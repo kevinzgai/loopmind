@@ -73,6 +73,14 @@
           <span class="icon">🐚</span>
           MiniMax
         </div>
+        <div 
+          class="nav-item" 
+          :class="{ active: activeTab === 'ollama' }"
+          @click="activeTab = 'ollama'"
+        >
+          <span class="icon">🖥️</span>
+          Ollama 本地
+        </div>
         <div class="nav-divider">语音服务</div>
         <div 
           class="nav-item" 
@@ -103,6 +111,7 @@
                 <option value="moonshot">Kimi (Moonshot)</option>
                 <option value="modelscope">ModelScope (魔搭)</option>
                 <option value="minimax">MiniMax</option>
+                <option value="ollama">Ollama 本地</option>
               </select>
               <p class="help-text">选择系统默认使用的对话模型服务商</p>
             </div>
@@ -368,6 +377,25 @@
           </div>
         </div>
 
+        <!-- Ollama 本地设置 -->
+        <div v-show="activeTab === 'ollama'" class="config-section">
+          <div class="section-header">
+            <h2>Ollama 本地配置</h2>
+            <p>配置本地 Ollama OpenAI 兼容接口参数</p>
+          </div>
+          <div class="card">
+            <div class="field">
+              <label>Base URL</label>
+              <input type="text" v-model="form.ollama.baseURL" placeholder="例如: http://localhost:11434/v1" />
+            </div>
+            <div class="field">
+              <label>Model</label>
+              <input type="text" v-model="form.ollama.model" placeholder="例如: llama3.1:8b 或 qwen2.5:7b" />
+              <p class="help-text">在本机通过 ollama pull 获取的模型名称，例如 llama3.1:8b</p>
+            </div>
+          </div>
+        </div>
+
         <!-- Seed ASR 设置 -->
         <div v-show="activeTab === 'seedAsr'" class="config-section">
           <div class="section-header">
@@ -450,6 +478,7 @@ const form = ref({
   moonshot: { apiKey: '', baseURL: '', model: 'moonshot-v1-8k' },
   modelscope: { apiKey: '', baseURL: '', model: 'Qwen/Qwen2.5-72B-Instruct' },
   minimax: { apiKey: '', baseURL: '', model: 'abab6.5s-chat' },
+  ollama: { apiKey: '', baseURL: 'http://localhost:11434/v1', model: 'llama3.1:8b' },
   seedAsr: { appId: '', apiKey: '', apiSecret: '', apiUrl: '', resourceId: '', audioConfig: {} }
 })
 
@@ -550,6 +579,11 @@ async function load() {
         form.value.minimax.baseURL = res.config.minimax.baseURL
         form.value.minimax.model = res.config.minimax.model
         form.value.minimax.apiKey = res.config.minimax.apiKey || ''
+      }
+      if (res.config.ollama) {
+        form.value.ollama.baseURL = res.config.ollama.baseURL
+        form.value.ollama.model = res.config.ollama.model
+        form.value.ollama.apiKey = res.config.ollama.apiKey || ''
       }
       form.value.seedAsr = res.config.seedAsr || form.value.seedAsr
     }

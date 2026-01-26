@@ -56,32 +56,53 @@
       </div>
 
       <div class="chat-container">
-        <!-- 消息列表区域 -->
-        <div class="messages-area">
-          <Conversation class="h-full">
-            <ConversationContent>
-              <div v-for="message in messages" :key="message.id">
-                <Message :from="message.role">
-                  <MessageContent v-html="renderMessageContent(message.content)" />
-                </Message>
-              </div>
-
-              <Message v-if="isLoading" from="assistant">
-                <MessageContent>
-                  <Loader />
-                </MessageContent>
-              </Message>
-            </ConversationContent>
-          </Conversation>
+        <div class="sidebar">
+          <div class="sidebar-header">
+            <span>会话列表</span>
+            <button v-if="token" class="new-conv-btn" @click="handleNewConversation">新建</button>
+          </div>
+          <div class="conversation-list">
+            <div
+              v-for="c in conversations"
+              :key="c.id"
+              class="conversation-item"
+              :class="{ active: c.id === activeConversationId }"
+              @click="selectConversation(c.id)"
+            >
+              <div class="conv-title">{{ c.title }}</div>
+              <div class="conv-meta">{{ formatConvMeta(c) }}</div>
+            </div>
+            <div v-if="!token && messages.length" class="conversation-item active">
+              <div class="conv-title">当前会话</div>
+              <div class="conv-meta">未登录用户</div>
+            </div>
+          </div>
         </div>
-
-        <!-- 固定在底部的输入框 -->
-        <div class="input-area">
-          <VoiceInput 
-            v-model="inputText"
-            @submit="sendMessage"
-            @autoSubmit="handleAutoSubmit"
-          />
+        <div class="chat-main">
+          <div class="messages-area">
+            <Conversation class="h-full">
+              <ConversationContent>
+                <div v-for="message in messages" :key="message.id">
+                  <Message :from="message.role">
+                    <MessageContent class="message-content" v-html="renderMessageContent(message.content)" />
+                  </Message>
+                </div>
+                <Message v-if="isLoading" from="assistant">
+                  <MessageContent>
+                    <Loader />
+                  </MessageContent>
+                </Message>
+              </ConversationContent>
+            </Conversation>
+          </div>
+          <div class="input-area">
+            <VoiceInput 
+              v-model="inputText"
+              @submit="sendMessage"
+              @autoSubmit="handleAutoSubmit"
+              ref="voiceInputRef"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -89,8 +110,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { useRoute, onBeforeRouteLeave } from 'vue-router'
 import { Volume2, VolumeX } from 'lucide-vue-next'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
@@ -99,10 +120,11 @@ import { Message, MessageContent } from '@/components/ai-elements/message'
 import { Loader } from '@/components/ai-elements/loader'
 import VoiceInput from '@/modules/chat/components/VoiceInput.vue'
 import { token } from '@/modules/auth/stores/authStore.js'
-import { getAgent, getMemory, getAgentChatHistory } from '../services/agentService.js'
+import { getAgent, getMemory, getAgentChatHistory, listAgentConversations, createAgentConversation, getAgentConversationMessages } from '../services/agentService.js'
 
 const route = useRoute()
 const agentId = route.params.agentId
+const voiceInputRef = ref(null)
 
 // 智能体相关状态
 const agent = ref(null)
@@ -128,9 +150,12 @@ const inputText = ref('')
 const isLoading = ref(false)
 const ttsEnabled = ref(false)
 const isSpeaking = ref(false)
+const conversations = ref([])
+const activeConversationId = ref(null)
 
 let audioQueue = []
 let isPlayingQueue = false
+let currentAudio = null
 let ttsRequestQueue = []
 let activeTTSRequests = 0
 const MAX_CONCURRENT_TTS = 1
@@ -219,19 +244,35 @@ const initializeChat = async () => {
   if (memory.value && memory.value.content) {
     console.log('📝 加载用户记忆:', memory.value.content.substring(0, 100) + '...')
   }
+  
+  if (token.value) {
+    await loadConversations()
+    if (!conversations.value.length) {
+      const created = await createAgentConversation(agentId, '新对话')
+      activeConversationId.value = created.conversation.id
+      await loadConversationMessages(activeConversationId.value)
+    } else {
+      activeConversationId.value = conversations.value[0].id
+      await loadConversationMessages(activeConversationId.value)
+    }
+  }
 }
 
 // 切换 TTS 开关
 function toggleTTS() {
   ttsEnabled.value = !ttsEnabled.value
-  
-  if (!ttsEnabled.value) {
-    stopAllAudio()
-  }
+  stopAllAudio()
 }
 
 // 停止所有音频播放
 function stopAllAudio() {
+  if (currentAudio) {
+    try {
+      currentAudio.pause()
+      currentAudio.currentTime = 0
+    } catch {}
+    currentAudio = null
+  }
   audioQueue.forEach(audio => {
     audio.pause()
     audio.currentTime = 0
@@ -273,9 +314,12 @@ async function playAudioQueue() {
     const audio = audioQueue.shift()
     if (audio) {
       try {
+        currentAudio = audio
         await playAudio(audio)
       } catch (error) {
         console.error('播放音频失败:', error)
+      } finally {
+        currentAudio = null
       }
     }
   }
@@ -340,8 +384,11 @@ async function sendMessage() {
   const text = inputText.value.trim()
   if (!text || isLoading.value) return
 
-  await sendMessageToAI(text)
   inputText.value = ''
+  try {
+    voiceInputRef.value?.focusTextInput?.()
+  } catch {}
+  await sendMessageToAI(text)
 }
 
 // 自动提交（语音识别后）
@@ -374,8 +421,11 @@ async function sendMessageToAI(text) {
     
     isLoading.value = true
 
-    // 使用智能体专用聊天接口
-    const response = await fetch(`/api/agent/${agentId}/chat`, {
+    const url = token.value && activeConversationId.value 
+      ? `/api/agent/${agentId}/conversations/${activeConversationId.value}/chat`
+      : `/api/agent/${agentId}/chat`
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -446,6 +496,56 @@ async function sendMessageToAI(text) {
   }
 }
 
+async function loadConversations() {
+  try {
+    const data = await listAgentConversations(agentId)
+    conversations.value = (data.conversations || []).map(c => ({
+      id: c.id, title: c.title, messageCount: c.messageCount, updatedAt: c.updatedAt
+    }))
+  } catch (err) {
+    console.error('获取会话列表失败', err)
+  }
+}
+
+async function loadConversationMessages(conversationId) {
+  try {
+    const data = await getAgentConversationMessages(agentId, conversationId)
+    const list = data.messages || []
+    messages.value = list.map((msg, index) => ({
+      id: Date.now() - (list.length - index) * 1000,
+      role: msg.role,
+      content: msg.content
+    }))
+  } catch (err) {
+    console.error('获取会话消息失败', err)
+  }
+}
+
+function formatConvMeta(c) {
+  const count = c.messageCount || 0
+  const date = c.updatedAt ? new Date(c.updatedAt) : null
+  const ds = date ? `${date.getMonth()+1}-${date.getDate()} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}` : ''
+  return `消息 ${count} · ${ds}`
+}
+
+async function selectConversation(id) {
+  if (activeConversationId.value === id) return
+  activeConversationId.value = id
+  await loadConversationMessages(id)
+}
+
+async function handleNewConversation() {
+  try {
+    const created = await createAgentConversation(agentId, '新对话')
+    conversations.value.unshift(created.conversation)
+    activeConversationId.value = created.conversation.id
+    messages.value = []
+    await loadConversationMessages(activeConversationId.value)
+  } catch (err) {
+    console.error('新建会话失败', err)
+  }
+}
+
 const renderMessageContent = (content) => {
   if (!content) return ''
   
@@ -478,6 +578,15 @@ onMounted(() => {
     .catch(() => {
       isOnline.value = false
     })
+})
+
+onUnmounted(() => {
+  stopAllAudio()
+})
+
+onBeforeRouteLeave((to, from, next) => {
+  stopAllAudio()
+  next && next()
 })
 </script>
 
@@ -598,7 +707,7 @@ onMounted(() => {
 }
 
 .agent-name {
-  font-size: 1.25rem;
+  font-size: 1.6rem;
   font-weight: bold;
   color: #2d3748;
   margin: 0;
@@ -617,9 +726,9 @@ onMounted(() => {
 }
 
 .status-badge {
-  padding: 0.25rem 0.75rem;
+  padding: 0.35rem 0.85rem;
   border-radius: 1rem;
-  font-size: 0.875rem;
+  font-size: 0.95rem;
   font-weight: 600;
   background: #fed7d7;
   color: #c53030;
@@ -676,19 +785,83 @@ onMounted(() => {
 .chat-container {
   flex: 1;
   display: flex;
-  flex-direction: column;
-  max-width: 1200px;
+  flex-direction: row;
+  max-width: none;
   width: 100%;
-  margin: 0 auto;
+  margin: 0;
   padding: 0;
   overflow: hidden;
+}
+
+.sidebar {
+  width: 280px;
+  border-right: 1px solid #e2e8f0;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.new-conv-btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 12px;
+  border-radius: 4px;
+  border: 1px solid #cbd5e0;
+  background: #f7fafc;
+  cursor: pointer;
+}
+
+.conversation-list {
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.conversation-item {
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.conversation-item:hover {
+  background: #f7fafc;
+}
+
+.conversation-item.active {
+  background: #edf2f7;
+}
+
+.conv-title {
+  font-size: 14px;
+  color: #2d3748;
+}
+
+.conv-meta {
+  font-size: 12px;
+  color: #718096;
+}
+
+.chat-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .messages-area {
   flex: 1;
   overflow-y: auto;
-  padding: 1.5rem;
-  padding-bottom: 0;
+  padding: 1rem 1.5rem 0 1.5rem;
+}
+
+.message-content {
+  font-size: 16px;
+  line-height: 1.8;
 }
 
 .input-area {
@@ -762,6 +935,16 @@ onMounted(() => {
 
   .header-info {
     align-self: flex-end;
+  }
+  
+  .chat-container {
+    flex-direction: column;
+  }
+  
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
   }
 }
 </style>

@@ -44,6 +44,11 @@ export const MINIMAX_API_KEY = process.env.MINIMAX_API_KEY;
 export const MINIMAX_BASE_URL = process.env.MINIMAX_BASE_URL || 'https://api.minimax.chat/v1';
 export const MINIMAX_MODEL = process.env.MINIMAX_MODEL || 'abab6.5s-chat';
 
+// Ollama 本地模型配置
+export const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY || '';
+export const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434/v1';
+export const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3.1:8b';
+
 // 默认 AI 提供商
 export const DEFAULT_AI_PROVIDER = process.env.DEFAULT_AI_PROVIDER || 'deepseek';
 

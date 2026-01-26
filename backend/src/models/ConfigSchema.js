@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const configSchema = new mongoose.Schema(
   {
-    provider: { type: String, enum: ['deepseek', 'qwen', 'doubao', 'glm', 'moonshot', 'modelscope', 'minimax'], default: 'deepseek' },
+    provider: { type: String, enum: ['deepseek', 'qwen', 'doubao', 'glm', 'moonshot', 'modelscope', 'minimax', 'ollama'], default: 'deepseek' },
     deepseek: {
       apiKey: { type: String, default: '' },
       baseURL: { type: String, default: '' },
@@ -34,6 +34,11 @@ const configSchema = new mongoose.Schema(
       model: { type: String, default: '' }
     },
     minimax: {
+      apiKey: { type: String, default: '' },
+      baseURL: { type: String, default: '' },
+      model: { type: String, default: '' }
+    },
+    ollama: {
       apiKey: { type: String, default: '' },
       baseURL: { type: String, default: '' },
       model: { type: String, default: '' }

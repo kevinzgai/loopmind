@@ -4,7 +4,14 @@ import {
     addMessageToHistory
 } from '../../../services/aiService.js';
 import { getAgent, getOrCreateMemory, updateMemory, incrementUsageCount } from '../services/agentService.js';
-import { getAgentConversationMessages, appendAgentConversationMessages } from '../../../services/conversationService.js';
+import { 
+    getAgentConversationMessages, 
+    appendAgentConversationMessages,
+    listAgentConversations,
+    createAgentConversation,
+    getAgentConversationMessagesById,
+    appendMessagesByConversationId
+} from '../../../services/conversationService.js';
 
 /**
  * 智能体聊天控制器
@@ -256,3 +263,131 @@ async function compressMemory(content) {
 export default {
     handleAgentChat
 };
+
+/**
+ * 列出用户与指定智能体的所有会话
+ * GET /api/agent/:agentId/conversations
+ */
+export async function handleListAgentConversations(req, res) {
+    try {
+        const { agentId } = req.params;
+        const dbUserId = req.user?.userId;
+        if (!dbUserId) return res.status(401).json({ error: '未授权' });
+        const list = await listAgentConversations(dbUserId, agentId);
+        res.status(200).json({ conversations: list });
+    } catch (error) {
+        console.error('❌ 列出智能体会话失败:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+}
+
+/**
+ * 创建新的智能体会话
+ * POST /api/agent/:agentId/conversations
+ */
+export async function handleCreateAgentConversation(req, res) {
+    try {
+        const { agentId } = req.params;
+        const { title } = req.body || {};
+        const dbUserId = req.user?.userId;
+        if (!dbUserId) return res.status(401).json({ error: '未授权' });
+        const conv = await createAgentConversation(dbUserId, agentId, title || '新对话');
+        res.status(201).json({ conversation: conv });
+    } catch (error) {
+        console.error('❌ 创建智能体会话失败:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+}
+
+/**
+ * 获取指定会话的消息
+ * GET /api/agent/:agentId/conversations/:conversationId
+ */
+export async function handleGetAgentConversationMessages(req, res) {
+    try {
+        const { agentId, conversationId } = req.params;
+        const dbUserId = req.user?.userId;
+        if (!dbUserId) return res.status(401).json({ error: '未授权' });
+        const msgs = await getAgentConversationMessagesById(dbUserId, conversationId);
+        if (!msgs) return res.status(404).json({ error: '会话不存在' });
+        const filtered = msgs.filter(m => m.role !== 'system');
+        res.status(200).json({ messages: filtered });
+    } catch (error) {
+        console.error('❌ 获取智能体会话消息失败:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+}
+
+/**
+ * 在指定会话中进行智能体聊天（流式）
+ * POST /api/agent/:agentId/conversations/:conversationId/chat
+ */
+export async function handleAgentChatInConversation(req, res) {
+    try {
+        const { agentId, conversationId } = req.params;
+        const { message } = req.body;
+        const dbUserId = req.user?.userId;
+        if (!dbUserId) return res.status(401).json({ error: '未授权' });
+        if (!message) return res.status(400).json({ error: '缺少消息' });
+
+        const agent = await getAgent(agentId);
+        if (!agent) return res.status(404).json({ error: '智能体不存在' });
+
+        const dbHistory = await getAgentConversationMessagesById(dbUserId, conversationId);
+        if (dbHistory === null) return res.status(404).json({ error: '会话不存在' });
+        const conversationHistory = [...dbHistory];
+        const newMessages = [];
+
+        const hasSystemPrompt = conversationHistory.some(msg => msg.role === 'system');
+        if (!hasSystemPrompt) {
+            let systemPrompt = `你是 ${agent.name}`;
+            if (agent.personality) systemPrompt += `\n\n人设：${agent.personality}`;
+            if (agent.initialMemory) systemPrompt += `\n\n初始记忆：${agent.initialMemory}`;
+            try {
+                const memory = await getOrCreateMemory(agentId, dbUserId);
+                if (memory && memory.content) {
+                    systemPrompt += `\n\n与用户的历史记忆：${memory.content}`;
+                }
+            } catch {}
+            const systemMsg = { role: 'system', content: systemPrompt };
+            newMessages.push(systemMsg);
+            conversationHistory.push(systemMsg);
+        }
+
+        const userMsg = { role: 'user', content: message };
+        newMessages.push(userMsg);
+        conversationHistory.push(userMsg);
+
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+
+        const streamResponse = await callAIStream(conversationHistory, agent.model);
+        let fullResponse = '';
+        for await (const chunk of streamResponse) {
+            const content = chunk.choices[0]?.delta?.content || '';
+            if (content) {
+                fullResponse += content;
+                res.write(content);
+            }
+        }
+
+        const assistantMsg = { role: 'assistant', content: fullResponse };
+        newMessages.push(assistantMsg);
+        await appendMessagesByConversationId(conversationId, newMessages);
+
+        try {
+            await incrementUsageCount(agentId);
+        } catch {}
+
+        updateUserMemory(agentId, dbUserId, message, fullResponse).catch(() => {});
+        res.end();
+    } catch (error) {
+        console.error('❌ 智能体指定会话聊天错误:', error);
+        if (!res.headersSent) {
+            res.status(500).json({ error: 'Internal server error' });
+        } else {
+            res.end();
+        }
+    }
+}
