@@ -69,8 +69,13 @@
               :class="{ active: c.id === activeConversationId }"
               @click="selectConversation(c.id)"
             >
-              <div class="conv-title">{{ c.title }}</div>
-              <div class="conv-meta">{{ formatConvMeta(c) }}</div>
+              <div class="conv-content">
+                <div class="conv-title">{{ c.title }}</div>
+                <div class="conv-meta">{{ formatConvMeta(c) }}</div>
+              </div>
+              <button class="delete-btn" @click.stop="handleDeleteConversation(c.id)" title="删除会话">
+                <Trash2 :size="14" />
+              </button>
             </div>
             <div v-if="!token && messages.length" class="conversation-item active">
               <div class="conv-title">当前会话</div>
@@ -80,28 +85,40 @@
         </div>
         <div class="chat-main">
           <div class="messages-area">
-            <Conversation class="h-full">
-              <ConversationContent>
-                <div v-for="message in messages" :key="message.id">
-                  <Message :from="message.role">
-                    <MessageContent class="message-content" v-html="renderMessageContent(message.content)" />
-                  </Message>
+            <div class="bubble-list">
+              <div
+                v-for="message in messages"
+                :key="message.id"
+                :class="['bubble', message.role === 'user' ? 'bubble-user' : 'bubble-assistant']"
+              >
+                <div class="bubble-content" v-html="renderMessageContent(message.content)"></div>
+              </div>
+              <div v-if="isLoading" class="bubble bubble-assistant">
+                <div class="bubble-content">
+                  <Loader />
                 </div>
-                <Message v-if="isLoading" from="assistant">
-                  <MessageContent>
-                    <Loader />
-                  </MessageContent>
-                </Message>
-              </ConversationContent>
-            </Conversation>
+              </div>
+            </div>
           </div>
           <div class="input-area">
-            <VoiceInput 
+            <XSender 
               v-model="inputText"
+              :disabled="isLoading"
+              placeholder="输入消息..."
               @submit="sendMessage"
               @autoSubmit="handleAutoSubmit"
-              ref="voiceInputRef"
             />
+            <div class="input-foot-wrapper">
+              <div class="input-foot-left">
+                <span><i>📝</i> 支持 Markdown</span>
+                <span><i>⌨️</i> Enter 发送</span>
+                <span class="input-foot-dividing-line"></span>
+                <span class="input-foot-maxlength">{{ inputText.length }}/2000</span>
+              </div>
+              <div class="input-foot-right">
+                <button class="clear-btn" :disabled="!inputText" @click="inputText = ''">清空输入</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -112,15 +129,23 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, onBeforeRouteLeave } from 'vue-router'
-import { Volume2, VolumeX } from 'lucide-vue-next'
+import { Volume2, VolumeX, Trash2 } from 'lucide-vue-next'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { Conversation, ConversationContent } from '@/components/ai-elements/conversation'
 import { Message, MessageContent } from '@/components/ai-elements/message'
 import { Loader } from '@/components/ai-elements/loader'
-import VoiceInput from '@/modules/chat/components/VoiceInput.vue'
+import XSender from '@/modules/chat/components/XSender.vue'
 import { token } from '@/modules/auth/stores/authStore.js'
-import { getAgent, getMemory, getAgentChatHistory, listAgentConversations, createAgentConversation, getAgentConversationMessages } from '../services/agentService.js'
+import { 
+  getAgent, 
+  getMemory, 
+  getAgentChatHistory, 
+  listAgentConversations, 
+  createAgentConversation, 
+  getAgentConversationMessages,
+  deleteAgentConversation
+} from '../services/agentService.js'
 
 const route = useRoute()
 const agentId = route.params.agentId
@@ -222,40 +247,70 @@ const loadHistory = async () => {
 
 // 初始化对话
 const initializeChat = async () => {
-  // 尝试加载历史记录
-  const hasHistory = await loadHistory()
-  
-  // 如果没有历史记录，显示欢迎语
-  if (!hasHistory) {
-    const welcomeMessage = agent.value.personality 
-      ? `你好！我是 ${agent.value.name}。${agent.value.personality}`
-      : `你好！我是 ${agent.value.name}，很高兴与你对话！`
-
-    messages.value = [
-      {
-        id: Date.now(),
-        role: 'assistant',
-        content: welcomeMessage
-      }
-    ]
+  // 如果已登录，处理会话列表
+  if (token.value) {
+    await loadConversations()
+    if (conversations.value.length > 0) {
+      // 如果有会话，加载第一个会话
+      activeConversationId.value = conversations.value[0].id
+      await loadConversationMessages(activeConversationId.value)
+    } else {
+      // 如果没有会话，创建一个并加载
+      const created = await createAgentConversation(agentId, '新对话')
+      activeConversationId.value = created.conversation.id
+      await loadConversationMessages(activeConversationId.value)
+    }
+  } else {
+    // 如果未登录，尝试加载匿名历史记录
+    const hasHistory = await loadHistory()
+    if (!hasHistory) {
+      showWelcomeMessage()
+    }
   }
 
   // 如果有记忆，可以在这里加载用户记忆摘要（可选，目前后端已在系统提示词中处理）
   if (memory.value && memory.value.content) {
     console.log('📝 加载用户记忆:', memory.value.content.substring(0, 100) + '...')
   }
+}
+
+// 显示欢迎语
+const showWelcomeMessage = () => {
+  // 必须确保 messages 数组为空时才添加
+  if (messages.value.length > 0) return
+
+  // 构建欢迎语
+  let welcomeMessage = ''
   
-  if (token.value) {
-    await loadConversations()
-    if (!conversations.value.length) {
-      const created = await createAgentConversation(agentId, '新对话')
-      activeConversationId.value = created.conversation.id
-      await loadConversationMessages(activeConversationId.value)
-    } else {
-      activeConversationId.value = conversations.value[0].id
-      await loadConversationMessages(activeConversationId.value)
+  // 1. 初始记忆（最高优先级，作为开场白）
+  if (agent.value && agent.value.initialMemory) {
+    welcomeMessage += `${agent.value.initialMemory}\n\n`
+  } else if (agent.value) {
+    welcomeMessage += `Hi，欢迎使用 **${agent.value.name}**\n\n`
+  } else {
+    welcomeMessage += `Hi，欢迎使用智能体\n\n`
+  }
+  
+  // 2. 人设（引用样式）
+  if (agent.value && agent.value.personality) {
+    // 检查人设是否已经包含在 initialMemory 中，避免重复
+    if (!agent.value.initialMemory || !agent.value.initialMemory.includes(agent.value.personality.substring(0, 20))) {
+       welcomeMessage += `> ${agent.value.personality}\n\n`
     }
   }
+  
+  // 3. 补充说明
+  welcomeMessage += `我可以辅助你编码、查询知识和相关作业信息、编写文档等。\n\n`
+  welcomeMessage += `_作为 AI 模型，提供的答案可能不总是准确，但你的反馈可以帮助我做得更好。_`
+
+  // 强制使用新数组触发响应式更新
+  const newMsg = {
+    id: Date.now(),
+    role: 'assistant',
+    content: welcomeMessage
+  }
+  messages.value = [newMsg]
+  console.log('✅ 欢迎语已设置:', welcomeMessage.substring(0, 50) + '...')
 }
 
 // 切换 TTS 开关
@@ -385,9 +440,6 @@ async function sendMessage() {
   if (!text || isLoading.value) return
 
   inputText.value = ''
-  try {
-    voiceInputRef.value?.focusTextInput?.()
-  } catch {}
   await sendMessageToAI(text)
 }
 
@@ -487,6 +539,16 @@ async function sendMessageToAI(text) {
       }
     }
     
+    // 如果是新对话的第一条消息，更新会话列表中的标题
+    const currentConv = conversations.value.find(c => c.id === activeConversationId.value)
+    if (currentConv && currentConv.title === '新对话') {
+      // 延迟一下再刷新列表，确保后端已经更新了标题
+      setTimeout(loadConversations, 500)
+    } else {
+      // 否则只更新当前会话的消息计数等信息
+      loadConversations()
+    }
+    
     isLoading.value = false
     
   } catch (error) {
@@ -511,11 +573,17 @@ async function loadConversationMessages(conversationId) {
   try {
     const data = await getAgentConversationMessages(agentId, conversationId)
     const list = data.messages || []
-    messages.value = list.map((msg, index) => ({
-      id: Date.now() - (list.length - index) * 1000,
-      role: msg.role,
-      content: msg.content
-    }))
+    if (list.length > 0) {
+      messages.value = list.map((msg, index) => ({
+        id: Date.now() - (list.length - index) * 1000,
+        role: msg.role,
+        content: msg.content
+      }))
+    } else {
+      // 如果消息列表为空，清空当前消息并显示欢迎语
+      messages.value = []
+      showWelcomeMessage()
+    }
   } catch (err) {
     console.error('获取会话消息失败', err)
   }
@@ -539,10 +607,44 @@ async function handleNewConversation() {
     const created = await createAgentConversation(agentId, '新对话')
     conversations.value.unshift(created.conversation)
     activeConversationId.value = created.conversation.id
+    // 清空消息并显示欢迎语
     messages.value = []
-    await loadConversationMessages(activeConversationId.value)
+    showWelcomeMessage()
   } catch (err) {
     console.error('新建会话失败', err)
+  }
+}
+
+async function handleDeleteConversation(id) {
+  if (!confirm('确定要删除这个会话吗？删除后无法恢复。')) {
+    return
+  }
+  
+  try {
+    await deleteAgentConversation(agentId, id)
+    
+    // 从列表中移除
+    const index = conversations.value.findIndex(c => c.id === id)
+    if (index !== -1) {
+      conversations.value.splice(index, 1)
+    }
+    
+    // 如果删除的是当前会话，切换到第一个会话或新建
+    if (activeConversationId.value === id) {
+      if (conversations.value.length > 0) {
+        activeConversationId.value = conversations.value[0].id
+        await loadConversationMessages(activeConversationId.value)
+      } else {
+        // 如果没有会话了，清空消息并重置状态
+        activeConversationId.value = null
+        messages.value = []
+        // 重新初始化（会显示欢迎语并可能创建新会话）
+        initializeChat()
+      }
+    }
+  } catch (err) {
+    console.error('删除会话失败', err)
+    alert('删除会话失败: ' + (err.message || '未知错误'))
   }
 }
 
@@ -827,6 +929,34 @@ onBeforeRouteLeave((to, from, next) => {
   padding: 0.5rem 0.75rem;
   border-radius: 6px;
   cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  group: hover;
+}
+
+.conv-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.delete-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: #a0aec0;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.conversation-item:hover .delete-btn {
+  display: block;
+}
+
+.delete-btn:hover {
+  background-color: #fed7d7;
+  color: #c53030;
 }
 
 .conversation-item:hover {
@@ -856,12 +986,41 @@ onBeforeRouteLeave((to, from, next) => {
 .messages-area {
   flex: 1;
   overflow-y: auto;
-  padding: 1rem 1.5rem 0 1.5rem;
+  padding: 1.5rem;
+  padding-bottom: 0;
 }
 
-.message-content {
-  font-size: 16px;
-  line-height: 1.8;
+.bubble-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.bubble {
+  max-width: 80%;
+  padding: 0.75rem 0.9rem;
+  border-radius: 14px;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.bubble-user {
+  margin-left: auto;
+  background: #1a73e8;
+  color: #fff;
+}
+
+.bubble-assistant {
+  margin-right: auto;
+  background: #f1f5f9;
+  color: #1a202c;
+  border: 1px solid #e2e8f0;
+}
+
+.bubble-content {
+  word-break: break-word;
 }
 
 .input-area {
@@ -872,6 +1031,50 @@ onBeforeRouteLeave((to, from, next) => {
   padding: 1rem 1.5rem;
   background: linear-gradient(to top, #f7fafc 80%, transparent);
   z-index: 10;
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.input-foot-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.input-foot-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #718096;
+  font-size: 0.85rem;
+}
+
+.input-foot-dividing-line {
+  width: 1px;
+  height: 14px;
+  background: #e2e8f0;
+}
+
+.input-foot-maxlength {
+  color: #4a5568;
+}
+
+.input-foot-right .clear-btn {
+  padding: 4px 10px;
+  border: 1px solid #cbd5e0;
+  border-radius: 16px;
+  background: #f7fafc;
+  color: #4a5568;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.input-foot-right .clear-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 :deep(.markdown-content) h1 {

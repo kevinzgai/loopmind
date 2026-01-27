@@ -10,12 +10,34 @@ import {
     listAgentConversations,
     createAgentConversation,
     getAgentConversationMessagesById,
-    appendMessagesByConversationId
+    appendMessagesByConversationId,
+    deleteAgentConversation
 } from '../../../services/conversationService.js';
 
 /**
  * 智能体聊天控制器
  */
+
+/**
+ * 删除指定的智能体会话
+ * DELETE /api/agent/:agentId/conversations/:conversationId
+ */
+export async function handleDeleteAgentConversation(req, res) {
+    try {
+        const { agentId, conversationId } = req.params;
+        const dbUserId = req.user?.userId;
+        if (!dbUserId) return res.status(401).json({ error: '未授权' });
+
+        const success = await deleteAgentConversation(dbUserId, agentId, conversationId);
+        if (!success) {
+            return res.status(404).json({ error: '会话不存在或无权删除' });
+        }
+        res.status(200).json({ message: '会话已删除' });
+    } catch (error) {
+        console.error('❌ 删除智能体会话失败:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+}
 
 /**
  * 获取智能体对话历史

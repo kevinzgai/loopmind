@@ -16,7 +16,6 @@
     "@radix-icons/vue": "^1.0.0",
     "@vueuse/core": "^14.1.0",
     "ai": "^6.0.6",
-    "ant-design-vue": "^4.2.6",
     "ant-design-x-vue": "^1.5.0",
     "axios": "^1.13.2",
     "class-variance-authority": "^0.7.1",

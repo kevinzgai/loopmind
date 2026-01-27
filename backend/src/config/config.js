@@ -56,18 +56,3 @@ export const DEFAULT_AI_PROVIDER = process.env.DEFAULT_AI_PROVIDER || 'deepseek'
 export const API_KEY = process.env.API_KEY || DEEPSEEK_API_KEY;
 export const BASE_URL = process.env.BASE_URL || DEEPSEEK_BASE_URL;
 export const MODEL = process.env.MODEL || DEEPSEEK_MODEL;
-
-export const SEED_ASR_CONFIG = {
-  appId: process.env.SEED_ASR_APPID || '',
-  apiKey: process.env.SEED_ASR_API_KEY || '',
-  apiSecret: process.env.SEED_ASR_API_SECRET || '',
-  apiUrl: process.env.SEED_ASR_API_URL || 'https://openspeech.bytedance.com/api/v3/auc/bigmodel/submit',
-  resourceId: process.env.SEED_ASR_RESOURCE_ID || 'volc.seedasr.auc',
-  audioConfig: {
-    format: 'wav',
-    codec: 'raw',
-    rate: 16000,
-    bits: 16,
-    channel: 1
-  }
-};

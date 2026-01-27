@@ -24,8 +24,7 @@ import {
   OLLAMA_API_KEY,
   OLLAMA_BASE_URL,
   OLLAMA_MODEL,
-  DEFAULT_AI_PROVIDER,
-  SEED_ASR_CONFIG
+  DEFAULT_AI_PROVIDER
 } from '../config/config.js';
 
 function mask(value) {
@@ -80,12 +79,18 @@ export async function ensureConfigInitialized() {
       model: OLLAMA_MODEL || ''
     },
     seedAsr: {
-      appId: SEED_ASR_CONFIG.appId || '',
-      apiKey: SEED_ASR_CONFIG.apiKey || '',
-      apiSecret: SEED_ASR_CONFIG.apiSecret || '',
-      apiUrl: SEED_ASR_CONFIG.apiUrl || '',
-      resourceId: SEED_ASR_CONFIG.resourceId || '',
-      audioConfig: SEED_ASR_CONFIG.audioConfig || undefined
+      appId: '',
+      apiKey: '',
+      apiSecret: '',
+      apiUrl: '',
+      resourceId: '',
+      audioConfig: {
+        format: 'wav',
+        codec: 'raw',
+        rate: 16000,
+        bits: 16,
+        channel: 1
+      }
     }
   });
   await config.save();
@@ -137,12 +142,12 @@ export async function getConfigMasked() {
       model: cfg.ollama?.model
     },
     seedAsr: {
-      appId: cfg.seedAsr.appId,
-      apiKey: mask(cfg.seedAsr.apiKey),
-      apiSecret: mask(cfg.seedAsr.apiSecret),
-      apiUrl: cfg.seedAsr.apiUrl,
-      resourceId: cfg.seedAsr.resourceId,
-      audioConfig: cfg.seedAsr.audioConfig
+      appId: cfg.seedAsr?.appId || '',
+      apiKey: mask(cfg.seedAsr?.apiKey || ''),
+      apiSecret: mask(cfg.seedAsr?.apiSecret || ''),
+      apiUrl: cfg.seedAsr?.apiUrl || '',
+      resourceId: cfg.seedAsr?.resourceId || '',
+      audioConfig: cfg.seedAsr?.audioConfig
     },
     updatedAt: cfg.updatedAt
   };
@@ -193,12 +198,12 @@ export async function getConfigUnmasked() {
       model: cfg.ollama?.model
     },
     seedAsr: {
-      appId: cfg.seedAsr.appId,
-      apiKey: cfg.seedAsr.apiKey,
-      apiSecret: cfg.seedAsr.apiSecret,
-      apiUrl: cfg.seedAsr.apiUrl,
-      resourceId: cfg.seedAsr.resourceId,
-      audioConfig: cfg.seedAsr.audioConfig
+      appId: cfg.seedAsr?.appId || '',
+      apiKey: cfg.seedAsr?.apiKey || '',
+      apiSecret: cfg.seedAsr?.apiSecret || '',
+      apiUrl: cfg.seedAsr?.apiUrl || '',
+      resourceId: cfg.seedAsr?.resourceId || '',
+      audioConfig: cfg.seedAsr?.audioConfig
     },
     updatedAt: cfg.updatedAt
   };

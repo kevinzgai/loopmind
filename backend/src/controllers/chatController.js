@@ -5,6 +5,7 @@ import {
     callAI,
     getAvailableProviders
 } from '../services/aiService.js';
+import { getConfigMasked } from '../services/configService.js';
 import {
     getConversationMessages,
     appendConversationMessages
@@ -114,7 +115,8 @@ export async function getChatHistory(req, res) {
 export async function getProviders(req, res) {
     try {
         const providers = getAvailableProviders();
-        res.json({ providers });
+        const cfg = await getConfigMasked();
+        res.json({ providers, defaultProvider: cfg.provider });
     } catch (error) {
         console.error('❌ Error getting providers:', error);
         res.status(500).json({ error: 'Internal server error' });

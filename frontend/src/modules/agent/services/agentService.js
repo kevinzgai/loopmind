@@ -8,6 +8,17 @@ import { logout } from '../../auth/stores/authStore.js';
 const API_BASE = '/agent';
 
 /**
+ * 自动生成智能体配置
+ */
+export async function generateAgentConfig(prompt) {
+  try {
+    return await apiService.post(`${API_BASE}/generate-config`, { prompt })
+  } catch (error) {
+    throw error
+  }
+}
+
+/**
  * 创建智能体
  */
 export async function createAgent(agentData, token) {
@@ -153,6 +164,17 @@ export async function createAgentConversation(agentId, title = '新对话') {
 export async function getAgentConversationMessages(agentId, conversationId) {
   try {
     return await apiService.get(`${API_BASE}/${agentId}/conversations/${conversationId}`)
+  } catch (error) {
+    throw error
+  }
+}
+
+/**
+ * 删除指定的智能体会话（需登录）
+ */
+export async function deleteAgentConversation(agentId, conversationId) {
+  try {
+    return await apiService.delete(`${API_BASE}/${agentId}/conversations/${conversationId}`)
   } catch (error) {
     throw error
   }

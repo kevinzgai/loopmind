@@ -2,9 +2,7 @@ import app from './app.js';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
 import { PORT } from './config/config.js';
-import { SEED_ASR_CONFIG } from './config/config.js';
 import { connectDatabase, disconnectDatabase } from './config/database.js';
-import SeedASRService from './services/seedAsrService.js';
 // 使用完整版本
 import { handleStreamConnection } from './services/aliAsrStreamService.js';
 import { createTTSStream, sendTextWithStart, sendComplete, parseMessage } from './services/aliTtsStreamService.js';
@@ -15,9 +13,6 @@ import crypto from 'crypto';
 // 创建 HTTP 服务器
 const httpServer = createServer(app);
 
-// 初始化 Seed-ASR 服务
-const seedAsrService = new SeedASRService(SEED_ASR_CONFIG);
-
 // 使用单一 WebSocket 服务器处理所有连接
 const wss = new WebSocketServer({ server: httpServer });
 
@@ -27,11 +22,7 @@ wss.on('connection', (ws, req) => {
     const path = req.url;
     console.log('📞 收到 WebSocket 连接请求，路径:', path);
     
-    if (path === '/ws-seed-asr') {
-        const clientId = uuidv4();
-        console.log(`✅ Seed-ASR 客户端已连接，ID: ${clientId}`);
-        seedAsrService.handleConnection(ws, clientId);
-    } else if (path === '/ws-asr-stream') {
+    if (path === '/ws-asr-stream') {
         console.log('✅ 阿里云流式 ASR 客户端已连接');
         handleStreamConnection(ws);
     } else if (path.startsWith('/ws-tts-stream')) {

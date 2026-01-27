@@ -11,7 +11,9 @@ async function getProviderConfig(provider) {
     }
     if (p === 'doubao') {
         const client = new OpenAI({ apiKey: cfg.doubao.apiKey, baseURL: cfg.doubao.baseURL });
-        return { client, model: cfg.doubao.model || 'doubao-pro-4k', name: '火山引擎' };
+        const m = (cfg.doubao.model || '').trim();
+        const model = m && m !== 'doubao-pro-4k' ? m : 'doubao-seed-1-8-251228';
+        return { client, model, name: '火山引擎' };
     }
     if (p === 'glm') {
         const client = new OpenAI({ apiKey: cfg.glm.apiKey, baseURL: cfg.glm.baseURL });
@@ -89,7 +91,7 @@ export function getAvailableProviders() {
     return [
         { id: 'deepseek', name: 'DeepSeek', model: 'deepseek-chat' },
         { id: 'qwen', name: '通义千问', model: 'qwen-turbo' },
-        { id: 'doubao', name: '火山引擎', model: 'doubao-pro-4k' },
+        { id: 'doubao', name: '火山引擎', model: 'doubao-seed-1-8-251228' },
         { id: 'glm', name: '智谱GLM', model: 'glm-4-flash' },
         { id: 'moonshot', name: 'Kimi (Moonshot)', model: 'moonshot-v1-8k' },
         { id: 'modelscope', name: 'ModelScope (魔搭)', model: 'Qwen/Qwen2.5-72B-Instruct' },

@@ -1,5 +1,4 @@
 import axios from 'axios'
-import { logout } from '../modules/auth/stores/authStore.js'
 
 // 创建 axios 实例
 const apiClient = axios.create({
@@ -40,7 +39,9 @@ apiClient.interceptors.response.use(
       
       // 处理无效 token
       if (data.error?.code === 'INVALID_TOKEN') {
-        logout()
+        // 清除本地存储并跳转登录
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
         window.location.href = '/login'
         return Promise.reject(new Error('登录已失效，请重新登录'))
       }

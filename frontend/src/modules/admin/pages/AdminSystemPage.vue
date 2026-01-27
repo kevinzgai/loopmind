@@ -150,6 +150,7 @@
                   {{ model.label }}
                 </option>
               </select>
+              <input type="text" v-model="form.deepseek.model" placeholder="或自定义填写模型标识" />
               <p class="help-text">选择 DeepSeek 模型版本</p>
             </div>
           </div>
@@ -187,6 +188,7 @@
                   {{ model.label }}
                 </option>
               </select>
+              <input type="text" v-model="form.qwen.model" placeholder="或自定义填写模型标识" />
               <p class="help-text">选择通义千问模型版本</p>
             </div>
           </div>
@@ -224,6 +226,7 @@
                   {{ model.label }}
                 </option>
               </select>
+              <input type="text" v-model="form.doubao.model" placeholder="或自定义填写模型标识" />
               <p class="help-text">选择火山引擎模型版本</p>
             </div>
           </div>
@@ -261,6 +264,7 @@
                   {{ model.label }}
                 </option>
               </select>
+              <input type="text" v-model="form.glm.model" placeholder="或自定义填写模型标识" />
               <p class="help-text">选择GLM模型版本</p>
             </div>
           </div>
@@ -298,6 +302,7 @@
                   {{ model.label }}
                 </option>
               </select>
+              <input type="text" v-model="form.moonshot.model" placeholder="或自定义填写模型标识" />
               <p class="help-text">选择Moonshot模型版本</p>
             </div>
           </div>
@@ -335,6 +340,7 @@
                   {{ model.label }}
                 </option>
               </select>
+              <input type="text" v-model="form.modelscope.model" placeholder="或自定义填写模型标识" />
               <p class="help-text">选择ModelScope模型版本</p>
             </div>
           </div>
@@ -372,6 +378,7 @@
                   {{ model.label }}
                 </option>
               </select>
+              <input type="text" v-model="form.minimax.model" placeholder="或自定义填写模型标识" />
               <p class="help-text">选择MiniMax模型版本</p>
             </div>
           </div>
@@ -473,7 +480,7 @@ const form = ref({
   provider: 'deepseek',
   deepseek: { apiKey: '', baseURL: '', model: 'deepseek-chat' },
   qwen: { apiKey: '', baseURL: '', model: 'qwen-turbo' },
-  doubao: { apiKey: '', baseURL: '', model: 'doubao-pro-4k' },
+  doubao: { apiKey: '', baseURL: '', model: 'doubao-seed-1-8-251228' },
   glm: { apiKey: '', baseURL: '', model: 'glm-4-flash' },
   moonshot: { apiKey: '', baseURL: '', model: 'moonshot-v1-8k' },
   modelscope: { apiKey: '', baseURL: '', model: 'Qwen/Qwen2.5-72B-Instruct' },
@@ -500,7 +507,8 @@ const doubaoModels = [
   { label: 'Doubao-Pro-128k', value: 'doubao-pro-128k' },
   { label: 'Doubao-Lite-4k', value: 'doubao-lite-4k' },
   { label: 'Doubao-Lite-32k', value: 'doubao-lite-32k' },
-  { label: 'Doubao-Lite-128k', value: 'doubao-lite-128k' }
+  { label: 'Doubao-Lite-128k', value: 'doubao-lite-128k' },
+  { label: 'Doubao-Seed-1-8', value: 'doubao-seed-1-8-251228' }
 ]
 
 const glmModels = [

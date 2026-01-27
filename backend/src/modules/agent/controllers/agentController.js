@@ -10,10 +10,68 @@ import {
   getOrCreateMemory,
   getUserMemory
 } from '../services/agentService.js';
+import { callAI } from '../../../services/aiService.js';
 
 /**
  * 智能体控制器
  */
+
+/**
+ * 自动生成智能体配置
+ * POST /api/agent/generate-config
+ */
+export async function handleGenerateAgentConfig(req, res, next) {
+  try {
+    const { prompt } = req.body;
+
+    if (!prompt) {
+      return res.status(400).json({
+        error: {
+          message: 'Prompt is required',
+          code: 'MISSING_PROMPT'
+        }
+      });
+    }
+
+    const systemPrompt = `You are an expert AI agent designer.
+User request: "${prompt}"
+
+Generate a valid JSON configuration for an AI agent based on the request.
+The JSON must have these fields:
+- name: A creative name (string)
+- description: A short description (string, max 100 chars)
+- personality: A detailed system prompt defining the agent's role, style, and constraints (string)
+- initialMemory: A greeting message (string)
+- avatar: A single emoji char (string)
+- voice: Suggest a voice id (string), choose from: 'xiaoxian' (female), 'xiaoyu' (male), 'yoyo' (child). Default to 'xiaoxian'.
+
+Return ONLY the raw JSON string. Do not include markdown formatting like \`\`\`json.`;
+
+    const aiResponse = await callAI([
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: prompt }
+    ]);
+
+    let configStr = aiResponse.choices[0].message.content.trim();
+    // Clean up markdown if present
+    if (configStr.startsWith('```json')) {
+      configStr = configStr.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    } else if (configStr.startsWith('```')) {
+        configStr = configStr.replace(/^```\s*/, '').replace(/\s*```$/, '');
+    }
+
+    const config = JSON.parse(configStr);
+
+    res.status(200).json({
+      message: 'Agent config generated',
+      config
+    });
+
+  } catch (error) {
+    console.error('❌ Failed to generate agent config:', error);
+    next(error);
+  }
+}
 
 /**
  * 创建智能体

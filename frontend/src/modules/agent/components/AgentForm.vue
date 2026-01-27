@@ -1,5 +1,36 @@
 <template>
   <form @submit.prevent="handleSubmit" class="agent-form">
+    <!-- 一键生成工具 -->
+    <div class="form-section generate-section" v-if="!isPublished && !isEditMode">
+      <div class="section-header">
+        <div class="section-icon">✨</div>
+        <div class="section-title-group">
+          <h2 class="section-title">一键生成</h2>
+          <p class="section-subtitle">输入简单的描述，AI 帮你自动生成所有配置</p>
+        </div>
+      </div>
+
+      <div class="generate-wrapper">
+        <textarea
+          v-model="generatePrompt"
+          placeholder="例如：我想要一个严厉的数学老师，喜欢出难题考验学生..."
+          class="form-textarea generate-input"
+          rows="2"
+          :disabled="isGenerating"
+        ></textarea>
+        <button 
+          type="button" 
+          @click="handleAutoGenerate" 
+          class="generate-btn"
+          :disabled="isGenerating || !generatePrompt.trim()"
+        >
+          <span v-if="isGenerating" class="btn-icon spin">🔄</span>
+          <span v-else class="btn-icon">⚡</span>
+          <span>{{ isGenerating ? '生成中...' : '自动生成配置' }}</span>
+        </button>
+      </div>
+    </div>
+
     <div class="form-section">
       <div class="section-header">
         <div class="section-icon">📝</div>
@@ -165,13 +196,48 @@
           <span class="label-text">AI 模型</span>
           <span class="label-required">*</span>
         </label>
-        <div class="select-wrapper">
-          <select v-model="form.model" id="model" :disabled="isSubmitting" class="form-select">
-            <option value="deepseek">DeepSeek - 智能对话</option>
-            <option value="qwen">通义千问 - 阿里云</option>
-          </select>
-          <div class="select-icon">🤖</div>
+        <div class="model-selection-container">
+          <div class="select-wrapper">
+            <select v-model="form.model" id="model" :disabled="isSubmitting" class="form-select">
+              <option value="" disabled>请选择模型</option>
+              <optgroup label="DeepSeek">
+                <option v-for="m in deepseekModels" :key="m.value" :value="m.value">{{ m.label }}</option>
+              </optgroup>
+              <optgroup label="通义千问">
+                <option v-for="m in qwenModels" :key="m.value" :value="m.value">{{ m.label }}</option>
+              </optgroup>
+              <optgroup label="火山引擎 (豆包)">
+                <option v-for="m in doubaoModels" :key="m.value" :value="m.value">{{ m.label }}</option>
+              </optgroup>
+              <optgroup label="智谱GLM">
+                <option v-for="m in glmModels" :key="m.value" :value="m.value">{{ m.label }}</option>
+              </optgroup>
+              <optgroup label="Kimi (Moonshot)">
+                <option v-for="m in moonshotModels" :key="m.value" :value="m.value">{{ m.label }}</option>
+              </optgroup>
+              <optgroup label="ModelScope">
+                <option v-for="m in modelscopeModels" :key="m.value" :value="m.value">{{ m.label }}</option>
+              </optgroup>
+              <optgroup label="MiniMax">
+                <option v-for="m in minimaxModels" :key="m.value" :value="m.value">{{ m.label }}</option>
+              </optgroup>
+              <optgroup label="其他">
+                <option value="ollama">Ollama (Local)</option>
+              </optgroup>
+            </select>
+            <div class="select-icon">🤖</div>
+          </div>
+          <div class="custom-model-input">
+            <input 
+              type="text" 
+              v-model="form.model" 
+              placeholder="或输入自定义模型ID" 
+              class="form-input"
+              :disabled="isSubmitting"
+            />
+          </div>
         </div>
+        <div class="helper-text">可从列表选择推荐模型，或直接输入模型 ID</div>
       </div>
 
       <div class="form-group">
@@ -320,6 +386,7 @@
 
 <script setup>
 import { ref, watch, reactive } from 'vue'
+import { generateAgentConfig } from '../services/agentService.js'
 
 const props = defineProps({
   modelValue: {
@@ -345,6 +412,10 @@ const props = defineProps({
   isUnpublishing: {
     type: Boolean,
     default: false
+  },
+  currentProvider: {
+    type: String,
+    default: 'deepseek'
   }
 })
 
@@ -353,6 +424,85 @@ const emit = defineEmits(['update:modelValue', 'submit', 'cancel', 'unpublish'])
 const form = reactive({ ...props.modelValue })
 const avatarType = ref('emoji')
 const isPreviewingVoice = ref(false)
+
+// 一键生成相关
+const generatePrompt = ref('')
+const isGenerating = ref(false)
+
+const handleAutoGenerate = async () => {
+  if (!generatePrompt.value.trim()) return
+  
+  try {
+    isGenerating.value = true
+    const { config } = await generateAgentConfig(generatePrompt.value)
+    
+    // Auto fill form
+    if (config.name) form.name = config.name
+    if (config.description) form.description = config.description
+    if (config.personality) form.personality = config.personality
+    if (config.initialMemory) form.initialMemory = config.initialMemory
+    if (config.avatar) {
+      form.avatar = config.avatar
+      avatarType.value = 'emoji'
+    }
+    if (config.voice) form.voice = config.voice
+    
+  } catch (err) {
+    console.error('Auto generation failed:', err)
+    // 简单的错误提示，实际项目中可以使用 Toast
+    alert('生成失败: ' + (err.message || '未知错误'))
+  } finally {
+    isGenerating.value = false
+  }
+}
+
+const deepseekModels = [
+  { label: 'DeepSeek-V3 (deepseek-chat)', value: 'deepseek-chat' },
+  { label: 'DeepSeek-R1 (deepseek-reasoner)', value: 'deepseek-reasoner' }
+]
+
+const qwenModels = [
+  { label: 'Qwen-Turbo', value: 'qwen-turbo' },
+  { label: 'Qwen-Plus', value: 'qwen-plus' },
+  { label: 'Qwen-Max', value: 'qwen-max' },
+  { label: 'Qwen-Long', value: 'qwen-long' }
+]
+
+const doubaoModels = [
+  { label: 'Doubao-Pro-4k', value: 'doubao-pro-4k' },
+  { label: 'Doubao-Pro-32k', value: 'doubao-pro-32k' },
+  { label: 'Doubao-Pro-128k', value: 'doubao-pro-128k' },
+  { label: 'Doubao-Lite-4k', value: 'doubao-lite-4k' },
+  { label: 'Doubao-Lite-32k', value: 'doubao-lite-32k' },
+  { label: 'Doubao-Lite-128k', value: 'doubao-lite-128k' },
+  { label: 'Doubao-Seed-1-8', value: 'doubao-seed-1-8-251228' }
+]
+
+const glmModels = [
+  { label: 'GLM-4-Flash', value: 'glm-4-flash' },
+  { label: 'GLM-4-Plus', value: 'glm-4-plus' },
+  { label: 'GLM-4-Air', value: 'glm-4-air' },
+  { label: 'GLM-4', value: 'glm-4' }
+]
+
+const moonshotModels = [
+  { label: 'Moonshot-v1-8k', value: 'moonshot-v1-8k' },
+  { label: 'Moonshot-v1-32k', value: 'moonshot-v1-32k' },
+  { label: 'Moonshot-v1-128k', value: 'moonshot-v1-128k' }
+]
+
+const modelscopeModels = [
+  { label: 'Qwen 2.5 72B Instruct', value: 'Qwen/Qwen2.5-72B-Instruct' },
+  { label: 'Qwen 2.5 7B Instruct', value: 'Qwen/Qwen2.5-7B-Instruct' },
+  { label: 'Qwen 2.5 Coder 32B Instruct', value: 'Qwen/Qwen2.5-Coder-32B-Instruct' },
+  { label: 'DeepSeek R1 Distill Qwen 32B', value: 'deepseek-ai/DeepSeek-R1-Distill-Qwen-32B' }
+]
+
+const minimaxModels = [
+  { label: 'Abab 6.5s Chat', value: 'abab6.5s-chat' },
+  { label: 'Abab 6.5 Chat', value: 'abab6.5-chat' },
+  { label: 'Abab 6.5g Chat', value: 'abab6.5g-chat' }
+]
 
 const emojiOptions = [
   '🤖', '👨‍💻', '👩‍💻', '🧠', '💡', '⚡', '🔥', '✨', 
@@ -373,6 +523,13 @@ watch(() => props.modelValue, (newVal) => {
     }
   }
 }, { deep: true })
+
+// 与系统配置保持一致：当系统 provider 变化且当前未设置模型时，同步到表单
+watch(() => props.currentProvider, (p) => {
+  if (!form.model && p) {
+    form.model = p
+  }
+})
 
 // 监听 form 变化，通知父组件
 watch(form, (newVal) => {
@@ -560,6 +717,11 @@ const previewVoice = async () => {
   padding-right: 1rem;
   resize: vertical;
   min-height: 100px;
+}
+
+.helper-text {
+  font-size: 0.8125rem;
+  color: #777;
 }
 
 .char-count {
@@ -1068,5 +1230,76 @@ const previewVoice = async () => {
   .emoji-grid {
     grid-template-columns: repeat(4, 1fr);
   }
+}
+
+.model-selection-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.custom-model-input {
+  position: relative;
+}
+
+/* 一键生成样式 */
+.generate-section {
+  background: linear-gradient(135deg, #f0f4ff 0%, #f5f3ff 100%);
+  border: 2px solid #e0e7ff;
+  border-radius: 16px;
+  padding: 1.5rem !important;
+}
+
+.generate-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.generate-input {
+  min-height: 80px;
+  border-color: #c3dafe;
+  background: white;
+}
+
+.generate-input:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
+}
+
+.generate-btn {
+  align-self: flex-end;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.generate-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.generate-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.spin {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 </style>

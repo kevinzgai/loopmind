@@ -31,8 +31,9 @@ const agentSchema = new mongoose.Schema(
     // 配置信息
     model: {
       type: String,
-      enum: ['deepseek', 'qwen'],
-      default: 'deepseek'
+      // 允许任意字符串作为模型名，以支持具体的模型ID（如 deepseek-reasoner, doubao-pro-4k 等）
+      // 如果需要限制，应该维护一个包含所有具体模型ID的列表，而不仅仅是 provider 列表
+      default: 'deepseek-chat'
     },
     personality: {
       type: String,

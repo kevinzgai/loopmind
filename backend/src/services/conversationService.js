@@ -122,11 +122,28 @@ export async function appendMessagesByConversationId(conversationId, messages) {
     if (!messages || messages.length === 0) return null;
     const conversation = await Conversation.findById(conversationId);
     if (!conversation) return null;
+
+    // 如果是新对话（messageCount 为 0），且 title 为 "新对话"，尝试使用第一条用户消息更新标题
+    if (conversation.messageCount === 0 && conversation.title === '新对话') {
+        const firstUserMsg = messages.find(m => m.role === 'user');
+        if (firstUserMsg && firstUserMsg.content) {
+            // 截取前 20 个字符作为标题
+            let newTitle = firstUserMsg.content.substring(0, 20);
+            if (firstUserMsg.content.length > 20) newTitle += '...';
+            conversation.title = newTitle;
+        }
+    }
+
     conversation.messages.push(...messages);
     conversation.messageCount = conversation.messages.length;
     conversation.updatedAt = new Date();
     await conversation.save();
     return conversation;
+}
+
+export async function deleteAgentConversation(userId, agentId, conversationId) {
+    const result = await Conversation.deleteOne({ _id: conversationId, userId, agentId });
+    return result.deletedCount > 0;
 }
 
 export default {
@@ -140,4 +157,5 @@ export default {
     createAgentConversation,
     getAgentConversationMessagesById,
     appendMessagesByConversationId,
+    deleteAgentConversation,
 };

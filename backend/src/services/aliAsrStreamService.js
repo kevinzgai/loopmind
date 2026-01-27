@@ -1,7 +1,6 @@
 import WebSocket from 'ws';
 import crypto from 'crypto';
 import { getToken } from './aliTokenService.js';
-import { convertToPcm } from '../utils/audioConverter.js';
 // 确保环境变量已加载
 import '../config/config.js';
 

@@ -8,7 +8,8 @@ import {
   handlePublishAgent,
   handleUnpublishAgent,
   handleDeleteAgent,
-  handleGetMemory
+  handleGetMemory,
+  handleGenerateAgentConfig
 } from '../controllers/agentController.js';
 import { 
   handleAgentChat, 
@@ -16,7 +17,8 @@ import {
   handleListAgentConversations,
   handleCreateAgentConversation,
   handleGetAgentConversationMessages,
-  handleAgentChatInConversation
+  handleAgentChatInConversation,
+  handleDeleteAgentConversation
 } from '../controllers/agentChatController.js';
 import { authenticateToken, optionalAuthenticateToken } from '../../../shared/middleware/authMiddleware.js';
 
@@ -35,6 +37,19 @@ const router = express.Router();
 router.get('/published', handleGetPublishedAgents);
 
 // 受保护路由
+
+/**
+ * @api {post} /agent/generate-config 自动生成智能体配置
+ * @apiName GenerateAgentConfig
+ * @apiGroup Agent
+ * @apiDescription 根据用户描述自动生成智能体配置
+ * @apiHeader {String} Authorization Bearer Token
+ *
+ * @apiBody {String} prompt 用户描述
+ *
+ * @apiSuccess {Object} config 生成的配置信息
+ */
+router.post('/generate-config', authenticateToken, handleGenerateAgentConfig);
 
 /**
  * @api {post} /agent/create 创建智能体
@@ -226,5 +241,19 @@ router.get('/:agentId/conversations/:conversationId', authenticateToken, handleG
  * @apiBody {String} message 用户消息
  */
 router.post('/:agentId/conversations/:conversationId/chat', authenticateToken, handleAgentChatInConversation);
+
+/**
+ * @api {delete} /agent/:agentId/conversations/:conversationId 删除会话
+ * @apiName DeleteAgentConversation
+ * @apiGroup Agent
+ * @apiDescription 删除指定的智能体会话（需登录）
+ * @apiHeader {String} Authorization Bearer Token
+ *
+ * @apiParam {String} agentId 智能体ID
+ * @apiParam {String} conversationId 会话ID
+ *
+ * @apiSuccess {String} message 删除成功消息
+ */
+router.delete('/:agentId/conversations/:conversationId', authenticateToken, handleDeleteAgentConversation);
 
 export default router;

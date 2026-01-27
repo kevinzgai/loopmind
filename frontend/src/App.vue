@@ -8,6 +8,7 @@
           
           <template v-if="isAuthenticated">
             <router-link to="/chat" class="nav-link">对话</router-link>
+            <router-link to="/agent/my-agents" class="nav-link">我的智能体</router-link>
             <router-link v-if="isAdmin" to="/admin/system" class="nav-link">系统配置</router-link>
             <div class="nav-user">
               <span class="username">{{ currentUser?.username }}</span>

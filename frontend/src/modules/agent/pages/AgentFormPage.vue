@@ -34,6 +34,7 @@
           :is-published="isPublished"
           :is-submitting="isSubmitting"
           :is-unpublishing="isUnpublishing"
+          :current-provider="defaultProvider"
           @submit="handleSubmit"
           @cancel="handleCancel"
           @unpublish="handleUnpublish"
@@ -49,6 +50,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { token } from '@/modules/auth/stores/authStore.js'
 import { getAgent, createAgent, updateAgent, unpublishAgent } from '../services/agentService.js'
 import AgentForm from '../components/AgentForm.vue'
+import apiService from '@/services/apiService.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -61,6 +63,7 @@ const isUnpublishing = ref(false)
 const error = ref(null)
 
 const initialAgentData = ref(null)
+const defaultProvider = ref('deepseek')
 
 const form = reactive({
   name: '',
@@ -74,7 +77,9 @@ const form = reactive({
 })
 
 const isPublished = computed(() => {
-  return initialAgentData.value?.isPublished || false
+  const published = initialAgentData.value?.isPublished || false
+  console.log('Is Published:', published, 'Initial Data:', initialAgentData.value)
+  return published
 })
 
 const loadAgent = async () => {
@@ -92,7 +97,8 @@ const loadAgent = async () => {
     form.name = result.name
     form.description = result.description || ''
     form.avatar = result.avatar || '🤖'
-    form.model = result.model || 'deepseek'
+    // 优先使用保存的模型配置，如果没有则使用系统默认
+    form.model = result.model || defaultProvider.value || 'deepseek'
     form.personality = result.personality || ''
     form.initialMemory = result.initialMemory || ''
     form.voice = result.voice || 'xiaoxian'
@@ -181,7 +187,17 @@ const handleCancel = () => {
 }
 
 onMounted(() => {
-  loadAgent()
+  ;(async () => {
+    try {
+      const resp = await apiService.get('/chat/providers')
+      defaultProvider.value = resp.data.defaultProvider || 'deepseek'
+      form.model = defaultProvider.value
+    } catch (e) {
+      defaultProvider.value = 'deepseek'
+    } finally {
+      loadAgent()
+    }
+  })()
 })
 </script>
 
