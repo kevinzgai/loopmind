@@ -11,8 +11,7 @@ const AsrStreamPage = () => import('@/modules/test/pages/AsrStreamPage.vue')
 const HomePage = () => import('@/modules/home/pages/HomePage.vue')
 const LoginPage = () => import('@/modules/auth/pages/LoginPage.vue')
 const RegisterPage = () => import('@/modules/auth/pages/RegisterPage.vue')
-const CreateAgentPage = () => import('@/modules/agent/pages/CreateAgentPage.vue')
-const EditAgentPage = () => import('@/modules/agent/pages/EditAgentPage.vue')
+const AgentFormPage = () => import('@/modules/agent/pages/AgentFormPage.vue')
 const MyAgentsPage = () => import('@/modules/agent/pages/MyAgentsPage.vue')
 const AgentChatPage = () => import('@/modules/agent/pages/AgentChatPage.vue')
 const AdminSystemPage = () => import('@/modules/admin/pages/AdminSystemPage.vue')
@@ -96,7 +95,7 @@ const routes = [
   {
     path: '/agent/create',
     name: 'CreateAgent',
-    component: CreateAgentPage,
+    component: AgentFormPage,
     meta: {
       title: '创建智能体',
       requiresAuth: true
@@ -105,7 +104,7 @@ const routes = [
   {
     path: '/agent/:agentId/edit',
     name: 'EditAgent',
-    component: EditAgentPage,
+    component: AgentFormPage,
     meta: {
       title: '编辑智能体',
       requiresAuth: true
