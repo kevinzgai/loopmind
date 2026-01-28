@@ -12,7 +12,8 @@ const API_BASE = '/agent';
  */
 export async function generateAgentConfig(prompt) {
   try {
-    return await apiService.post(`${API_BASE}/generate-config`, { prompt })
+    // AI 生成任务可能需要更长时间，设置超时为 60 秒
+    return await apiService.post(`${API_BASE}/generate-config`, { prompt }, { timeout: 60000 })
   } catch (error) {
     throw error
   }

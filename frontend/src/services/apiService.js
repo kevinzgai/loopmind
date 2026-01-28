@@ -3,7 +3,7 @@ import axios from 'axios'
 // 创建 axios 实例
 const apiClient = axios.create({
   baseURL: '/api', // 基础URL，与vite.config.js中的proxy配置对应
-  timeout: 10000, // 请求超时时间
+  timeout: 30000, // 请求超时时间增加到 30 秒
   headers: {
     'Content-Type': 'application/json'
   }

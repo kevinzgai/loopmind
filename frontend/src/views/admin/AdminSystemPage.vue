@@ -8,110 +8,58 @@
     <div class="config-container">
       <!-- 侧边导航 -->
       <div class="sidebar">
-        <div 
-          class="nav-item" 
-          :class="{ active: activeTab === 'general' }"
-          @click="activeTab = 'general'"
-        >
+        <div class="nav-item" :class="{ active: activeTab === 'general' }" @click="activeTab = 'general'">
           <span class="icon">⚙️</span>
           通用设置
+          <span class="text-red-500 ml-auto font-bold">*</span>
         </div>
         <div class="nav-divider">AI 模型厂商</div>
-        <div 
-          class="nav-item" 
-          :class="{ active: activeTab === 'deepseek' }"
-          @click="activeTab = 'deepseek'"
-        >
+        <div class="nav-item" :class="{ active: activeTab === 'deepseek' }" @click="activeTab = 'deepseek'">
           <span class="icon">🧠</span>
           DeepSeek
+          <span v-if="form.provider === 'deepseek'" class="text-red-500 ml-auto font-bold">*</span>
         </div>
-        <div 
-          class="nav-item" 
-          :class="{ active: activeTab === 'qwen' }"
-          @click="activeTab = 'qwen'"
-        >
+        <div class="nav-item" :class="{ active: activeTab === 'qwen' }" @click="activeTab = 'qwen'">
           <span class="icon">🐼</span>
           通义千问
+          <span v-if="form.provider === 'qwen'" class="text-red-500 ml-auto font-bold">*</span>
         </div>
-        <div 
-          class="nav-item" 
-          :class="{ active: activeTab === 'doubao' }"
-          @click="activeTab = 'doubao'"
-        >
+        <div class="nav-item" :class="{ active: activeTab === 'doubao' }" @click="activeTab = 'doubao'">
           <span class="icon">🍲</span>
           火山引擎
         </div>
-        <div 
-          class="nav-item" 
-          :class="{ active: activeTab === 'glm' }"
-          @click="activeTab = 'glm'"
-        >
+        <div class="nav-item" :class="{ active: activeTab === 'glm' }" @click="activeTab = 'glm'">
           <span class="icon">🤖</span>
           智谱GLM
         </div>
-        <div 
-          class="nav-item" 
-          :class="{ active: activeTab === 'embedding' }"
-          @click="activeTab = 'embedding'"
-        >
-          <span class="icon">🧩</span>
-          Embedding 模型
-        </div>
-        <div 
-          class="nav-item" 
-          :class="{ active: activeTab === 'moonshot' }"
-          @click="activeTab = 'moonshot'"
-        >
+        <div class="nav-item" :class="{ active: activeTab === 'moonshot' }" @click="activeTab = 'moonshot'">
           <span class="icon">🌙</span>
           Kimi (Moonshot)
         </div>
-        <div 
-          class="nav-item" 
-          :class="{ active: activeTab === 'modelscope' }"
-          @click="activeTab = 'modelscope'"
-        >
+        <div class="nav-item" :class="{ active: activeTab === 'modelscope' }" @click="activeTab = 'modelscope'">
           <span class="icon">🔮</span>
           ModelScope (魔搭)
         </div>
-        <div 
-          class="nav-item" 
-          :class="{ active: activeTab === 'minimax' }"
-          @click="activeTab = 'minimax'"
-        >
+        <div class="nav-item" :class="{ active: activeTab === 'minimax' }" @click="activeTab = 'minimax'">
           <span class="icon">🐚</span>
           MiniMax
         </div>
-        <div 
-          class="nav-item" 
-          :class="{ active: activeTab === 'ollama' }"
-          @click="activeTab = 'ollama'"
-        >
+        <div class="nav-item" :class="{ active: activeTab === 'ollama' }" @click="activeTab = 'ollama'">
           <span class="icon">🖥️</span>
           Ollama 本地
         </div>
         <div class="nav-divider">语音服务</div>
-        <div 
-          class="nav-item" 
-          :class="{ active: activeTab === 'seedAsr' }"
-          @click="activeTab = 'seedAsr'"
-        >
+        <div class="nav-item" :class="{ active: activeTab === 'seedAsr' }" @click="activeTab = 'seedAsr'">
           <span class="icon">🎙️</span>
           Seed ASR
         </div>
         <div class="nav-divider">RAG 增强</div>
-        <div 
-          class="nav-item" 
-          :class="{ active: activeTab === 'embedding' }"
-          @click="activeTab = 'embedding'"
-        >
+        <div class="nav-item" :class="{ active: activeTab === 'embedding' }" @click="activeTab = 'embedding'">
           <span class="icon">🔍</span>
           向量模型 (Embedding)
+          <span class="text-red-500 ml-auto font-bold">*</span>
         </div>
-        <div 
-          class="nav-item" 
-          :class="{ active: activeTab === 'logs' }"
-          @click="activeTab = 'logs'"
-        >
+        <div class="nav-item" :class="{ active: activeTab === 'logs' }" @click="activeTab = 'logs'">
           <span class="icon">📊</span>
           系统日志
         </div>
@@ -119,6 +67,12 @@
 
       <!-- 内容区域 -->
       <form v-show="activeTab !== 'logs'" class="content-area" @submit.prevent="save" autocomplete="off">
+        <div
+          class="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-lg text-sm text-blue-700 flex items-center gap-2">
+          <span class="text-blue-500 text-lg">ℹ️</span>
+          <span>标注 <span class="text-red-500 font-bold">*</span> 的项目为系统初始化及运行必备配置，请务必填写完整。</span>
+        </div>
+
         <!-- 通用设置 -->
         <div v-show="activeTab === 'general'" class="config-section">
           <div class="section-header">
@@ -127,8 +81,11 @@
           </div>
           <div class="card">
             <div class="field">
-              <label>默认 AI 提供商</label>
-              <select v-model="form.provider" class="select-input">
+              <label class="flex items-center">
+                默认 AI 提供商
+                <span class="text-red-500 ml-1" title="系统运行必备配置">*</span>
+              </label>
+              <select v-model="form.provider" class="select-input" required>
                 <option value="deepseek">DeepSeek</option>
                 <option value="qwen">通义千问</option>
                 <option value="doubao">火山引擎</option>
@@ -151,25 +108,35 @@
           </div>
           <div class="card">
             <div class="field">
-              <label>API Key</label>
+              <label class="flex items-center justify-between">
+                <div class="flex items-center">
+                  API Key
+                  <span class="text-red-500 ml-1" title="作为默认提供商时必填">*</span>
+                </div>
+                <a href="https://platform.deepseek.com/api_keys" target="_blank"
+                  class="text-xs text-blue-500 hover:underline flex items-center gap-1">
+                  获取 API Key ↗
+                </a>
+              </label>
               <div class="input-group">
-                <input 
-                  :type="showDeepseekKey ? 'text' : 'password'" 
-                  v-model="form.deepseek.apiKey" 
-                  placeholder="请输入 API Key"
-                  autocomplete="new-password"
-                />
+                <input :type="showDeepseekKey ? 'text' : 'password'" v-model="form.deepseek.apiKey"
+                  placeholder="请输入 API Key" autocomplete="new-password" />
                 <button class="toggle-btn" @click="showDeepseekKey = !showDeepseekKey">
                   {{ showDeepseekKey ? '隐藏' : '显示' }}
                 </button>
               </div>
             </div>
             <div class="field">
-              <label>Base URL</label>
+              <label class="flex items-center">
+                Base URL
+              </label>
               <input type="text" v-model="form.deepseek.baseURL" placeholder="例如: https://api.deepseek.com/v1" />
             </div>
             <div class="field">
-              <label>Model</label>
+              <label class="flex items-center">
+                Model
+                <span class="text-red-500 ml-1" title="作为默认提供商时必填">*</span>
+              </label>
               <select v-model="form.deepseek.model" class="select-input">
                 <option v-for="model in deepseekModels" :key="model.value" :value="model.value">
                   {{ model.label }}
@@ -189,25 +156,36 @@
           </div>
           <div class="card">
             <div class="field">
-              <label>API Key</label>
+              <label class="flex items-center justify-between">
+                <div class="flex items-center">
+                  API Key
+                  <span class="text-red-500 ml-1" title="作为默认提供商时必填">*</span>
+                </div>
+                <a href="https://dashscope.console.aliyun.com/apiKey" target="_blank"
+                  class="text-xs text-blue-500 hover:underline flex items-center gap-1">
+                  获取 API Key ↗
+                </a>
+              </label>
               <div class="input-group">
-                <input 
-                  :type="showQwenKey ? 'text' : 'password'" 
-                  v-model="form.qwen.apiKey" 
-                  placeholder="请输入 API Key"
-                  autocomplete="new-password"
-                />
+                <input :type="showQwenKey ? 'text' : 'password'" v-model="form.qwen.apiKey" placeholder="请输入 API Key"
+                  autocomplete="new-password" />
                 <button class="toggle-btn" @click="showQwenKey = !showQwenKey">
                   {{ showQwenKey ? '隐藏' : '显示' }}
                 </button>
               </div>
             </div>
             <div class="field">
-              <label>Base URL</label>
-              <input type="text" v-model="form.qwen.baseURL" placeholder="例如: https://dashscope.aliyuncs.com/compatible-mode/v1" />
+              <label class="flex items-center">
+                Base URL
+              </label>
+              <input type="text" v-model="form.qwen.baseURL"
+                placeholder="例如: https://dashscope.aliyuncs.com/compatible-mode/v1" />
             </div>
             <div class="field">
-              <label>Model</label>
+              <label class="flex items-center">
+                Model
+                <span class="text-red-500 ml-1" title="作为默认提供商时必填">*</span>
+              </label>
               <select v-model="form.qwen.model" class="select-input">
                 <option v-for="model in qwenModels" :key="model.value" :value="model.value">
                   {{ model.label }}
@@ -227,14 +205,16 @@
           </div>
           <div class="card">
             <div class="field">
-              <label>API Key</label>
+              <label class="flex items-center justify-between">
+                <span>API Key</span>
+                <a href="https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey" target="_blank"
+                  class="text-xs text-blue-500 hover:underline flex items-center gap-1">
+                  获取 API Key ↗
+                </a>
+              </label>
               <div class="input-group">
-                <input 
-                  :type="showDoubaoKey ? 'text' : 'password'" 
-                  v-model="form.doubao.apiKey" 
-                  placeholder="请输入 API Key"
-                  autocomplete="new-password"
-                />
+                <input :type="showDoubaoKey ? 'text' : 'password'" v-model="form.doubao.apiKey"
+                  placeholder="请输入 API Key" autocomplete="new-password" />
                 <button class="toggle-btn" @click="showDoubaoKey = !showDoubaoKey">
                   {{ showDoubaoKey ? '隐藏' : '显示' }}
                 </button>
@@ -242,7 +222,8 @@
             </div>
             <div class="field">
               <label>Base URL</label>
-              <input type="text" v-model="form.doubao.baseURL" placeholder="例如: https://ark.cn-beijing.volces.com/api/v3" />
+              <input type="text" v-model="form.doubao.baseURL"
+                placeholder="例如: https://ark.cn-beijing.volces.com/api/v3" />
             </div>
             <div class="field">
               <label>Model</label>
@@ -265,14 +246,16 @@
           </div>
           <div class="card">
             <div class="field">
-              <label>API Key</label>
+              <label class="flex items-center justify-between">
+                <span>API Key</span>
+                <a href="https://open.bigmodel.cn/usercenter/apikeys" target="_blank"
+                  class="text-xs text-blue-500 hover:underline flex items-center gap-1">
+                  获取 API Key ↗
+                </a>
+              </label>
               <div class="input-group">
-                <input 
-                  :type="showGlmKey ? 'text' : 'password'" 
-                  v-model="form.glm.apiKey" 
-                  placeholder="请输入 API Key"
-                  autocomplete="new-password"
-                />
+                <input :type="showGlmKey ? 'text' : 'password'" v-model="form.glm.apiKey" placeholder="请输入 API Key"
+                  autocomplete="new-password" />
                 <button class="toggle-btn" @click="showGlmKey = !showGlmKey">
                   {{ showGlmKey ? '隐藏' : '显示' }}
                 </button>
@@ -303,22 +286,25 @@
           </div>
           <div class="card">
             <div class="field">
-              <label>API Key</label>
+              <label class="flex items-center">
+                API Key
+                <span class="text-red-500 ml-1" title="向量模型必备配置">*</span>
+              </label>
               <div class="input-group">
-                <input 
-                  :type="showEmbeddingKey ? 'text' : 'password'" 
-                  v-model="form.embedding.apiKey" 
-                  placeholder="请输入 API Key"
-                  autocomplete="new-password"
-                />
+                <input :type="showEmbeddingKey ? 'text' : 'password'" v-model="form.embedding.apiKey"
+                  placeholder="请输入 API Key" autocomplete="new-password" required />
                 <button class="toggle-btn" @click="showEmbeddingKey = !showEmbeddingKey">
                   {{ showEmbeddingKey ? '隐藏' : '显示' }}
                 </button>
               </div>
             </div>
             <div class="field">
-              <label>Base URL</label>
-              <input type="text" v-model="form.embedding.baseURL" placeholder="例如: https://api.siliconflow.cn/v1" />
+              <label class="flex items-center">
+                Base URL
+                <span class="text-red-500 ml-1" title="向量模型必备配置">*</span>
+              </label>
+              <input type="text" v-model="form.embedding.baseURL" placeholder="例如: https://api.siliconflow.cn/v1"
+                required />
               <p class="help-text">
                 推荐国产地址：<br>
                 硅基流动: https://api.siliconflow.cn/v1<br>
@@ -327,13 +313,16 @@
               </p>
             </div>
             <div class="field">
-              <label>Model</label>
-              <select v-model="form.embedding.model" class="select-input">
+              <label class="flex items-center">
+                Model
+                <span class="text-red-500 ml-1" title="向量模型必备配置">*</span>
+              </label>
+              <select v-model="form.embedding.model" class="select-input" required>
                 <option v-for="model in embeddingModels" :key="model.value" :value="model.value">
                   {{ model.label }}
                 </option>
               </select>
-              <input type="text" v-model="form.embedding.model" placeholder="或自定义填写模型标识" />
+              <input type="text" v-model="form.embedding.model" placeholder="或自定义填写模型标识" required />
               <p class="help-text">选择 Embedding 模型版本</p>
             </div>
           </div>
@@ -347,14 +336,16 @@
           </div>
           <div class="card">
             <div class="field">
-              <label>API Key</label>
+              <label class="flex items-center justify-between">
+                <span>API Key</span>
+                <a href="https://platform.moonshot.cn/console/api-keys" target="_blank"
+                  class="text-xs text-blue-500 hover:underline flex items-center gap-1">
+                  获取 API Key ↗
+                </a>
+              </label>
               <div class="input-group">
-                <input 
-                  :type="showMoonshotKey ? 'text' : 'password'" 
-                  v-model="form.moonshot.apiKey" 
-                  placeholder="请输入 API Key"
-                  autocomplete="new-password"
-                />
+                <input :type="showMoonshotKey ? 'text' : 'password'" v-model="form.moonshot.apiKey"
+                  placeholder="请输入 API Key" autocomplete="new-password" />
                 <button class="toggle-btn" @click="showMoonshotKey = !showMoonshotKey">
                   {{ showMoonshotKey ? '隐藏' : '显示' }}
                 </button>
@@ -385,14 +376,16 @@
           </div>
           <div class="card">
             <div class="field">
-              <label>API Key</label>
+              <label class="flex items-center justify-between">
+                <span>API Key</span>
+                <a href="https://modelscope.cn/my/overview" target="_blank"
+                  class="text-xs text-blue-500 hover:underline flex items-center gap-1">
+                  获取 API Key ↗
+                </a>
+              </label>
               <div class="input-group">
-                <input 
-                  :type="showModelscopeKey ? 'text' : 'password'" 
-                  v-model="form.modelscope.apiKey" 
-                  placeholder="请输入 API Key"
-                  autocomplete="new-password"
-                />
+                <input :type="showModelscopeKey ? 'text' : 'password'" v-model="form.modelscope.apiKey"
+                  placeholder="请输入 API Key" autocomplete="new-password" />
                 <button class="toggle-btn" @click="showModelscopeKey = !showModelscopeKey">
                   {{ showModelscopeKey ? '隐藏' : '显示' }}
                 </button>
@@ -400,7 +393,8 @@
             </div>
             <div class="field">
               <label>Base URL</label>
-              <input type="text" v-model="form.modelscope.baseURL" placeholder="例如: https://api-inference.modelscope.cn/v1" />
+              <input type="text" v-model="form.modelscope.baseURL"
+                placeholder="例如: https://api-inference.modelscope.cn/v1" />
             </div>
             <div class="field">
               <label>Model</label>
@@ -423,14 +417,16 @@
           </div>
           <div class="card">
             <div class="field">
-              <label>API Key</label>
+              <label class="flex items-center justify-between">
+                <span>API Key</span>
+                <a href="https://platform.minimaxi.com/usercenter/key" target="_blank"
+                  class="text-xs text-blue-500 hover:underline flex items-center gap-1">
+                  获取 API Key ↗
+                </a>
+              </label>
               <div class="input-group">
-                <input 
-                  :type="showMinimaxKey ? 'text' : 'password'" 
-                  v-model="form.minimax.apiKey" 
-                  placeholder="请输入 API Key"
-                  autocomplete="new-password"
-                />
+                <input :type="showMinimaxKey ? 'text' : 'password'" v-model="form.minimax.apiKey"
+                  placeholder="请输入 API Key" autocomplete="new-password" />
                 <button class="toggle-btn" @click="showMinimaxKey = !showMinimaxKey">
                   {{ showMinimaxKey ? '隐藏' : '显示' }}
                 </button>
@@ -484,14 +480,16 @@
               <input type="text" v-model="form.seedAsr.appId" placeholder="请输入 App ID" />
             </div>
             <div class="field">
-              <label>API Key</label>
+              <label class="flex items-center justify-between">
+                <span>API Key</span>
+                <a href="https://console.volcengine.com/speech/service/1" target="_blank"
+                  class="text-xs text-blue-500 hover:underline flex items-center gap-1">
+                  获取 API Key ↗
+                </a>
+              </label>
               <div class="input-group">
-                <input 
-                  :type="showSeedAsrKey ? 'text' : 'password'" 
-                  v-model="form.seedAsr.apiKey" 
-                  placeholder="请输入 API Key"
-                  autocomplete="new-password"
-                />
+                <input :type="showSeedAsrKey ? 'text' : 'password'" v-model="form.seedAsr.apiKey"
+                  placeholder="请输入 API Key" autocomplete="new-password" />
                 <button class="toggle-btn" @click="showSeedAsrKey = !showSeedAsrKey">
                   {{ showSeedAsrKey ? '隐藏' : '显示' }}
                 </button>
@@ -500,12 +498,8 @@
             <div class="field">
               <label>API Secret</label>
               <div class="input-group">
-                <input 
-                  :type="showSeedAsrSecret ? 'text' : 'password'" 
-                  v-model="form.seedAsr.apiSecret" 
-                  placeholder="请输入 API Secret"
-                  autocomplete="new-password"
-                />
+                <input :type="showSeedAsrSecret ? 'text' : 'password'" v-model="form.seedAsr.apiSecret"
+                  placeholder="请输入 API Secret" autocomplete="new-password" />
                 <button class="toggle-btn" @click="showSeedAsrSecret = !showSeedAsrSecret">
                   {{ showSeedAsrSecret ? '隐藏' : '显示' }}
                 </button>
@@ -532,12 +526,8 @@
             <div class="field">
               <label>API Key</label>
               <div class="input-group">
-                <input 
-                  :type="showEmbeddingKey ? 'text' : 'password'" 
-                  v-model="form.embedding.apiKey" 
-                  placeholder="请输入 API Key"
-                  autocomplete="new-password"
-                />
+                <input :type="showEmbeddingKey ? 'text' : 'password'" v-model="form.embedding.apiKey"
+                  placeholder="请输入 API Key" autocomplete="new-password" />
                 <button class="toggle-btn" @click="showEmbeddingKey = !showEmbeddingKey">
                   {{ showEmbeddingKey ? '隐藏' : '显示' }}
                 </button>
@@ -545,7 +535,8 @@
             </div>
             <div class="field">
               <label>Base URL</label>
-              <input type="text" v-model="form.embedding.baseURL" placeholder="例如: https://dashscope.aliyuncs.com/compatible-mode/v1" />
+              <input type="text" v-model="form.embedding.baseURL"
+                placeholder="例如: https://dashscope.aliyuncs.com/compatible-mode/v1" />
               <p class="help-text">如果不填写，将默认使用 OpenAI 官方地址</p>
             </div>
             <div class="field">
@@ -586,7 +577,7 @@
             </button>
           </div>
         </div>
-        
+
         <div class="logs-container" ref="logsContainer">
           <div v-if="logs.length === 0" class="no-logs">暂无日志</div>
           <div v-else class="log-list">
@@ -623,12 +614,12 @@ const filteredLogs = computed(() => {
 
 async function fetchLogs() {
   if (activeTab.value !== 'logs') return
-  
+
   logsLoading.value = true
   try {
     const res = await apiService.get('/admin/logs')
     logs.value = res.logs || []
-    
+
     // 自动滚动到底部
     setTimeout(() => {
       if (logsContainer.value) {
@@ -798,11 +789,11 @@ async function save() {
     message.value = ''
     error.value = ''
     await apiService.put('/admin/config', form.value)
-    
+
     await load()
 
     message.value = '配置已成功保存'
-    
+
     // 3秒后清除成功消息
     setTimeout(() => {
       message.value = ''
@@ -826,7 +817,8 @@ onMounted(() => {
 <style scoped>
 .admin-system-page {
   width: 100%;
-  height: calc(100vh - 60px); /* 减去导航栏高度 */
+  height: calc(100vh - 60px);
+  /* 减去导航栏高度 */
   margin: 0;
   padding: 0;
   color: #1a202c;
@@ -855,7 +847,8 @@ onMounted(() => {
 
 .config-container {
   display: flex;
-  height: calc(100% - 85px); /* 减去 header 高度 */
+  height: calc(100% - 85px);
+  /* 减去 header 高度 */
   background: white;
   border-radius: 0;
   box-shadow: none;
@@ -1051,7 +1044,7 @@ input:focus,
   .config-container {
     flex-direction: column;
   }
-  
+
   .sidebar {
     width: 100%;
     border-right: none;
@@ -1060,18 +1053,18 @@ input:focus,
     display: flex;
     padding: 0;
   }
-  
+
   .nav-divider {
     display: none;
   }
-  
+
   .nav-item {
     padding: 1rem;
     border-left: none;
     border-bottom: 3px solid transparent;
     white-space: nowrap;
   }
-  
+
   .nav-item.active {
     border-left: none;
     border-bottom-color: #3182ce;
@@ -1145,7 +1138,15 @@ input:focus,
   display: inline-block;
 }
 
-.log-item.info .log-level { color: #48bb78; }
-.log-item.warn .log-level { color: #ecc94b; }
-.log-item.error .log-level { color: #f56565; }
+.log-item.info .log-level {
+  color: #48bb78;
+}
+
+.log-item.warn .log-level {
+  color: #ecc94b;
+}
+
+.log-item.error .log-level {
+  color: #f56565;
+}
 </style>

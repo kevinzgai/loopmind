@@ -26,19 +26,10 @@
           <div class="error-text">{{ error }}</div>
         </div>
 
-        <AgentForm
-          v-else
-          v-model="form"
-          :initial-data="initialAgentData"
-          :is-edit-mode="isEditMode"
-          :is-published="isPublished"
-          :is-submitting="isSubmitting"
-          :is-unpublishing="isUnpublishing"
-          :current-provider="defaultProvider"
-          @submit="handleSubmit"
-          @cancel="handleCancel"
-          @unpublish="handleUnpublish"
-        />
+        <AgentForm v-else v-model="form" :initial-data="initialAgentData" :is-edit-mode="isEditMode"
+          :is-published="isPublished" :is-submitting="isSubmitting" :is-unpublishing="isUnpublishing"
+          :current-provider="defaultProvider" @submit="handleSubmit" @cancel="handleCancel"
+          @unpublish="handleUnpublish" />
       </div>
     </div>
   </div>
@@ -73,7 +64,7 @@ const form = reactive({
   personality: '',
   initialMemory: '',
   voice: 'xiaoxian',
-  speechRate: 150,
+  speechRate: 130,
   knowledgeBaseId: null
 })
 
@@ -165,7 +156,7 @@ const handleSubmit = async () => {
   } catch (err) {
     error.value = err.message
     console.error(`❌ ${isEditMode.value ? '更新' : '创建'}智能体失败:`, err.message)
-    
+
     if (err.message.includes('登录已失效')) {
       router.push('/login')
     }
@@ -186,12 +177,12 @@ const handleUnpublish = async () => {
     const updatedAgent = await unpublishAgent(agentId, token.value)
     const result = updatedAgent.agent || updatedAgent
     initialAgentData.value = result
-    
+
     console.log('✅ 智能体下架成功')
   } catch (err) {
     error.value = err.message
     console.error('❌ 下架智能体失败:', err.message)
-    
+
     if (err.message.includes('登录已失效')) {
       router.push('/login')
     }
@@ -205,7 +196,7 @@ const handleCancel = () => {
 }
 
 onMounted(() => {
-  ;(async () => {
+  ; (async () => {
     try {
       const resp = await apiService.get('/chat/providers')
       defaultProvider.value = resp.data.defaultProvider || 'deepseek'
@@ -273,15 +264,20 @@ onMounted(() => {
 }
 
 @keyframes float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translate(0, 0) scale(1);
   }
+
   25% {
     transform: translate(20px, -20px) scale(1.05);
   }
+
   50% {
     transform: translate(-10px, 20px) scale(0.95);
   }
+
   75% {
     transform: translate(-20px, -10px) scale(1.02);
   }
@@ -295,9 +291,9 @@ onMounted(() => {
 
 .agent-card {
   background: white;
-  border-radius: 24px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
-  max-width: 800px;
+  border-radius: 32px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.05);
+  max-width: 1440px;
   margin: 0 auto;
   padding: 3rem;
   position: relative;
@@ -326,9 +322,12 @@ onMounted(() => {
 }
 
 @keyframes bounce {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0);
   }
+
   50% {
     transform: translateY(-10px);
   }
@@ -371,7 +370,9 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .error-message {

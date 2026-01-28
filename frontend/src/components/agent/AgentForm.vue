@@ -1,417 +1,323 @@
 <template>
-  <form @submit.prevent="handleSubmit" class="agent-form">
-    <!-- 一键生成工具 -->
-    <div class="form-section generate-section" v-if="!isPublished && !isEditMode">
-      <div class="section-header">
-        <div class="section-icon">✨</div>
-        <div class="section-title-group">
-          <h2 class="section-title">一键生成</h2>
-          <p class="section-subtitle">输入简单的描述，AI 帮你自动生成所有配置</p>
+  <form @submit.prevent="handleSubmit" class="w-full space-y-8">
+    <!-- 一键生成工具 - 保留原始功能与核心样式 -->
+    <div class="bg-indigo-50/50 rounded-3xl border border-indigo-100 p-6 md:p-8 mb-8" v-if="!isPublished">
+      <div class="flex items-center gap-4 mb-6">
+        <div class="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-2xl">✨</div>
+        <div>
+          <h3 class="text-xl font-bold text-indigo-900">一键生成智能体配置</h3>
+          <p class="text-sm text-indigo-700/70">只需描述你想要的智能体，AI 将自动为你填充所有配置项</p>
         </div>
       </div>
 
-      <div class="generate-wrapper">
-        <textarea
-          v-model="generatePrompt"
-          placeholder="例如：我想要一个严厉的数学老师，喜欢出难题考验学生..."
-          class="form-textarea generate-input"
-          rows="2"
-          :disabled="isGenerating"
-        ></textarea>
-        <button 
-          type="button" 
-          @click="handleAutoGenerate" 
-          class="generate-btn"
-          :disabled="isGenerating || !generatePrompt.trim()"
-        >
-          <span v-if="isGenerating" class="btn-icon spin">🔄</span>
-          <span v-else class="btn-icon">⚡</span>
-          <span>{{ isGenerating ? '生成中...' : '自动生成配置' }}</span>
-        </button>
-      </div>
-    </div>
-
-    <div class="form-section">
-      <div class="section-header">
-        <div class="section-icon">📝</div>
-        <div class="section-title-group">
-          <h2 class="section-title">基本信息</h2>
-          <p class="section-subtitle">设置智能体的基本信息</p>
+      <div class="flex flex-col md:flex-row gap-4">
+        <div class="flex-1">
+          <textarea v-model="generatePrompt" placeholder="例如：我想要一个严厉的数学老师，喜欢出难题考验学生，说话风格幽默且严谨..."
+            class="w-full px-4 py-3 bg-white border border-indigo-200 rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all min-h-[100px] text-gray-700 shadow-inner"
+            :disabled="isGenerating"></textarea>
         </div>
-      </div>
-
-      <div class="form-group">
-        <label for="name">
-          <span class="label-text">智能体名称</span>
-          <span class="label-required">*</span>
-        </label>
-        <div class="input-wrapper">
-          <input
-            id="name"
-            v-model="form.name"
-            type="text"
-            placeholder="例如：编程助手、写作顾问"
-            required
-            :disabled="isSubmitting"
-            maxlength="50"
-            class="form-input"
-          />
-          <div class="input-icon">🏷️</div>
-        </div>
-        <div class="char-count">
-          <span :class="{ 'count-warning': form.name.length >= 45 }">{{ form.name.length }}</span>
-          <span class="count-separator">/</span>
-          <span class="count-max">50</span>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label for="description">
-          <span class="label-text">描述</span>
-        </label>
-        <div class="textarea-wrapper">
-          <textarea
-            id="description"
-            v-model="form.description"
-            placeholder="简要描述你的智能体的功能和特点"
-            :disabled="isSubmitting"
-            maxlength="500"
-            rows="3"
-            class="form-textarea"
-          ></textarea>
-          <div class="char-count">
-            <span :class="{ 'count-warning': form.description.length >= 450 }">{{ form.description.length }}</span>
-            <span class="count-separator">/</span>
-            <span class="count-max">500</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label for="category">
-          <span class="label-text">分类</span>
-          <span class="label-required">*</span>
-        </label>
-        <div class="select-wrapper">
-          <select v-model="form.category" id="category" :disabled="isSubmitting" class="form-select" required>
-            <option value="" disabled>请选择分类</option>
-            <option v-for="cat in AGENT_CATEGORIES" :key="cat.value" :value="cat.value">
-              {{ cat.icon }} {{ cat.label }}
-            </option>
-          </select>
-          <div class="select-icon">📁</div>
-        </div>
-        <div class="helper-text">选择最适合你的智能体的分类</div>
-      </div>
-
-      <div class="form-group">
-        <label for="knowledgeBase">
-          <span class="label-text">知识库</span>
-        </label>
-        <div class="select-wrapper">
-          <select v-model="form.knowledgeBaseId" id="knowledgeBase" :disabled="isSubmitting" class="form-select">
-            <option :value="null">无知识库</option>
-            <option v-for="kb in knowledgeBases" :key="kb.id" :value="kb.id">
-              📚 {{ kb.name }} ({{ kb.documentCount }} 篇文档)
-            </option>
-          </select>
-          <div class="select-icon">📖</div>
-        </div>
-        <div class="helper-text">关联知识库后，智能体将能够基于文档内容回答问题</div>
-      </div>
-
-      <div class="form-group">
-        <label>
-          <span class="label-text">头像</span>
-        </label>
-        <div class="avatar-section">
-          <div class="avatar-type-selector">
-            <label class="type-option" :class="{ active: avatarType === 'emoji' }">
-              <input type="radio" v-model="avatarType" value="emoji" />
-              <span class="type-icon">😊</span>
-              <span class="type-text">Emoji</span>
-            </label>
-            <label class="type-option" :class="{ active: avatarType === 'url' }">
-              <input type="radio" v-model="avatarType" value="url" />
-              <span class="type-icon">🖼️</span>
-              <span class="type-text">图片链接</span>
-            </label>
-          </div>
-          
-          <div v-if="avatarType === 'emoji'" class="emoji-selector">
-            <div class="emoji-grid">
-              <button
-                v-for="emoji in emojiOptions"
-                :key="emoji"
-                type="button"
-                @click="selectEmoji(emoji)"
-                :class="{ selected: form.avatar === emoji }"
-                class="emoji-option"
-              >
-                {{ emoji }}
-              </button>
-            </div>
-          </div>
-          
-          <div v-if="avatarType === 'url'" class="url-input-wrapper">
-            <div class="input-wrapper">
-              <input
-                id="avatar"
-                v-model="form.avatar"
-                type="url"
-                placeholder="https://example.com/avatar.jpg"
-                :disabled="isSubmitting"
-                class="form-input"
-              />
-              <div class="input-icon">🔗</div>
-            </div>
-          </div>
-          
-          <div v-if="form.avatar" class="avatar-preview-container">
-            <div class="avatar-preview-label">预览</div>
-            <div class="avatar-preview">
-              <img v-if="avatarType === 'url'" :src="form.avatar" :alt="form.name" />
-              <div v-else class="emoji-preview">{{ form.avatar }}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 发布状态管理 (仅编辑模式显示) -->
-    <div class="form-section" v-if="isEditMode && initialData">
-      <div class="section-header">
-        <div class="section-icon">📊</div>
-        <div class="section-title-group">
-          <h2 class="section-title">发布状态</h2>
-          <p class="section-subtitle">管理智能体的发布和下架</p>
-        </div>
-      </div>
-      
-      <div class="status-card" :class="{ 'status-published': isPublished, 'status-draft': !isPublished }">
-        <div class="status-icon">{{ isPublished ? '✅' : '📝' }}</div>
-        <div class="status-content">
-          <h3>{{ isPublished ? '已发布' : '草稿' }}</h3>
-          <p>{{ isPublished ? '已发布的智能体不能修改核心配置' : '草稿状态下可以修改所有配置' }}</p>
-        </div>
-      </div>
-
-      <!-- 下架按钮 -->
-      <div v-if="isPublished" class="unpublish-wrapper">
-        <div class="unpublish-alert">
-          <span class="alert-icon">💡</span>
-          <span class="alert-text">如需修改核心配置（模型、人设、语音等），请先下架智能体</span>
-        </div>
-        <button 
-          type="button"
-          @click="$emit('unpublish')" 
-          class="unpublish-btn"
-          :disabled="isUnpublishing"
-        >
-          <span class="btn-icon">⬇️</span>
-          <span>{{ isUnpublishing ? '下架中...' : '下架智能体' }}</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- 核心配置 (未发布或创建模式下显示) -->
-    <div class="form-section" v-if="!isPublished">
-      <div class="section-header">
-        <div class="section-icon">⚙️</div>
-        <div class="section-title-group">
-          <h2 class="section-title">配置信息</h2>
-          <p class="section-subtitle">设置智能体的核心配置</p>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label for="model">
-          <span class="label-text">AI 模型</span>
-          <span class="label-required">*</span>
-        </label>
-        <div class="model-selection-container">
-          <div class="select-wrapper">
-            <select v-model="form.model" id="model" :disabled="isSubmitting" class="form-select">
-              <option value="" disabled>请选择模型</option>
-              <optgroup label="DeepSeek">
-                <option v-for="m in deepseekModels" :key="m.value" :value="m.value">{{ m.label }}</option>
-              </optgroup>
-              <optgroup label="通义千问">
-                <option v-for="m in qwenModels" :key="m.value" :value="m.value">{{ m.label }}</option>
-              </optgroup>
-              <optgroup label="火山引擎 (豆包)">
-                <option v-for="m in doubaoModels" :key="m.value" :value="m.value">{{ m.label }}</option>
-              </optgroup>
-              <optgroup label="智谱GLM">
-                <option v-for="m in glmModels" :key="m.value" :value="m.value">{{ m.label }}</option>
-              </optgroup>
-              <optgroup label="Kimi (Moonshot)">
-                <option v-for="m in moonshotModels" :key="m.value" :value="m.value">{{ m.label }}</option>
-              </optgroup>
-              <optgroup label="ModelScope">
-                <option v-for="m in modelscopeModels" :key="m.value" :value="m.value">{{ m.label }}</option>
-              </optgroup>
-              <optgroup label="MiniMax">
-                <option v-for="m in minimaxModels" :key="m.value" :value="m.value">{{ m.label }}</option>
-              </optgroup>
-              <optgroup label="其他">
-                <option value="ollama">Ollama (Local)</option>
-              </optgroup>
-            </select>
-            <div class="select-icon">🤖</div>
-          </div>
-          <div class="custom-model-input">
-            <input 
-              type="text" 
-              v-model="form.model" 
-              placeholder="或输入自定义模型ID" 
-              class="form-input"
-              :disabled="isSubmitting"
-            />
-          </div>
-        </div>
-        <div class="helper-text">可从列表选择推荐模型，或直接输入模型 ID</div>
-      </div>
-
-      <div class="form-group">
-        <label for="personality">
-          <span class="label-text">人设</span>
-        </label>
-        <div class="textarea-wrapper">
-          <textarea
-            id="personality"
-            v-model="form.personality"
-            placeholder="描述你的智能体的性格、说话风格等"
-            :disabled="isSubmitting"
-            maxlength="1000"
-            rows="4"
-            class="form-textarea"
-          ></textarea>
-          <div class="char-count">
-            <span :class="{ 'count-warning': form.personality.length >= 900 }">{{ form.personality.length }}</span>
-            <span class="count-separator">/</span>
-            <span class="count-max">1000</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label for="initialMemory">
-          <span class="label-text">初始记忆</span>
-        </label>
-        <div class="textarea-wrapper">
-          <textarea
-            id="initialMemory"
-            v-model="form.initialMemory"
-            placeholder="智能体的初始背景信息或记忆"
-            :disabled="isSubmitting"
-            maxlength="500"
-            rows="3"
-            class="form-textarea"
-          ></textarea>
-          <div class="char-count">
-            <span :class="{ 'count-warning': form.initialMemory.length >= 450 }">{{ form.initialMemory.length }}</span>
-            <span class="count-separator">/</span>
-            <span class="count-max">500</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 语音配置 (未发布或创建模式下显示) -->
-    <div class="form-section" v-if="!isPublished">
-      <div class="section-header">
-        <div class="section-icon">🔊</div>
-        <div class="section-title-group">
-          <h2 class="section-title">语音配置</h2>
-          <p class="section-subtitle">定制智能体的语音风格</p>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label for="voice">
-          <span class="label-text">音色</span>
-        </label>
-        <div class="voice-selector">
-          <div class="select-wrapper">
-            <select v-model="form.voice" id="voice" :disabled="isSubmitting" class="form-select">
-              <option value="xiaoxian">小仙 - 亲切女声</option>
-              <option value="xiaoyun">小云 - 标准女声</option>
-              <option value="xiaogang">小刚 - 标准男声</option>
-              <option value="ruoxi">若兮 - 温柔女声</option>
-              <option value="siqi">思琪 - 温柔女声</option>
-              <option value="zhitian">知甜 - 甜美女声</option>
-              <option value="xiaomei">小美 - 清新女声</option>
-              <option value="aining">艾宁 - 知性女声</option>
-              <option value="aiqi">艾琪 - 温暖女声</option>
-              <option value="aijia">艾佳 - 自然女声</option>
-              <option value="aida">艾达 - 成熟女声</option>
-              <option value="ninger">宁儿 - 青春女声</option>
-              <option value="ruilin">瑞琳 - 优雅女声</option>
-              <option value="siyue">思悦 - 活泼女声</option>
-              <option value="aixia">艾夏 - 清脆女声</option>
-              <option value="yina">伊娜 - 磁性女声</option>
-              <option value="sijia">思佳 - 温柔女声</option>
-              <option value="xiaobei">小北 - 可爱女声</option>
-              <option value="aitong">艾彤 - 甜美女声</option>
-              <option value="aiyu">艾雨 - 清新女声</option>
-            </select>
-            <div class="select-icon">🎙️</div>
-          </div>
-          <button 
-            type="button" 
-            @click="previewVoice" 
-            :disabled="isSubmitting || isPreviewingVoice"
-            class="preview-btn"
-          >
-            <span v-if="isPreviewingVoice" class="preview-icon">🔊</span>
-            <span v-else class="preview-icon">▶️</span>
-            <span>{{ isPreviewingVoice ? '试听中...' : '试听' }}</span>
+        <div class="flex items-center">
+          <button type="button" @click="handleAutoGenerate"
+            class="w-full md:w-auto px-8 py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-3"
+            :disabled="isGenerating || !generatePrompt.trim()">
+            <span v-if="isGenerating" class="animate-spin text-xl">🔄</span>
+            <span v-else class="text-xl">⚡</span>
+            <span>{{ isGenerating ? '正在施法...' : '立即生成' }}</span>
           </button>
         </div>
       </div>
+    </div>
 
-      <div class="form-group">
-        <label for="speechRate">
-          <span class="label-text">语速</span>
-        </label>
-        <div class="slider-wrapper">
-          <div class="slider-labels">
-            <span>慢</span>
-            <span>快</span>
+    <div class="space-y-8">
+      <!-- 基本信息卡片 -->
+      <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-8">
+        <div class="flex items-center gap-4 mb-8">
+          <div class="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-2xl">📝</div>
+          <div>
+            <h3 class="text-xl font-bold text-gray-900">基本信息</h3>
+            <p class="text-sm text-gray-500">设置智能体的展示名称和基础分类</p>
           </div>
-          <div class="slider-container">
-            <input
-              id="speechRate"
-              v-model.number="form.speechRate"
-              type="range"
-              min="50"
-              max="400"
-              step="10"
-              :disabled="isSubmitting"
-              class="form-slider"
-            />
-            <div class="slider-track"></div>
-            <div class="slider-fill" :style="{ width: ((form.speechRate - 50) / 350 * 100) + '%' }"></div>
-            <div class="slider-thumb" :style="{ left: ((form.speechRate - 50) / 350 * 100) + '%' }"></div>
+        </div>
+
+        <div class="space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="form-group">
+              <label for="name" class="text-sm font-semibold text-gray-700 flex items-center gap-1">
+                智能体名称 <span class="text-red-500">*</span>
+              </label>
+              <div class="relative">
+                <input id="name" v-model="form.name" type="text" placeholder="给智能体起个响亮的名字" required
+                  :disabled="isSubmitting" maxlength="50"
+                  class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
+                <div class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
+                  {{ form.name.length }}/50
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="category" class="text-sm font-semibold text-gray-700">分类 <span
+                  class="text-red-500">*</span></label>
+              <select v-model="form.category" id="category" :disabled="isSubmitting"
+                class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none cursor-pointer"
+                required>
+                <option value="" disabled>请选择分类</option>
+                <option v-for="cat in AGENT_CATEGORIES" :key="cat.value" :value="cat.value">
+                  {{ cat.icon }} {{ cat.label }}
+                </option>
+              </select>
+            </div>
           </div>
-          <div class="slider-value">
-            <span class="value-number">{{ form.speechRate }}</span>
-            <span class="value-unit">字/分钟</span>
+
+          <div class="form-group">
+            <label for="description" class="text-sm font-semibold text-gray-700">简短描述</label>
+            <textarea id="description" v-model="form.description" placeholder="用一句话介绍你的智能体" :disabled="isSubmitting"
+              maxlength="500" rows="2"
+              class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"></textarea>
           </div>
+
+          <div class="form-group">
+            <label for="knowledgeBase" class="text-sm font-semibold text-gray-700">关联知识库</label>
+            <select v-model="form.knowledgeBaseId" id="knowledgeBase" :disabled="isSubmitting"
+              class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none cursor-pointer">
+              <option :value="null">🧠 纯模型对话（无知识库）</option>
+              <option v-for="kb in knowledgeBases" :key="kb.id" :value="kb.id">
+                📚 {{ kb.name }} ({{ kb.documentCount }} 篇文档)
+              </option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 大脑配置卡片 -->
+      <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-8" v-if="!isPublished">
+        <div class="flex items-center gap-4 mb-8">
+          <div class="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center text-2xl">⚙️</div>
+          <div>
+            <h3 class="text-xl font-bold text-gray-900">大脑配置</h3>
+            <p class="text-sm text-gray-500">定义智能体的性格、思维方式与所使用的模型</p>
+          </div>
+        </div>
+
+        <div class="space-y-6">
+          <div class="form-group">
+            <label for="model" class="text-sm font-semibold text-gray-700 flex items-center gap-1">
+              AI 模型 <span class="text-red-500">*</span>
+            </label>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <select v-model="form.model" id="model" :disabled="isSubmitting"
+                class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none cursor-pointer">
+                <option value="" disabled>选择推荐模型</option>
+                <optgroup label="DeepSeek (官方)">
+                  <option v-for="m in deepseekModels" :key="m.value" :value="m.value">{{ m.label }}</option>
+                </optgroup>
+                <optgroup label="SiliconFlow (推荐)">
+                  <option v-for="m in siliconflowModels" :key="m.value" :value="m.value">{{ m.label }}</option>
+                </optgroup>
+                <optgroup label="通义千问">
+                  <option v-for="m in qwenModels" :key="m.value" :value="m.value">{{ m.label }}</option>
+                </optgroup>
+                <optgroup label="火山引擎 (豆包)">
+                  <option v-for="m in doubaoModels" :key="m.value" :value="m.value">{{ m.label }}</option>
+                </optgroup>
+                <optgroup label="智谱GLM">
+                  <option v-for="m in glmModels" :key="m.value" :value="m.value">{{ m.label }}</option>
+                </optgroup>
+                <optgroup label="Kimi (Moonshot)">
+                  <option v-for="m in moonshotModels" :key="m.value" :value="m.value">{{ m.label }}</option>
+                </optgroup>
+                <optgroup label="ModelScope (魔搭)">
+                  <option v-for="m in modelscopeModels" :key="m.value" :value="m.value">{{ m.label }}</option>
+                </optgroup>
+                <optgroup label="MiniMax">
+                  <option v-for="m in minimaxModels" :key="m.value" :value="m.value">{{ m.label }}</option>
+                </optgroup>
+                <option value="ollama">Ollama (Local)</option>
+              </select>
+              <input type="text" v-model="form.model" placeholder="或输入自定义模型 ID"
+                class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                :disabled="isSubmitting" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="personality" class="text-sm font-semibold text-gray-700 flex items-center gap-1">
+              人设与指令 <span class="text-red-500">*</span>
+            </label>
+            <div class="relative">
+              <textarea id="personality" v-model="form.personality"
+                placeholder="详细描述智能体的性格、说话风格、专业领域等。例如：你是一个幽默的编程导师..." :disabled="isSubmitting" maxlength="1000" rows="6"
+                required
+                class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"></textarea>
+              <div
+                class="absolute right-3 bottom-3 text-xs text-gray-400 bg-white/80 px-2 py-1 rounded-md backdrop-blur-sm">
+                {{ form.personality.length }}/1000
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="initialMemory" class="text-sm font-semibold text-gray-700">长期记忆 / 背景设定</label>
+            <textarea id="initialMemory" v-model="form.initialMemory" placeholder="赋予智能体一些预设的记忆 or 背景信息"
+              :disabled="isSubmitting" maxlength="500" rows="3"
+              class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- 视觉与语音卡片 (并排) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- 头像设置卡片 -->
+        <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-8">
+          <div class="flex items-center gap-4 mb-6">
+            <div class="w-10 h-10 rounded-xl bg-pink-50 flex items-center justify-center text-xl">🖼️</div>
+            <h3 class="text-lg font-bold text-gray-900">视觉外观</h3>
+          </div>
+
+          <div class="flex flex-col items-center">
+            <!-- 预览区 -->
+            <div class="relative group mb-8">
+              <div
+                class="w-32 h-32 rounded-[2.5rem] bg-gradient-to-br from-gray-50 to-gray-100 border-4 border-white shadow-xl flex items-center justify-center overflow-hidden group-hover:scale-105 transition-transform duration-300">
+                <img v-if="avatarType === 'url' && form.avatar" :src="form.avatar" class="w-full h-full object-cover" />
+                <span v-else class="text-6xl">{{ form.avatar || '🤖' }}</span>
+              </div>
+              <div
+                class="absolute -bottom-2 -right-2 w-10 h-10 bg-white rounded-2xl shadow-lg border border-gray-100 flex items-center justify-center text-xl"
+                title="必填项">
+                ⭐</div>
+            </div>
+
+            <!-- 切换器 -->
+            <div class="flex p-1 bg-gray-100 rounded-2xl w-full mb-6">
+              <button type="button" @click="avatarType = 'emoji'"
+                class="flex-1 py-2 rounded-xl text-sm font-bold transition-all"
+                :class="avatarType === 'emoji' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500 hover:text-gray-700'">
+                Emoji <span class="text-red-500">*</span>
+              </button>
+              <button type="button" @click="avatarType = 'url'"
+                class="flex-1 py-2 rounded-xl text-sm font-bold transition-all"
+                :class="avatarType === 'url' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500 hover:text-gray-700'">
+                图片链接 <span class="text-red-500">*</span>
+              </button>
+            </div>
+
+            <!-- 选择器内容 -->
+            <div v-if="avatarType === 'emoji'" class="w-full">
+              <div class="grid grid-cols-6 gap-2">
+                <button v-for="emoji in emojiOptions" :key="emoji" type="button" @click="selectEmoji(emoji)"
+                  class="aspect-square flex items-center justify-center text-xl rounded-xl border-2 transition-all hover:scale-110 active:scale-95"
+                  :class="form.avatar === emoji ? 'border-indigo-500 bg-indigo-50' : 'border-transparent bg-gray-50 hover:bg-white hover:border-gray-200'">
+                  {{ emoji }}
+                </button>
+              </div>
+            </div>
+
+            <div v-else class="w-full">
+              <input v-model="form.avatar" type="url" placeholder="输入头像图片 URL..."
+                class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 语音设置卡片 -->
+        <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-8" v-if="!isPublished">
+          <div class="flex items-center gap-4 mb-6">
+            <div class="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center text-xl">🔊</div>
+            <h3 class="text-lg font-bold text-gray-900">语音配置</h3>
+          </div>
+
+          <div class="space-y-6">
+            <div class="form-group">
+              <label class="text-sm font-semibold text-gray-700 mb-2 block flex items-center gap-1">
+                选择音色 <span class="text-red-500">*</span>
+              </label>
+              <div class="flex gap-2">
+                <div class="flex-1 relative">
+                  <select v-model="form.voice" required
+                    class="w-full pl-4 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none cursor-pointer text-sm">
+                    <option value="" disabled>请选择音色</option>
+                    <optgroup v-for="cat in voiceCategories" :key="cat.category" :label="cat.category">
+                      <option v-for="voice in cat.voices" :key="voice.id" :value="voice.id">
+                        {{ voice.name }} ({{ voice.type }})
+                      </option>
+                    </optgroup>
+                  </select>
+                  <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">▼</div>
+                </div>
+                <button type="button" @click="previewVoice" :disabled="isSubmitting || isPreviewingVoice"
+                  class="px-4 bg-green-500 hover:bg-green-600 text-white rounded-xl transition-all flex items-center justify-center disabled:opacity-50">
+                  <span v-if="isPreviewingVoice" class="animate-pulse">🔊</span>
+                  <span v-else>▶️</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <div class="flex justify-between items-center mb-4">
+                <label class="text-sm font-semibold text-gray-700">语速调节</label>
+                <span class="px-2 py-1 bg-indigo-50 text-indigo-600 rounded-md text-xs font-bold">{{ form.speechRate }}
+                  字/分</span>
+              </div>
+              <div class="px-2">
+                <input type="range" v-model.number="form.speechRate" min="50" max="400" step="10"
+                  class="w-full h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+                <div class="flex justify-between mt-2 text-[10px] text-gray-400 font-medium">
+                  <span>龟速</span>
+                  <span>正常</span>
+                  <span>极速</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 状态卡片 (仅编辑模式) -->
+      <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-8" v-if="isEditMode && initialData">
+        <div class="flex items-center gap-4 mb-6">
+          <div class="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-xl">📊</div>
+          <h3 class="text-lg font-bold text-gray-900">发布状态</h3>
+        </div>
+
+        <div class="p-4 rounded-2xl mb-6"
+          :class="isPublished ? 'bg-green-50 border border-green-100' : 'bg-orange-50 border border-orange-100'">
+          <div class="flex items-start gap-3">
+            <div class="text-2xl">{{ isPublished ? '✅' : '📝' }}</div>
+            <div>
+              <h4 class="font-bold text-sm" :class="isPublished ? 'text-green-700' : 'text-orange-700'">{{ isPublished
+                ? '已上线' : '草稿状态' }}</h4>
+              <p class="text-xs mt-1" :class="isPublished ? 'text-green-600' : 'text-orange-600'">
+                {{ isPublished ? '智能体当前对外可见，核心配置已锁定。' : '当前仅您可见，可自由修改所有配置。' }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="isPublished" class="space-y-3">
+          <p class="text-[11px] text-gray-400 bg-gray-50 p-3 rounded-xl border border-dashed border-gray-200">
+            💡 提示：如需修改模型、人设等核心参数，请先执行下架操作。
+          </p>
+          <button type="button" @click="$emit('unpublish')"
+            class="w-full py-3 border border-red-200 text-red-500 rounded-xl text-sm font-bold hover:bg-red-50 transition-all flex items-center justify-center gap-2"
+            :disabled="isUnpublishing">
+            {{ isUnpublishing ? '正在下架...' : '下架智能体' }}
+          </button>
         </div>
       </div>
     </div>
 
-    <div class="form-actions">
-      <button type="submit" class="submit-btn" :disabled="isSubmitting">
-        <span v-if="isSubmitting" class="btn-icon">⏳</span>
-        <span v-else class="btn-icon">💾</span>
-        <span>{{ isSubmitting ? '保存中...' : (isEditMode ? '保存修改' : '创建智能体') }}</span>
+    <!-- 底部操作栏 -->
+    <div class="flex flex-col md:flex-row justify-end gap-4 pt-8 border-t border-gray-100">
+      <button type="button" @click="$emit('cancel')"
+        class="px-8 py-4 rounded-2xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition-all text-lg">
+        取消
       </button>
-      <button type="button" @click="$emit('cancel')" class="cancel-btn">
-        <span class="btn-icon">✕</span>
-        <span>取消</span>
+      <button type="submit"
+        class="px-12 py-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold shadow-xl shadow-indigo-100 hover:shadow-2xl hover:-translate-y-1 active:translate-y-0 transition-all text-lg disabled:opacity-50"
+        :disabled="isSubmitting">
+        <span v-if="isSubmitting" class="animate-spin mr-2">🔄</span>
+        <span>{{ isSubmitting ? '正在保存...' : (isEditMode ? '保存修改' : '立即创建智能体') }}</span>
       </button>
     </div>
   </form>
@@ -419,6 +325,7 @@
 
 <script setup>
 import { ref, watch, reactive, onMounted } from 'vue'
+import { voiceCategories } from '@/data/voices.js'
 import { generateAgentConfig } from '@/services/agentService.js'
 import { getKnowledgeBases } from '@/services/knowledgeService.js'
 import { AGENT_CATEGORIES } from '@/constants/agent.js'
@@ -458,10 +365,10 @@ const emit = defineEmits(['update:modelValue', 'submit', 'cancel', 'unpublish'])
 
 const knowledgeBases = ref([])
 
-const form = reactive({ 
+const form = reactive({
   category: '生活',
   knowledgeBaseId: null,
-  ...props.modelValue 
+  ...props.modelValue
 })
 
 onMounted(async () => {
@@ -481,11 +388,11 @@ const isGenerating = ref(false)
 
 const handleAutoGenerate = async () => {
   if (!generatePrompt.value.trim()) return
-  
+
   try {
     isGenerating.value = true
     const { config } = await generateAgentConfig(generatePrompt.value)
-    
+
     // Auto fill form
     if (config.name) form.name = config.name
     if (config.description) form.description = config.description
@@ -497,7 +404,9 @@ const handleAutoGenerate = async () => {
       avatarType.value = 'emoji'
     }
     if (config.voice) form.voice = config.voice
-    
+    if (config.model) form.model = config.model
+    if (config.speechRate) form.speechRate = config.speechRate
+
   } catch (err) {
     console.error('Auto generation failed:', err)
     // 简单的错误提示，实际项目中可以使用 Toast
@@ -510,6 +419,14 @@ const handleAutoGenerate = async () => {
 const deepseekModels = [
   { label: 'DeepSeek-V3 (deepseek-chat)', value: 'deepseek-chat' },
   { label: 'DeepSeek-R1 (deepseek-reasoner)', value: 'deepseek-reasoner' }
+]
+
+const siliconflowModels = [
+  { label: 'DeepSeek-V3', value: 'deepseek-ai/DeepSeek-V3' },
+  { label: 'DeepSeek-R1', value: 'deepseek-ai/DeepSeek-R1' },
+  { label: 'Qwen 2.5 72B', value: 'Qwen/Qwen2.5-72B-Instruct' },
+  { label: 'Qwen 2.5 7B', value: 'Qwen/Qwen2.5-7B-Instruct' },
+  { label: 'GLM-4-9B', value: 'THUDM/glm-4-9b-chat' }
 ]
 
 const qwenModels = [
@@ -525,8 +442,7 @@ const doubaoModels = [
   { label: 'Doubao-Pro-128k', value: 'doubao-pro-128k' },
   { label: 'Doubao-Lite-4k', value: 'doubao-lite-4k' },
   { label: 'Doubao-Lite-32k', value: 'doubao-lite-32k' },
-  { label: 'Doubao-Lite-128k', value: 'doubao-lite-128k' },
-  { label: 'Doubao-Seed-1-8', value: 'doubao-seed-1-8-251228' }
+  { label: 'Doubao-Lite-128k', value: 'doubao-lite-128k' }
 ]
 
 const glmModels = [
@@ -543,10 +459,9 @@ const moonshotModels = [
 ]
 
 const modelscopeModels = [
-  { label: 'Qwen 2.5 72B Instruct', value: 'Qwen/Qwen2.5-72B-Instruct' },
-  { label: 'Qwen 2.5 7B Instruct', value: 'Qwen/Qwen2.5-7B-Instruct' },
-  { label: 'Qwen 2.5 Coder 32B Instruct', value: 'Qwen/Qwen2.5-Coder-32B-Instruct' },
-  { label: 'DeepSeek R1 Distill Qwen 32B', value: 'deepseek-ai/DeepSeek-R1-Distill-Qwen-32B' }
+  { label: 'Qwen-7B-Chat', value: 'qwen-7b-chat' },
+  { label: 'Qwen-14B-Chat', value: 'qwen-14b-chat' },
+  { label: 'ChatGLM3-6B', value: 'chatglm3-6b' }
 ]
 
 const minimaxModels = [
@@ -556,7 +471,7 @@ const minimaxModels = [
 ]
 
 const emojiOptions = [
-  '🤖', '👨‍💻', '👩‍💻', '🧠', '💡', '⚡', '🔥', '✨', 
+  '🤖', '👨‍💻', '👩‍💻', '🧠', '💡', '⚡', '🔥', '✨',
   '🎯', '🚀', '💎', '🌟', '🎨', '📚', '🔬', '🎵',
   '🐱', '🐶', '🦊', '🐼', '🦄', '🐸', '🦋', '🌸',
   '😊', '😎', '🤓', '😇', '🥳', '🤗', '😋', '🤔'
@@ -565,7 +480,7 @@ const emojiOptions = [
 // 监听 props.modelValue 变化（外部数据加载完成时）
 watch(() => props.modelValue, (newVal) => {
   Object.assign(form, newVal)
-  
+
   if (newVal.avatar) {
     if (newVal.avatar.startsWith('http') || newVal.avatar.startsWith('data:')) {
       avatarType.value = 'url'
@@ -598,7 +513,7 @@ const handleSubmit = () => {
 const previewVoice = async () => {
   try {
     isPreviewingVoice.value = true
-    
+
     const response = await fetch('/api/tts', {
       method: 'POST',
       headers: {
@@ -610,25 +525,25 @@ const previewVoice = async () => {
         speechRate: form.speechRate
       })
     })
-    
+
     if (!response.ok) {
       throw new Error('试听失败')
     }
-    
+
     const blob = await response.blob()
     const audioUrl = URL.createObjectURL(blob)
     const audio = new Audio(audioUrl)
-    
+
     audio.onended = () => {
       isPreviewingVoice.value = false
       URL.revokeObjectURL(audioUrl)
     }
-    
+
     audio.onerror = () => {
       isPreviewingVoice.value = false
       URL.revokeObjectURL(audioUrl)
     }
-    
+
     await audio.play()
   } catch (err) {
     console.error('❌ 试听失败:', err.message)
@@ -1082,8 +997,8 @@ const previewVoice = async () => {
   transition: left 0.1s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.form-slider:hover ~ .slider-thumb,
-.form-slider:active ~ .slider-thumb {
+.form-slider:hover~.slider-thumb,
+.form-slider:active~.slider-thumb {
   transform: translate(-50%, -50%) scale(1.2);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
 }
@@ -1350,7 +1265,12 @@ const previewVoice = async () => {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>
