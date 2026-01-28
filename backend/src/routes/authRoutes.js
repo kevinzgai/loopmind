@@ -78,14 +78,32 @@ router.get('/me', authenticateToken, handleGetCurrentUser);
 router.post('/logout', authenticateToken, handleLogout);
 
 /**
- * POST /api/auth/change-password
- * 修改密码
+ * @api {post} /auth/change-password 修改密码
+ * @apiName ChangePassword
+ * @apiGroup Auth
+ * @apiDescription 修改当前用户的登录密码
+ * @apiHeader {String} Authorization Bearer Token
+ *
+ * @apiBody {String} oldPassword 旧密码
+ * @apiBody {String} newPassword 新密码
+ *
+ * @apiSuccess {String} message 成功消息
  */
 router.post('/change-password', authenticateToken, handleChangePassword);
 
 /**
- * PUT /api/auth/profile
- * 更新个人资料
+ * @api {put} /auth/profile 更新个人资料
+ * @apiName UpdateProfile
+ * @apiGroup Auth
+ * @apiDescription 更新当前用户的个人资料
+ * @apiHeader {String} Authorization Bearer Token
+ *
+ * @apiBody {String} [nickname] 昵称
+ * @apiBody {String} [avatar] 头像链接
+ * @apiBody {String} [email] 邮箱
+ *
+ * @apiSuccess {String} message 成功消息
+ * @apiSuccess {Object} user 更新后的用户信息
  */
 router.put('/profile', authenticateToken, handleUpdateProfile);
 

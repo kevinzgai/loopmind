@@ -3,6 +3,12 @@ import {
     getConversationHistory,
     addMessageToHistory
 } from '../../../services/aiService.js';
+import { getModel } from '../../../services/langchainService.js';
+import { createRetriever } from '../../knowledge/services/langchainRetriever.js';
+import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
+import { RunnableSequence, RunnablePassthrough } from "@langchain/core/runnables";
+import { StringOutputParser } from "@langchain/core/output_parsers";
+import { HumanMessage, AIMessage, SystemMessage } from "@langchain/core/messages";
 import { getAgent, getOrCreateMemory, updateMemory, incrementUsageCount } from '../services/agentService.js';
 import { searchKnowledge } from '../../knowledge/services/knowledgeService.js';
 import { generateEmbedding } from '../../knowledge/services/embeddingService.js';
@@ -147,6 +153,96 @@ async function getBaseSystemPrompt(agent, userId) {
 }
 
 /**
+ * 判断是否为问候语（跳过 RAG）
+ */
+const isGreeting = (text) => {
+    const query = text.trim().toLowerCase();
+    const greetings = ['你好', '您好', '在吗', 'hello', 'hi', 'hey', '谢谢', '感谢', '再见', 'bye'];
+    return query.length < 2 || greetings.some(g => query === g);
+};
+
+/**
+ * 使用 LangChain 处理智能体对话
+ */
+async function handleAgentChatLangChain(req, res, agent, conversationHistory, message, dbUserId, conversationId) {
+    const model = await getModel(agent.model);
+    const kbId = agent.knowledgeBaseId;
+    
+    // 1. 准备检索器 (如果有关联知识库)
+    let retriever = null;
+    if (kbId && !isGreeting(message)) {
+        const id = (typeof kbId === 'object') ? (kbId.id || kbId._id) : kbId;
+        retriever = createRetriever(id.toString());
+    }
+
+    // 2. 转换历史记录格式
+    const chatHistory = conversationHistory.map(msg => {
+        if (msg.role === 'system') return new SystemMessage(msg.content);
+        if (msg.role === 'user') return new HumanMessage(msg.content);
+        return new AIMessage(msg.content);
+    });
+
+    // 3. 构建 Prompt
+    const prompt = ChatPromptTemplate.fromMessages([
+        ["system", agent.personality || "你是一个专业的 AI 助手。"],
+        new MessagesPlaceholder("chat_history"),
+        ["system", "{rag_context}"],
+        ["user", "{input}"],
+    ]);
+
+    // 4. 构建 Chain
+    const chain = RunnableSequence.from([
+        {
+            input: new RunnablePassthrough(),
+            chat_history: () => chatHistory,
+            rag_context: async (input) => {
+                if (!retriever) return "";
+                const docs = await retriever.getRelevantDocuments(input);
+                if (!docs.length) return "";
+                const context = docs.map(d => d.pageContent).join("\n---\n");
+                return `\n\n请参考以下背景知识来回答问题：\n${context}`;
+            }
+        },
+        prompt,
+        model,
+        new StringOutputParser(),
+    ]);
+
+    // 5. 流式输出
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    const stream = await chain.stream(message);
+    let fullResponse = "";
+    
+    for await (const chunk of stream) {
+        fullResponse += chunk;
+        res.write(chunk);
+    }
+
+    // 6. 保存结果
+    const assistantMsg = { role: "assistant", content: fullResponse };
+    const userMsg = { role: "user", content: message };
+    
+    if (dbUserId) {
+        if (conversationId) {
+            await appendMessagesByConversationId(conversationId, [userMsg, assistantMsg]);
+        } else {
+            await appendAgentConversationMessages(dbUserId, agent._id, [userMsg, assistantMsg]);
+        }
+    } else {
+        addMessageToHistory(req.body.userId || 'anonymous', userMsg, `agent_${agent._id}`);
+        addMessageToHistory(req.body.userId || 'anonymous', assistantMsg, `agent_${agent._id}`);
+    }
+
+    // 更新智能体使用次数
+    try {
+        await incrementUsageCount(agent._id);
+    } catch (error) {}
+
+    res.end();
+    return fullResponse;
+}
+
+/**
  * 处理智能体聊天消息（支持流式响应）
  */
 export async function handleAgentChat(req, res) {
@@ -170,8 +266,6 @@ export async function handleAgentChat(req, res) {
         }
 
         let conversationHistory;
-        let newMessages = [];
-        
         if (dbUserId) {
             // 已登录：从数据库加载历史
             const dbHistory = await getAgentConversationMessages(dbUserId, agentId);
@@ -180,96 +274,10 @@ export async function handleAgentChat(req, res) {
             // 未登录：从内存加载历史
             conversationHistory = getConversationHistory(effectiveUserId, `agent_${agentId}`);
         }
-        
-        // 如果是新对话（没有系统提示词），添加系统提示词
-        const hasSystemPrompt = conversationHistory.some(msg => msg.role === 'system');
-        if (!hasSystemPrompt) {
-            const systemPrompt = await getBaseSystemPrompt(agent, effectiveUserId);
-            const systemMsg = { role: "system", content: systemPrompt };
-            
-            if (dbUserId) {
-                newMessages.push(systemMsg);
-            } else {
-                addMessageToHistory(effectiveUserId, systemMsg, `agent_${agentId}`);
-            }
-            if (!conversationHistory.some(msg => msg.role === 'system')) {
-                 conversationHistory.push(systemMsg);
-            }
-            console.log('📝 系统提示词已设置');
-        }
-        
-        // RAG 检索
-        let ragContext = '';
-        const isGreeting = (text) => {
-            const query = text.trim().toLowerCase();
-            const greetings = ['你好', '您好', '在吗', 'hello', 'hi', 'hey', '谢谢', '感谢', '再见', 'bye'];
-            return query.length < 2 || greetings.some(g => query === g);
-        };
 
-        if (!isGreeting(message)) {
-            ragContext = await getRAGContext(agent, message);
-        }
-
-        // 添加用户消息
-        const userMsg = { role: "user", content: message };
-        conversationHistory.push(userMsg);
-        
-        if (dbUserId) {
-            newMessages.push(userMsg);
-        } else {
-            addMessageToHistory(effectiveUserId, userMsg, `agent_${agentId}`);
-        }
-
-        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-        res.setHeader('Cache-Control', 'no-cache');
-        res.setHeader('Connection', 'keep-alive');
-        
-        // 构造发送给 AI 的消息列表（注入 Context）
-        const messagesForAI = [...conversationHistory];
-        if (ragContext) {
-            // 将 Context 附加到最后一条用户消息中
-            const lastMsgIndex = messagesForAI.length - 1;
-            messagesForAI[lastMsgIndex] = {
-                ...messagesForAI[lastMsgIndex],
-                content: messagesForAI[lastMsgIndex].content + ragContext
-            };
-        }
-        
-        const streamResponse = await callAIStream(messagesForAI, agent.model);
-        
-        let fullResponse = "";
-        
-        for await (const chunk of streamResponse) {
-            const content = chunk.choices[0]?.delta?.content || "";
-            if (content) {
-                fullResponse += content;
-                res.write(content);
-            }
-        }
-        
-        // 添加 AI 回复
-        const assistantMsg = { role: "assistant", content: fullResponse };
-        
-        if (dbUserId) {
-            newMessages.push(assistantMsg);
-            await appendAgentConversationMessages(dbUserId, agentId, newMessages);
-        } else {
-            addMessageToHistory(effectiveUserId, assistantMsg, `agent_${agentId}`);
-        }
-        
-        // 更新智能体使用次数
-        try {
-            await incrementUsageCount(agentId);
-        } catch (error) {}
-        
-        if (dbUserId) {
-            updateUserMemory(agentId, dbUserId, message, fullResponse).catch(error => {
-                console.warn('更新用户记忆失败:', error.message);
-            });
-        }
-        
-        console.log('✅ 智能体对话完成');
-        res.end();
+        // 全部切换到 LangChain 处理
+        console.log(`🦜 LangChain Flow triggered for model: ${agent.model}`);
+        return await handleAgentChatLangChain(req, res, agent, conversationHistory, message, dbUserId, null);
     } catch (error) {
         console.error('❌ 智能体对话错误:', error);
         if (!res.headersSent) {
@@ -416,68 +424,10 @@ export async function handleAgentChatInConversation(req, res) {
         const dbHistory = await getAgentConversationMessagesById(dbUserId, conversationId);
         if (dbHistory === null) return res.status(404).json({ error: '会话不存在' });
         const conversationHistory = [...dbHistory];
-        const newMessages = [];
 
-        const hasSystemPrompt = conversationHistory.some(msg => msg.role === 'system');
-        if (!hasSystemPrompt) {
-            const systemPrompt = await getBaseSystemPrompt(agent, dbUserId);
-            const systemMsg = { role: 'system', content: systemPrompt };
-            newMessages.push(systemMsg);
-            conversationHistory.push(systemMsg);
-            console.log('📝 系统提示词已设置');
-        }
-
-        // RAG 检索
-        let ragContext = '';
-        const isGreeting = (text) => {
-            const query = text.trim().toLowerCase();
-            const greetings = ['你好', '您好', '在吗', 'hello', 'hi', 'hey', '谢谢', '感谢', '再见', 'bye'];
-            return query.length < 2 || greetings.some(g => query === g);
-        };
-
-        if (!isGreeting(message)) {
-            ragContext = await getRAGContext(agent, message);
-        }
-
-        const userMsg = { role: 'user', content: message };
-        newMessages.push(userMsg);
-        conversationHistory.push(userMsg);
-
-        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-        res.setHeader('Cache-Control', 'no-cache');
-        res.setHeader('Connection', 'keep-alive');
-
-        // 构造发送给 AI 的消息列表（注入 Context）
-        const messagesForAI = [...conversationHistory];
-        if (ragContext) {
-            // 将 Context 附加到最后一条用户消息中
-            const lastMsgIndex = messagesForAI.length - 1;
-            messagesForAI[lastMsgIndex] = {
-                ...messagesForAI[lastMsgIndex],
-                content: messagesForAI[lastMsgIndex].content + ragContext
-            };
-        }
-
-        const streamResponse = await callAIStream(messagesForAI, agent.model);
-        let fullResponse = '';
-        for await (const chunk of streamResponse) {
-            const content = chunk.choices[0]?.delta?.content || '';
-            if (content) {
-                fullResponse += content;
-                res.write(content);
-            }
-        }
-
-        const assistantMsg = { role: 'assistant', content: fullResponse };
-        newMessages.push(assistantMsg);
-        await appendMessagesByConversationId(conversationId, newMessages);
-
-        try {
-            await incrementUsageCount(agentId);
-        } catch {}
-
-        updateUserMemory(agentId, dbUserId, message, fullResponse).catch(() => {});
-        res.end();
+        // 全部切换到 LangChain 处理
+        console.log(`🦜 LangChain Flow triggered for model: ${agent.model} (in conversation)`);
+        return await handleAgentChatLangChain(req, res, agent, conversationHistory, message, dbUserId, conversationId);
     } catch (error) {
         console.error('❌ 智能体指定会话聊天错误:', error);
         if (!res.headersSent) {
