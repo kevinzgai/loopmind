@@ -473,7 +473,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import apiService from '@/services/apiService.js'
-import { isAdmin, token } from '@/modules/auth/stores/authStore.js'
+import { isAdmin, token } from '@/stores/authStore.js'
 
 const activeTab = ref('general')
 const form = ref({

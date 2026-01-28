@@ -235,8 +235,8 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { isAuthenticated, isAdmin } from '@/modules/auth/stores/authStore.js'
-import { getPublishedAgents } from '@/modules/agent/services/agentService.js'
+import { isAuthenticated, isAdmin } from '@/stores/authStore.js'
+import { getPublishedAgents } from '@/services/agentService.js'
 
 const agents = ref([])
 const selectedCategory = ref('全部')

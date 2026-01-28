@@ -47,9 +47,9 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { token } from '@/modules/auth/stores/authStore.js'
-import { getAgent, createAgent, updateAgent, unpublishAgent } from '../services/agentService.js'
-import AgentForm from '../components/AgentForm.vue'
+import { token } from '@/stores/authStore.js'
+import { getAgent, createAgent, updateAgent, unpublishAgent } from '@/services/agentService.js'
+import AgentForm from '@/components/agent/AgentForm.vue'
 import apiService from '@/services/apiService.js'
 
 const route = useRoute()

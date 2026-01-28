@@ -2,8 +2,8 @@
  * 智能体服务
  */
 
-import apiService from '../../../services/apiService.js'
-import { logout } from '../../auth/stores/authStore.js';
+import apiService from '@/services/apiService.js'
+import { logout } from '@/stores/authStore.js';
 
 const API_BASE = '/agent';
 

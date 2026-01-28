@@ -386,7 +386,7 @@
 
 <script setup>
 import { ref, watch, reactive } from 'vue'
-import { generateAgentConfig } from '../services/agentService.js'
+import { generateAgentConfig } from '@/services/agentService.js'
 
 const props = defineProps({
   modelValue: {

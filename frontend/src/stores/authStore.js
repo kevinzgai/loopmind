@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import apiService from '../../../services/apiService.js'
+import apiService from '@/services/apiService.js'
 
 /**
  * 认证状态管理

@@ -85,6 +85,26 @@
         </div>
         <div class="chat-main">
           <div class="messages-area">
+            <!-- 欢迎页展示 -->
+            <div v-if="messages.length === 0 && agent" class="intro-container">
+              <McIntroduction 
+                :logoImg="agent.avatar && (agent.avatar.startsWith('http') || agent.avatar.startsWith('data:')) ? agent.avatar : ''" 
+                :title="agent.name" 
+                :subTitle="'Hi，欢迎使用 ' + agent.name" 
+                :description="agentDescription" 
+              >
+                <template #extra>
+                   <PromptShortcut 
+                    v-if="agent.prompts && agent.prompts.length > 0"
+                    class="intro-prompt" 
+                    :list="agent.prompts" 
+                    direction="horizontal" 
+                    @itemClick="onSubmit($event.label)" 
+                  />
+                </template>
+              </McIntroduction>
+            </div>
+            
             <div class="bubble-list">
               <div
                 v-for="message in messages"
@@ -127,7 +147,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute, onBeforeRouteLeave } from 'vue-router'
 import { Volume2, VolumeX, Trash2 } from 'lucide-vue-next'
 import { marked } from 'marked'
@@ -135,8 +155,10 @@ import DOMPurify from 'dompurify'
 import { Conversation, ConversationContent } from '@/components/ai-elements/conversation'
 import { Message, MessageContent } from '@/components/ai-elements/message'
 import { Loader } from '@/components/ai-elements/loader'
-import XSender from '@/modules/chat/components/XSender.vue'
-import { token } from '@/modules/auth/stores/authStore.js'
+import XSender from '@/components/chat/XSender.vue'
+import McIntroduction from '@/components/chat/McIntroduction.vue'
+import PromptShortcut from '@/components/chat/PromptShortcut.vue'
+import { token } from '@/stores/authStore.js'
 import { 
   getAgent, 
   getMemory, 
@@ -145,7 +167,7 @@ import {
   createAgentConversation, 
   getAgentConversationMessages,
   deleteAgentConversation
-} from '../services/agentService.js'
+} from '@/services/agentService.js'
 
 const route = useRoute()
 const agentId = route.params.agentId
@@ -177,6 +199,26 @@ const ttsEnabled = ref(false)
 const isSpeaking = ref(false)
 const conversations = ref([])
 const activeConversationId = ref(null)
+
+// 智能体介绍描述（Markdown 格式）
+const agentDescription = computed(() => {
+  if (!agent.value) return ''
+  
+  let desc = ''
+  if (agent.value.initialMemory) {
+    desc += `<p>${agent.value.initialMemory}</p>`
+  }
+  
+  if (agent.value.personality) {
+    desc += `<p><em>${agent.value.personality}</em></p>`
+  }
+  
+  if (!desc) {
+    desc = '<p>我可以辅助你编码、查询知识和相关作业信息、编写文档等。</p><p>作为 AI 模型，提供的答案可能不总是准确，但你的反馈可以帮助我做得更好。</p>'
+  }
+  
+  return desc
+})
 
 let audioQueue = []
 let isPlayingQueue = false
@@ -262,10 +304,7 @@ const initializeChat = async () => {
     }
   } else {
     // 如果未登录，尝试加载匿名历史记录
-    const hasHistory = await loadHistory()
-    if (!hasHistory) {
-      showWelcomeMessage()
-    }
+    await loadHistory()
   }
 
   // 如果有记忆，可以在这里加载用户记忆摘要（可选，目前后端已在系统提示词中处理）
@@ -274,43 +313,9 @@ const initializeChat = async () => {
   }
 }
 
-// 显示欢迎语
+// 显示欢迎语（已废弃，现在使用 McIntroduction 组件展示）
 const showWelcomeMessage = () => {
-  // 必须确保 messages 数组为空时才添加
-  if (messages.value.length > 0) return
-
-  // 构建欢迎语
-  let welcomeMessage = ''
-  
-  // 1. 初始记忆（最高优先级，作为开场白）
-  if (agent.value && agent.value.initialMemory) {
-    welcomeMessage += `${agent.value.initialMemory}\n\n`
-  } else if (agent.value) {
-    welcomeMessage += `Hi，欢迎使用 **${agent.value.name}**\n\n`
-  } else {
-    welcomeMessage += `Hi，欢迎使用智能体\n\n`
-  }
-  
-  // 2. 人设（引用样式）
-  if (agent.value && agent.value.personality) {
-    // 检查人设是否已经包含在 initialMemory 中，避免重复
-    if (!agent.value.initialMemory || !agent.value.initialMemory.includes(agent.value.personality.substring(0, 20))) {
-       welcomeMessage += `> ${agent.value.personality}\n\n`
-    }
-  }
-  
-  // 3. 补充说明
-  welcomeMessage += `我可以辅助你编码、查询知识和相关作业信息、编写文档等。\n\n`
-  welcomeMessage += `_作为 AI 模型，提供的答案可能不总是准确，但你的反馈可以帮助我做得更好。_`
-
-  // 强制使用新数组触发响应式更新
-  const newMsg = {
-    id: Date.now(),
-    role: 'assistant',
-    content: welcomeMessage
-  }
-  messages.value = [newMsg]
-  console.log('✅ 欢迎语已设置:', welcomeMessage.substring(0, 50) + '...')
+  // 保持空函数以兼容现有代码调用，或者移除相关调用
 }
 
 // 切换 TTS 开关
@@ -580,9 +585,8 @@ async function loadConversationMessages(conversationId) {
         content: msg.content
       }))
     } else {
-      // 如果消息列表为空，清空当前消息并显示欢迎语
+      // 如果消息列表为空，清空当前消息并不再手动显示文本欢迎语
       messages.value = []
-      showWelcomeMessage()
     }
   } catch (err) {
     console.error('获取会话消息失败', err)
@@ -607,9 +611,8 @@ async function handleNewConversation() {
     const created = await createAgentConversation(agentId, '新对话')
     conversations.value.unshift(created.conversation)
     activeConversationId.value = created.conversation.id
-    // 清空消息并显示欢迎语
+    // 清空消息，McIntroduction 会自动显示
     messages.value = []
-    showWelcomeMessage()
   } catch (err) {
     console.error('新建会话失败', err)
   }
@@ -988,6 +991,19 @@ onBeforeRouteLeave((to, from, next) => {
   overflow-y: auto;
   padding: 1.5rem;
   padding-bottom: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.intro-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.intro-prompt {
+  margin-top: 1.5rem;
 }
 
 .bubble-list {

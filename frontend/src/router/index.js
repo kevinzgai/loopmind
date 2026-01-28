@@ -1,20 +1,20 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { isAuthenticated, token } from '@/modules/auth/stores/authStore.js'
-import { isAdmin } from '@/modules/auth/stores/authStore.js'
+import { isAuthenticated, token } from '@/stores/authStore.js'
+import { isAdmin } from '@/stores/authStore.js'
 
 // 导入页面组件
-const ChatPage = () => import('@/modules/chat/pages/ChatPage.vue')
-const AudioTestPage = () => import('@/modules/test/pages/AudioTestPage.vue')
-const TtsTestPage = () => import('@/modules/test/pages/TtsTestPage.vue')
-const AsrTestPage = () => import('@/modules/test/pages/AsrTestPage.vue')
-const AsrStreamPage = () => import('@/modules/test/pages/AsrStreamPage.vue')
-const HomePage = () => import('@/modules/home/pages/HomePage.vue')
-const LoginPage = () => import('@/modules/auth/pages/LoginPage.vue')
-const RegisterPage = () => import('@/modules/auth/pages/RegisterPage.vue')
-const AgentFormPage = () => import('@/modules/agent/pages/AgentFormPage.vue')
-const MyAgentsPage = () => import('@/modules/agent/pages/MyAgentsPage.vue')
-const AgentChatPage = () => import('@/modules/agent/pages/AgentChatPage.vue')
-const AdminSystemPage = () => import('@/modules/admin/pages/AdminSystemPage.vue')
+const ChatPage = () => import('@/views/chat/ChatPage.vue')
+const AudioTestPage = () => import('@/views/test/AudioTestPage.vue')
+const TtsTestPage = () => import('@/views/test/TtsTestPage.vue')
+const AsrTestPage = () => import('@/views/test/AsrTestPage.vue')
+const AsrStreamPage = () => import('@/views/test/AsrStreamPage.vue')
+const HomePage = () => import('@/views/home/HomePage.vue')
+const LoginPage = () => import('@/views/auth/LoginPage.vue')
+const RegisterPage = () => import('@/views/auth/RegisterPage.vue')
+const AgentFormPage = () => import('@/views/agent/AgentFormPage.vue')
+const MyAgentsPage = () => import('@/views/agent/MyAgentsPage.vue')
+const AgentChatPage = () => import('@/views/agent/AgentChatPage.vue')
+const AdminSystemPage = () => import('@/views/admin/AdminSystemPage.vue')
 
 const routes = [
   {

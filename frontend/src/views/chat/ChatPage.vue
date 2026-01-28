@@ -95,9 +95,9 @@ import { Volume2, VolumeX } from 'lucide-vue-next'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { Loader } from '@/components/ai-elements/loader'
-import XSender from '@/modules/chat/components/XSender.vue'
-import ChatHistoryDrawer from '@/modules/chat/components/ChatHistoryDrawer.vue'
-import PromptShortcut from '@/modules/chat/components/PromptShortcut.vue'
+import XSender from '@/components/chat/XSender.vue'
+import ChatHistoryDrawer from '@/components/chat/ChatHistoryDrawer.vue'
+import PromptShortcut from '@/components/chat/PromptShortcut.vue'
 
 const userId = 'user_' + Math.random().toString(36).substr(2, 9)
 const isOnline = ref(true)

@@ -123,8 +123,8 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { token } from '@/modules/auth/stores/authStore.js'
-import { getUserAgents, publishAgent, unpublishAgent, deleteAgent } from '../services/agentService.js'
+import { token } from '@/stores/authStore.js'
+import { getUserAgents, publishAgent, unpublishAgent, deleteAgent } from '@/services/agentService.js'
 
 const router = useRouter()
 

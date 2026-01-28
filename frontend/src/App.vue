@@ -30,7 +30,7 @@
 <script setup>
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { initializeAuth, logout, isAuthenticated, currentUser, isAdmin } from '@/modules/auth/stores/authStore.js'
+import { initializeAuth, logout, isAuthenticated, currentUser, isAdmin } from '@/stores/authStore.js'
 
 const router = useRouter()
 
