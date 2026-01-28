@@ -8,6 +8,7 @@ import ttsRoutes from './routes/ttsRoutes.js';
 import voiceRoutes from './routes/voiceRoutes.js';
 import asrRoutes from './routes/asrRoutes.js';
 import agentRoutes from './modules/agent/routes/agentRoutes.js';
+import knowledgeRoutes from './modules/knowledge/routes/knowledgeRoutes.js';
 import adminConfigRoutes from './routes/adminConfigRoutes.js';
 import { errorHandler } from './shared/middleware/errorHandler.js';
 import { errorHandler as authErrorHandler } from './shared/middleware/authMiddleware.js';
@@ -31,6 +32,7 @@ app.use('/apidoc', express.static(path.join(__dirname, '..', 'docs', 'apidoc')))
 // 路由
 app.use('/api/auth', authRoutes);
 app.use('/api/agent', agentRoutes);
+app.use('/api/knowledge', knowledgeRoutes);
 app.use('/api/admin', adminConfigRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/tts', ttsRoutes);

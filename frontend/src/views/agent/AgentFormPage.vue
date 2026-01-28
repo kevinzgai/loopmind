@@ -73,7 +73,8 @@ const form = reactive({
   personality: '',
   initialMemory: '',
   voice: 'xiaoxian',
-  speechRate: 150
+  speechRate: 150,
+  knowledgeBaseId: null
 })
 
 const isPublished = computed(() => {
@@ -103,6 +104,13 @@ const loadAgent = async () => {
     form.initialMemory = result.initialMemory || ''
     form.voice = result.voice || 'xiaoxian'
     form.speechRate = result.speechRate || 150
+    // 如果后端 populate 了 knowledgeBaseId，它是一个对象；否则是 ID 字符串
+    if (result.knowledgeBaseId && typeof result.knowledgeBaseId === 'object') {
+      // 优先取 id (字符串)，如果没有则取 _id 并转字符串
+      form.knowledgeBaseId = result.knowledgeBaseId.id || (result.knowledgeBaseId._id ? result.knowledgeBaseId._id.toString() : null)
+    } else {
+      form.knowledgeBaseId = result.knowledgeBaseId || null
+    }
 
   } catch (err) {
     error.value = err.message
@@ -118,16 +126,25 @@ const handleSubmit = async () => {
     error.value = null
 
     if (isEditMode.value) {
-      await updateAgent(agentId, {
+      const updateData = {
         name: form.name,
         description: form.description,
         avatar: form.avatar,
-        model: form.model,
-        personality: form.personality,
-        initialMemory: form.initialMemory,
-        voice: form.voice,
-        speechRate: form.speechRate
-      }, token.value)
+        knowledgeBaseId: form.knowledgeBaseId
+      }
+
+      // 如果未发布，才允许更新核心配置
+      if (!isPublished.value) {
+        Object.assign(updateData, {
+          model: form.model,
+          personality: form.personality,
+          initialMemory: form.initialMemory,
+          voice: form.voice,
+          speechRate: form.speechRate
+        })
+      }
+
+      await updateAgent(agentId, updateData, token.value)
       console.log('✅ 智能体更新成功')
     } else {
       await createAgent({
@@ -138,7 +155,8 @@ const handleSubmit = async () => {
         personality: form.personality,
         initialMemory: form.initialMemory,
         voice: form.voice,
-        speechRate: form.speechRate
+        speechRate: form.speechRate,
+        knowledgeBaseId: form.knowledgeBaseId
       }, token.value)
       console.log('✅ 智能体创建成功')
     }

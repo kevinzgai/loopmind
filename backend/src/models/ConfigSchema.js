@@ -43,6 +43,11 @@ const configSchema = new mongoose.Schema(
       baseURL: { type: String, default: '' },
       model: { type: String, default: '' }
     },
+    embedding: {
+      apiKey: { type: String, default: '' },
+      baseURL: { type: String, default: '' },
+      model: { type: String, default: 'text-embedding-3-small' }
+    },
     seedAsr: {
       appId: { type: String, default: '' },
       apiKey: { type: String, default: '' },

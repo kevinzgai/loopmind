@@ -62,16 +62,21 @@ export async function getUserAgents(userId, options = {}) {
  */
 export async function getPublishedAgents(options = {}) {
   try {
-    const { page = 1, limit = 10 } = options;
+    const { page = 1, limit = 10, category } = options;
     const skip = (page - 1) * limit;
 
-    const agents = await Agent.find({ isPublished: true })
+    const query = { isPublished: true };
+    if (category && category !== '全部') {
+      query.category = category;
+    }
+
+    const agents = await Agent.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .lean();
 
-    const total = await Agent.countDocuments({ isPublished: true });
+    const total = await Agent.countDocuments(query);
 
     return {
       agents: agents.map(agent => ({
@@ -94,7 +99,7 @@ export async function getPublishedAgents(options = {}) {
  */
 export async function getAgent(agentId) {
   try {
-    const agent = await Agent.findById(agentId);
+    const agent = await Agent.findById(agentId).populate('knowledgeBaseId', 'name');
 
     if (!agent) {
       throw new Error('智能体不存在');

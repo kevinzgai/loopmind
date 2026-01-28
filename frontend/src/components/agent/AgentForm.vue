@@ -88,6 +88,39 @@
       </div>
 
       <div class="form-group">
+        <label for="category">
+          <span class="label-text">分类</span>
+          <span class="label-required">*</span>
+        </label>
+        <div class="select-wrapper">
+          <select v-model="form.category" id="category" :disabled="isSubmitting" class="form-select" required>
+            <option value="" disabled>请选择分类</option>
+            <option v-for="cat in AGENT_CATEGORIES" :key="cat.value" :value="cat.value">
+              {{ cat.icon }} {{ cat.label }}
+            </option>
+          </select>
+          <div class="select-icon">📁</div>
+        </div>
+        <div class="helper-text">选择最适合你的智能体的分类</div>
+      </div>
+
+      <div class="form-group">
+        <label for="knowledgeBase">
+          <span class="label-text">知识库</span>
+        </label>
+        <div class="select-wrapper">
+          <select v-model="form.knowledgeBaseId" id="knowledgeBase" :disabled="isSubmitting" class="form-select">
+            <option :value="null">无知识库</option>
+            <option v-for="kb in knowledgeBases" :key="kb.id" :value="kb.id">
+              📚 {{ kb.name }} ({{ kb.documentCount }} 篇文档)
+            </option>
+          </select>
+          <div class="select-icon">📖</div>
+        </div>
+        <div class="helper-text">关联知识库后，智能体将能够基于文档内容回答问题</div>
+      </div>
+
+      <div class="form-group">
         <label>
           <span class="label-text">头像</span>
         </label>
@@ -385,8 +418,10 @@
 </template>
 
 <script setup>
-import { ref, watch, reactive } from 'vue'
+import { ref, watch, reactive, onMounted } from 'vue'
 import { generateAgentConfig } from '@/services/agentService.js'
+import { getKnowledgeBases } from '@/services/knowledgeService.js'
+import { AGENT_CATEGORIES } from '@/constants/agent.js'
 
 const props = defineProps({
   modelValue: {
@@ -421,7 +456,22 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'submit', 'cancel', 'unpublish'])
 
-const form = reactive({ ...props.modelValue })
+const knowledgeBases = ref([])
+
+const form = reactive({ 
+  category: '生活',
+  knowledgeBaseId: null,
+  ...props.modelValue 
+})
+
+onMounted(async () => {
+  try {
+    const res = await getKnowledgeBases()
+    knowledgeBases.value = res.kbs
+  } catch (error) {
+    console.error('获取知识库列表失败:', error)
+  }
+})
 const avatarType = ref('emoji')
 const isPreviewingVoice = ref(false)
 
@@ -439,6 +489,7 @@ const handleAutoGenerate = async () => {
     // Auto fill form
     if (config.name) form.name = config.name
     if (config.description) form.description = config.description
+    if (config.category) form.category = config.category
     if (config.personality) form.personality = config.personality
     if (config.initialMemory) form.initialMemory = config.initialMemory
     if (config.avatar) {

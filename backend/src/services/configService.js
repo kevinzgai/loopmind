@@ -78,6 +78,11 @@ export async function ensureConfigInitialized() {
       baseURL: OLLAMA_BASE_URL || '',
       model: OLLAMA_MODEL || ''
     },
+    embedding: {
+      apiKey: '',
+      baseURL: '',
+      model: 'text-embedding-3-small'
+    },
     seedAsr: {
       appId: '',
       apiKey: '',
@@ -141,6 +146,11 @@ export async function getConfigMasked() {
       baseURL: cfg.ollama?.baseURL,
       model: cfg.ollama?.model
     },
+    embedding: {
+      apiKey: mask(cfg.embedding?.apiKey),
+      baseURL: cfg.embedding?.baseURL,
+      model: cfg.embedding?.model
+    },
     seedAsr: {
       appId: cfg.seedAsr?.appId || '',
       apiKey: mask(cfg.seedAsr?.apiKey || ''),
@@ -196,6 +206,11 @@ export async function getConfigUnmasked() {
       apiKey: cfg.ollama?.apiKey,
       baseURL: cfg.ollama?.baseURL,
       model: cfg.ollama?.model
+    },
+    embedding: {
+      apiKey: cfg.embedding?.apiKey,
+      baseURL: cfg.embedding?.baseURL,
+      model: cfg.embedding?.model
     },
     seedAsr: {
       appId: cfg.seedAsr?.appId || '',
@@ -257,6 +272,12 @@ export async function updateConfig(payload) {
     cfg.ollama.apiKey = payload.ollama.apiKey ?? cfg.ollama.apiKey;
     cfg.ollama.baseURL = payload.ollama.baseURL ?? cfg.ollama.baseURL;
     cfg.ollama.model = payload.ollama.model ?? cfg.ollama.model;
+  }
+  if (payload.embedding) {
+    if (!cfg.embedding) cfg.embedding = {};
+    cfg.embedding.apiKey = payload.embedding.apiKey ?? cfg.embedding.apiKey;
+    cfg.embedding.baseURL = payload.embedding.baseURL ?? cfg.embedding.baseURL;
+    cfg.embedding.model = payload.embedding.model ?? cfg.embedding.model;
   }
   if (payload.seedAsr) {
     cfg.seedAsr.appId = payload.seedAsr.appId ?? cfg.seedAsr.appId;

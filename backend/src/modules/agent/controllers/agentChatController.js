@@ -4,6 +4,8 @@ import {
     addMessageToHistory
 } from '../../../services/aiService.js';
 import { getAgent, getOrCreateMemory, updateMemory, incrementUsageCount } from '../services/agentService.js';
+import { searchKnowledge } from '../../knowledge/services/knowledgeService.js';
+import { generateEmbedding } from '../../knowledge/services/embeddingService.js';
 import { 
     getAgentConversationMessages, 
     appendAgentConversationMessages,
@@ -80,8 +82,59 @@ export async function handleGetAgentChatHistory(req, res) {
 }
 
 /**
+ * 获取 RAG 上下文
+ */
+async function getRAGContext(agent, userMessage) {
+    if (agent.knowledgeBaseId && userMessage) {
+        try {
+            // 提取知识库 ID（处理 populate 后的对象情况）
+            const kbId = (typeof agent.knowledgeBaseId === 'object' && agent.knowledgeBaseId !== null) 
+                ? (agent.knowledgeBaseId.id || agent.knowledgeBaseId._id) 
+                : agent.knowledgeBaseId;
+
+            console.log('🔍 正在检索知识库:', kbId);
+            const queryVector = await generateEmbedding(userMessage);
+            const chunks = await searchKnowledge(kbId, queryVector, 3);
+            
+            if (chunks && chunks.length > 0) {
+                const context = chunks.map(c => c.content).join('\n---\n');
+                console.log('✅ 知识库检索完成，注入上下文');
+                return `\n\n请参考以下背景知识来回答用户的问题。如果背景知识中没有相关信息，请诚实告知用户，不要编造。\n\n背景知识：\n${context}`;
+            }
+        } catch (error) {
+            console.warn('⚠️ 知识库检索失败:', error.message);
+        }
+    }
+    return '';
+}
+
+/**
+ * 生成基础系统提示词（人设 + 记忆，不含 RAG）
+ */
+async function getBaseSystemPrompt(agent, userId) {
+    let systemPrompt = `你是 ${agent.name}`;
+    
+    if (agent.personality) {
+        systemPrompt += `\n\n人设：${agent.personality}`;
+    }
+    
+    if (agent.initialMemory) {
+        systemPrompt += `\n\n初始记忆：${agent.initialMemory}`;
+    }
+
+    // 获取用户历史记忆
+    try {
+        const memory = await getOrCreateMemory(agent.id, userId);
+        if (memory && memory.content) {
+            systemPrompt += `\n\n与用户的历史记忆：${memory.content}`;
+        }
+    } catch (error) {}
+
+    return systemPrompt;
+}
+
+/**
  * 处理智能体聊天消息（支持流式响应）
- * POST /api/agent/:agentId/chat
  */
 export async function handleAgentChat(req, res) {
     try {
@@ -109,7 +162,7 @@ export async function handleAgentChat(req, res) {
         if (dbUserId) {
             // 已登录：从数据库加载历史
             const dbHistory = await getAgentConversationMessages(dbUserId, agentId);
-            conversationHistory = [...dbHistory]; // Copy to avoid mutation issues if any
+            conversationHistory = [...dbHistory];
         } else {
             // 未登录：从内存加载历史
             conversationHistory = getConversationHistory(effectiveUserId, `agent_${agentId}`);
@@ -118,29 +171,7 @@ export async function handleAgentChat(req, res) {
         // 如果是新对话（没有系统提示词），添加系统提示词
         const hasSystemPrompt = conversationHistory.some(msg => msg.role === 'system');
         if (!hasSystemPrompt) {
-            let systemPrompt = `你是 ${agent.name}`;
-            
-            if (agent.personality) {
-                systemPrompt += `\n\n人设：${agent.personality}`;
-            }
-            
-            if (agent.initialMemory) {
-                systemPrompt += `\n\n初始记忆：${agent.initialMemory}`;
-            }
-            
-            // 获取用户记忆（如果存在）
-            try {
-                // 只有登录用户才有持久化记忆？ getOrCreateMemory 需要 userId 吗？
-                // 假设 memoryService 也依赖 userId。如果是匿名用户，可能没有记忆或使用临时ID。
-                // 暂时尝试获取，失败忽略。
-                const memory = await getOrCreateMemory(agentId, effectiveUserId);
-                if (memory && memory.content) {
-                    systemPrompt += `\n\n与用户的历史记忆：${memory.content}`;
-                }
-            } catch (error) {
-                // console.warn('获取用户记忆失败 (可能是匿名用户):', error.message);
-            }
-            
+            const systemPrompt = await getBaseSystemPrompt(agent, effectiveUserId);
             const systemMsg = { role: "system", content: systemPrompt };
             
             if (dbUserId) {
@@ -148,13 +179,14 @@ export async function handleAgentChat(req, res) {
             } else {
                 addMessageToHistory(effectiveUserId, systemMsg, `agent_${agentId}`);
             }
-            // 确保 memory context 在 conversationHistory 中
             if (!conversationHistory.some(msg => msg.role === 'system')) {
                  conversationHistory.push(systemMsg);
             }
-            
             console.log('📝 系统提示词已设置');
         }
+        
+        // RAG 检索
+        const ragContext = await getRAGContext(agent, message);
         
         // 添加用户消息
         const userMsg = { role: "user", content: message };
@@ -165,14 +197,23 @@ export async function handleAgentChat(req, res) {
         } else {
             addMessageToHistory(effectiveUserId, userMsg, `agent_${agentId}`);
         }
-        
-        // 设置流式响应头
+
         res.setHeader('Content-Type', 'text/plain; charset=utf-8');
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('Connection', 'keep-alive');
         
-        // 调用 AI 流式响应
-        const streamResponse = await callAIStream(conversationHistory, agent.model);
+        // 构造发送给 AI 的消息列表（注入 Context）
+        const messagesForAI = [...conversationHistory];
+        if (ragContext) {
+            // 将 Context 附加到最后一条用户消息中
+            const lastMsgIndex = messagesForAI.length - 1;
+            messagesForAI[lastMsgIndex] = {
+                ...messagesForAI[lastMsgIndex],
+                content: messagesForAI[lastMsgIndex].content + ragContext
+            };
+        }
+        
+        const streamResponse = await callAIStream(messagesForAI, agent.model);
         
         let fullResponse = "";
         
@@ -189,7 +230,6 @@ export async function handleAgentChat(req, res) {
         
         if (dbUserId) {
             newMessages.push(assistantMsg);
-            // 批量保存到数据库
             await appendAgentConversationMessages(dbUserId, agentId, newMessages);
         } else {
             addMessageToHistory(effectiveUserId, assistantMsg, `agent_${agentId}`);
@@ -198,12 +238,8 @@ export async function handleAgentChat(req, res) {
         // 更新智能体使用次数
         try {
             await incrementUsageCount(agentId);
-        } catch (error) {
-            // console.warn('更新使用统计失败:', error.message);
-        }
+        } catch (error) {}
         
-        // 更新用户记忆（异步处理，不阻塞响应）
-        // 仅对登录用户更新记忆？或者匿名用户也更新（存疑，因为 getOrCreateMemory 可能失败）
         if (dbUserId) {
             updateUserMemory(agentId, dbUserId, message, fullResponse).catch(error => {
                 console.warn('更新用户记忆失败:', error.message);
@@ -362,19 +398,15 @@ export async function handleAgentChatInConversation(req, res) {
 
         const hasSystemPrompt = conversationHistory.some(msg => msg.role === 'system');
         if (!hasSystemPrompt) {
-            let systemPrompt = `你是 ${agent.name}`;
-            if (agent.personality) systemPrompt += `\n\n人设：${agent.personality}`;
-            if (agent.initialMemory) systemPrompt += `\n\n初始记忆：${agent.initialMemory}`;
-            try {
-                const memory = await getOrCreateMemory(agentId, dbUserId);
-                if (memory && memory.content) {
-                    systemPrompt += `\n\n与用户的历史记忆：${memory.content}`;
-                }
-            } catch {}
+            const systemPrompt = await getBaseSystemPrompt(agent, dbUserId);
             const systemMsg = { role: 'system', content: systemPrompt };
             newMessages.push(systemMsg);
             conversationHistory.push(systemMsg);
+            console.log('📝 系统提示词已设置');
         }
+
+        // RAG 检索
+        const ragContext = await getRAGContext(agent, message);
 
         const userMsg = { role: 'user', content: message };
         newMessages.push(userMsg);
@@ -384,7 +416,18 @@ export async function handleAgentChatInConversation(req, res) {
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('Connection', 'keep-alive');
 
-        const streamResponse = await callAIStream(conversationHistory, agent.model);
+        // 构造发送给 AI 的消息列表（注入 Context）
+        const messagesForAI = [...conversationHistory];
+        if (ragContext) {
+            // 将 Context 附加到最后一条用户消息中
+            const lastMsgIndex = messagesForAI.length - 1;
+            messagesForAI[lastMsgIndex] = {
+                ...messagesForAI[lastMsgIndex],
+                content: messagesForAI[lastMsgIndex].content + ragContext
+            };
+        }
+
+        const streamResponse = await callAIStream(messagesForAI, agent.model);
         let fullResponse = '';
         for await (const chunk of streamResponse) {
             const content = chunk.choices[0]?.delta?.content || '';

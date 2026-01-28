@@ -45,9 +45,13 @@ export async function getUserAgents(token, page = 1, limit = 10) {
 /**
  * 获取已发布的智能体列表（广场）
  */
-export async function getPublishedAgents(page = 1, limit = 10) {
+export async function getPublishedAgents(page = 1, limit = 10, category = '全部') {
   try {
-    return await apiService.get(`${API_BASE}/published`, { page, limit })
+    const params = { page, limit }
+    if (category && category !== '全部') {
+      params.category = category
+    }
+    return await apiService.get(`${API_BASE}/published`, params)
   } catch (error) {
     // 错误已经在 apiService 中处理
     throw error

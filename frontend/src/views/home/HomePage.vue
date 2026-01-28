@@ -116,20 +116,33 @@
           </div>
           <div class="category-tabs">
             <button
-              v-for="cat in categories"
-              :key="cat"
-              @click="selectedCategory = cat"
-              :class="{ active: selectedCategory === cat }"
+              @click="handleCategoryChange('全部')"
+              :class="{ active: selectedCategory === '全部' }"
               class="category-tab"
             >
-              {{ cat }}
+              <span class="tab-icon">🌐</span>
+              <span class="tab-text">全部</span>
+            </button>
+            <button
+              v-for="cat in AGENT_CATEGORIES"
+              :key="cat.value"
+              @click="handleCategoryChange(cat.value)"
+              :class="{ active: selectedCategory === cat.value }"
+              class="category-tab"
+            >
+              <span class="tab-icon">{{ cat.icon }}</span>
+              <span class="tab-text">{{ cat.label }}</span>
             </button>
           </div>
         </div>
       </div>
 
       <div class="agents-section">
-        <div class="agents-grid">
+        <div v-if="isLoadingAgents" class="loading-state">
+          <div class="loading-spinner"></div>
+          <p>加载中...</p>
+        </div>
+        <div v-else class="agents-grid">
           <div v-for="agent in displayedAgents" :key="agent.id" class="agent-item">
             <div class="agent-card">
               <div class="agent-card-bg"></div>
@@ -234,28 +247,33 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { isAuthenticated, isAdmin } from '@/stores/authStore.js'
 import { getPublishedAgents } from '@/services/agentService.js'
+import { AGENT_CATEGORIES } from '@/constants/agent.js'
 
 const agents = ref([])
 const selectedCategory = ref('全部')
-const categories = ref(['全部', '编程', '写作', '生活', '教育', '娱乐'])
+const isLoadingAgents = ref(false)
 
-const displayedAgents = computed(() => {
-  if (selectedCategory.value === '全部') {
-    return agents.value
-  }
-  return agents.value.filter(agent => agent.category === selectedCategory.value)
-})
+const displayedAgents = computed(() => agents.value)
 
 const loadAgents = async () => {
   try {
-    const result = await getPublishedAgents(1, 12)
+    isLoadingAgents.value = true
+    const result = await getPublishedAgents(1, 12, selectedCategory.value)
     agents.value = result.agents
   } catch (error) {
     console.error('❌ 加载智能体失败:', error.message)
+  } finally {
+    isLoadingAgents.value = false
   }
+}
+
+const handleCategoryChange = (cat) => {
+  if (selectedCategory.value === cat) return
+  selectedCategory.value = cat
+  loadAgents()
 }
 
 onMounted(() => {
@@ -716,6 +734,9 @@ onMounted(() => {
 }
 
 .category-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   padding: 0.75rem 1.5rem;
   border: 2px solid #e0e0e0;
   background: white;
@@ -727,6 +748,17 @@ onMounted(() => {
   color: #666;
   position: relative;
   overflow: hidden;
+}
+
+.tab-icon {
+  font-size: 1.2rem;
+  position: relative;
+  z-index: 1;
+}
+
+.tab-text {
+  position: relative;
+  z-index: 1;
 }
 
 .category-tab::before {
@@ -952,6 +984,30 @@ onMounted(() => {
 
 .agent-btn:hover .btn-arrow {
   transform: translateX(5px);
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem;
+  color: #667eea;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .empty-state {

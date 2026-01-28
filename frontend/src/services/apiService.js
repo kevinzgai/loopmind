@@ -79,13 +79,13 @@ export default {
   },
   
   // POST 请求
-  post(url, data = {}) {
-    return apiClient.post(url, data)
+  post(url, data = {}, options = {}) {
+    return apiClient.post(url, data, options)
   },
   
   // PUT 请求
-  put(url, data = {}) {
-    return apiClient.put(url, data)
+  put(url, data = {}, options = {}) {
+    return apiClient.put(url, data, options)
   },
   
   // DELETE 请求

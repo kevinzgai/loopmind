@@ -51,6 +51,14 @@
         </div>
         <div 
           class="nav-item" 
+          :class="{ active: activeTab === 'embedding' }"
+          @click="activeTab = 'embedding'"
+        >
+          <span class="icon">🧩</span>
+          Embedding 模型
+        </div>
+        <div 
+          class="nav-item" 
           :class="{ active: activeTab === 'moonshot' }"
           @click="activeTab = 'moonshot'"
         >
@@ -89,6 +97,15 @@
         >
           <span class="icon">🎙️</span>
           Seed ASR
+        </div>
+        <div class="nav-divider">RAG 增强</div>
+        <div 
+          class="nav-item" 
+          :class="{ active: activeTab === 'embedding' }"
+          @click="activeTab = 'embedding'"
+        >
+          <span class="icon">🔍</span>
+          向量模型 (Embedding)
         </div>
       </div>
 
@@ -266,6 +283,50 @@
               </select>
               <input type="text" v-model="form.glm.model" placeholder="或自定义填写模型标识" />
               <p class="help-text">选择GLM模型版本</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Embedding 设置 -->
+        <div v-show="activeTab === 'embedding'" class="config-section">
+          <div class="section-header">
+            <h2>Embedding 模型配置</h2>
+            <p>配置用于知识库向量化的 Embedding 模型 (支持 OpenAI 兼容接口)</p>
+          </div>
+          <div class="card">
+            <div class="field">
+              <label>API Key</label>
+              <div class="input-group">
+                <input 
+                  :type="showEmbeddingKey ? 'text' : 'password'" 
+                  v-model="form.embedding.apiKey" 
+                  placeholder="请输入 API Key"
+                  autocomplete="new-password"
+                />
+                <button class="toggle-btn" @click="showEmbeddingKey = !showEmbeddingKey">
+                  {{ showEmbeddingKey ? '隐藏' : '显示' }}
+                </button>
+              </div>
+            </div>
+            <div class="field">
+              <label>Base URL</label>
+              <input type="text" v-model="form.embedding.baseURL" placeholder="例如: https://api.siliconflow.cn/v1" />
+              <p class="help-text">
+                推荐国产地址：<br>
+                硅基流动: https://api.siliconflow.cn/v1<br>
+                智谱AI: https://open.bigmodel.cn/api/paas/v4<br>
+                阿里DashScope: https://dashscope.aliyuncs.com/compatible-mode/v1
+              </p>
+            </div>
+            <div class="field">
+              <label>Model</label>
+              <select v-model="form.embedding.model" class="select-input">
+                <option v-for="model in embeddingModels" :key="model.value" :value="model.value">
+                  {{ model.label }}
+                </option>
+              </select>
+              <input type="text" v-model="form.embedding.model" placeholder="或自定义填写模型标识" />
+              <p class="help-text">选择 Embedding 模型版本</p>
             </div>
           </div>
         </div>
@@ -453,6 +514,40 @@
           </div>
         </div>
 
+        <!-- Embedding 设置 -->
+        <div v-show="activeTab === 'embedding'" class="config-section">
+          <div class="section-header">
+            <h2>向量模型 (Embedding) 配置</h2>
+            <p>配置用于知识库 RAG 的向量化模型。建议使用阿里云 DashScope 或 OpenAI。</p>
+          </div>
+          <div class="card">
+            <div class="field">
+              <label>API Key</label>
+              <div class="input-group">
+                <input 
+                  :type="showEmbeddingKey ? 'text' : 'password'" 
+                  v-model="form.embedding.apiKey" 
+                  placeholder="请输入 API Key"
+                  autocomplete="new-password"
+                />
+                <button class="toggle-btn" @click="showEmbeddingKey = !showEmbeddingKey">
+                  {{ showEmbeddingKey ? '隐藏' : '显示' }}
+                </button>
+              </div>
+            </div>
+            <div class="field">
+              <label>Base URL</label>
+              <input type="text" v-model="form.embedding.baseURL" placeholder="例如: https://dashscope.aliyuncs.com/compatible-mode/v1" />
+              <p class="help-text">如果不填写，将默认使用 OpenAI 官方地址</p>
+            </div>
+            <div class="field">
+              <label>Model</label>
+              <input type="text" v-model="form.embedding.model" placeholder="例如: text-embedding-v3" />
+              <p class="help-text">常用模型：text-embedding-v3 (阿里), text-embedding-3-small (OpenAI)</p>
+            </div>
+          </div>
+        </div>
+
         <!-- 底部操作栏 -->
         <div class="actions-bar">
           <div v-if="message" class="status-message success">
@@ -486,6 +581,7 @@ const form = ref({
   modelscope: { apiKey: '', baseURL: '', model: 'Qwen/Qwen2.5-72B-Instruct' },
   minimax: { apiKey: '', baseURL: '', model: 'abab6.5s-chat' },
   ollama: { apiKey: '', baseURL: 'http://localhost:11434/v1', model: 'llama3.1:8b' },
+  embedding: { apiKey: '', baseURL: '', model: 'text-embedding-3-small' },
   seedAsr: { appId: '', apiKey: '', apiSecret: '', apiUrl: '', resourceId: '', audioConfig: {} }
 })
 
@@ -518,6 +614,17 @@ const glmModels = [
   { label: 'GLM-4', value: 'glm-4' }
 ]
 
+const embeddingModels = [
+  { label: 'OpenAI text-embedding-3-small', value: 'text-embedding-3-small' },
+  { label: 'OpenAI text-embedding-3-large', value: 'text-embedding-3-large' },
+  { label: '硅基流动 BGE-M3 (BAAI/bge-m3)', value: 'BAAI/bge-m3' },
+  { label: '硅基流动 BGE-Large-Zh (BAAI/bge-large-zh-v1.5)', value: 'BAAI/bge-large-zh-v1.5' },
+  { label: '智谱 AI Embedding-3', value: 'embedding-3' },
+  { label: '智谱 AI Embedding-2', value: 'embedding-2' },
+  { label: '阿里通义千问 Text-Embedding-V3', value: 'text-embedding-v3' },
+  { label: '阿里通义千问 Text-Embedding-V2', value: 'text-embedding-v2' }
+]
+
 const moonshotModels = [
   { label: 'Moonshot-v1-8k', value: 'moonshot-v1-8k' },
   { label: 'Moonshot-v1-32k', value: 'moonshot-v1-32k' },
@@ -541,6 +648,7 @@ const showDeepseekKey = ref(false)
 const showQwenKey = ref(false)
 const showDoubaoKey = ref(false)
 const showGlmKey = ref(false)
+const showEmbeddingKey = ref(false)
 const showMoonshotKey = ref(false)
 const showModelscopeKey = ref(false)
 const showMinimaxKey = ref(false)
@@ -592,6 +700,11 @@ async function load() {
         form.value.ollama.baseURL = res.config.ollama.baseURL
         form.value.ollama.model = res.config.ollama.model
         form.value.ollama.apiKey = res.config.ollama.apiKey || ''
+      }
+      if (res.config.embedding) {
+        form.value.embedding.baseURL = res.config.embedding.baseURL || ''
+        form.value.embedding.model = res.config.embedding.model || 'text-embedding-3-small'
+        form.value.embedding.apiKey = res.config.embedding.apiKey || ''
       }
       form.value.seedAsr = res.config.seedAsr || form.value.seedAsr
     }

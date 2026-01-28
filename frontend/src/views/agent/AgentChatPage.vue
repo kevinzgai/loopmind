@@ -33,7 +33,12 @@
           </div>
           <div class="agent-details">
             <h1 class="agent-name">{{ agent.name }}</h1>
-            <p class="agent-model">{{ getModelName(agent.model) }}</p>
+            <div class="agent-meta-row">
+              <p class="agent-model">{{ getModelName(agent.model) }}</p>
+              <span v-if="agent.knowledgeBaseId && agent.knowledgeBaseId.name" class="kb-badge" title="已关联知识库">
+                📚 {{ agent.knowledgeBaseId.name }}
+              </span>
+            </div>
           </div>
         </div>
         
@@ -811,6 +816,23 @@ onBeforeRouteLeave((to, from, next) => {
   text-align: center;
 }
 
+.agent-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+
+.kb-badge {
+  background-color: #ebf8ff;
+  color: #2b6cb0;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  border: 1px solid #bee3f8;
+  white-space: nowrap;
+}
+
 .agent-name {
   font-size: 1.6rem;
   font-weight: bold;
@@ -1009,9 +1031,11 @@ onBeforeRouteLeave((to, from, next) => {
 .bubble-list {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 0.75rem;
   max-width: 900px;
   margin: 0 auto;
+  width: 100%;
 }
 
 .bubble {

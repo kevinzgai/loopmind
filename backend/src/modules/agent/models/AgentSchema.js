@@ -18,6 +18,11 @@ const agentSchema = new mongoose.Schema(
       maxlength: [500, '智能体描述最多 500 个字符']
     },
     avatar: String,
+    category: {
+      type: String,
+      default: '生活',
+      index: true
+    },
 
     // 创建者信息
     creatorId: {
@@ -52,6 +57,11 @@ const agentSchema = new mongoose.Schema(
     speechRate: {
       type: Number,
       default: 150
+    },
+    knowledgeBaseId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'KnowledgeBase',
+      index: true
     },
 
     // 发布状态

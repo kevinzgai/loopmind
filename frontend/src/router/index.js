@@ -4,10 +4,6 @@ import { isAdmin } from '@/stores/authStore.js'
 
 // 导入页面组件
 const ChatPage = () => import('@/views/chat/ChatPage.vue')
-const AudioTestPage = () => import('@/views/test/AudioTestPage.vue')
-const TtsTestPage = () => import('@/views/test/TtsTestPage.vue')
-const AsrTestPage = () => import('@/views/test/AsrTestPage.vue')
-const AsrStreamPage = () => import('@/views/test/AsrStreamPage.vue')
 const HomePage = () => import('@/views/home/HomePage.vue')
 const LoginPage = () => import('@/views/auth/LoginPage.vue')
 const RegisterPage = () => import('@/views/auth/RegisterPage.vue')
@@ -15,6 +11,7 @@ const AgentFormPage = () => import('@/views/agent/AgentFormPage.vue')
 const MyAgentsPage = () => import('@/views/agent/MyAgentsPage.vue')
 const AgentChatPage = () => import('@/views/agent/AgentChatPage.vue')
 const AdminSystemPage = () => import('@/views/admin/AdminSystemPage.vue')
+const KnowledgePage = () => import('@/views/knowledge/KnowledgePage.vue')
 
 const routes = [
   {
@@ -48,38 +45,6 @@ const routes = [
     meta: {
       title: 'AI 对话',
       requiresAuth: true
-    }
-  },
-  {
-    path: '/audio-test',
-    name: 'AudioTest',
-    component: AudioTestPage,
-    meta: {
-      title: '录音测试'
-    }
-  },
-  {
-    path: '/tts-test',
-    name: 'TtsTest',
-    component: TtsTestPage,
-    meta: {
-      title: 'TTS 测试'
-    }
-  },
-  {
-    path: '/asr-test',
-    name: 'AsrTest',
-    component: AsrTestPage,
-    meta: {
-      title: 'ASR 语音识别测试'
-    }
-  },
-  {
-    path: '/asr-stream',
-    name: 'AsrStream',
-    component: AsrStreamPage,
-    meta: {
-      title: '实时语音识别'
     }
   },
   {
@@ -124,6 +89,15 @@ const routes = [
     component: MyAgentsPage,
     meta: {
       title: '我的智能体',
+      requiresAuth: true
+    }
+  },
+  {
+    path: '/knowledge',
+    name: 'Knowledge',
+    component: KnowledgePage,
+    meta: {
+      title: '知识库管理',
       requiresAuth: true
     }
   },

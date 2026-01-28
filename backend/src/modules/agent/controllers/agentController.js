@@ -40,6 +40,7 @@ Generate a valid JSON configuration for an AI agent based on the request.
 The JSON must have these fields:
 - name: A creative name (string)
 - description: A short description (string, max 100 chars)
+- category: Suggest a category (string), choose from: '编程', '写作', '生活', '教育', '娱乐', '职场', '创意'.
 - personality: A detailed system prompt defining the agent's role, style, and constraints (string)
 - initialMemory: A greeting message (string)
 - avatar: A single emoji char (string)
@@ -80,7 +81,7 @@ Return ONLY the raw JSON string. Do not include markdown formatting like \`\`\`j
 export async function handleCreateAgent(req, res, next) {
   try {
     const userId = req.user.userId;
-    const { name, description, avatar, model, personality, initialMemory, voice, speechRate } = req.body;
+    const { name, description, avatar, category, model, personality, initialMemory, voice, speechRate, knowledgeBaseId } = req.body;
 
     // 验证必填字段
     if (!name) {
@@ -96,11 +97,13 @@ export async function handleCreateAgent(req, res, next) {
       name,
       description,
       avatar,
+      category: category || '生活',
       model: model || 'deepseek',
       personality,
       initialMemory,
       voice: voice || 'xiaoxian',
-      speechRate: speechRate || 150
+      speechRate: speechRate || 150,
+      knowledgeBaseId
     });
 
     res.status(201).json({
@@ -143,11 +146,12 @@ export async function handleGetUserAgents(req, res, next) {
  */
 export async function handleGetPublishedAgents(req, res, next) {
   try {
-    const { page = 1, limit = 10 } = req.query;
+    const { page = 1, limit = 10, category } = req.query;
 
     const result = await getPublishedAgents({
       page: parseInt(page),
-      limit: parseInt(limit)
+      limit: parseInt(limit),
+      category
     });
 
     res.status(200).json({
