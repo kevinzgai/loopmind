@@ -31,7 +31,7 @@
       </div>
 
       <!-- 消息区域 -->
-      <div class="messages-area" ref="messagesArea">
+      <div class="messages-area" ref="messagesArea" @scroll="handleScroll">
         <div v-if="messages.length === 0" class="welcome-section">
           <div class="welcome-icon">{{ agent?.avatar || '🤖' }}</div>
           <p class="welcome-text">{{ agent?.initialMemory || 'Hi! 有什么我可以帮你的吗？' }}</p>
@@ -45,11 +45,12 @@
           >
             <div class="bubble-content" v-html="renderMessageContent(message.content)"></div>
           </div>
-          <div v-if="isLoading" class="bubble bubble-assistant">
+          <div v-if="isLoading" ref="loadingRef" class="bubble bubble-assistant">
             <div class="bubble-content">
               <Loader />
             </div>
           </div>
+          <div ref="bottomAnchor" style="height: 1px; width: 100%;"></div>
         </div>
       </div>
 
@@ -107,15 +108,42 @@ const getAnonymousUserId = () => {
 }
 const userId = getAnonymousUserId()
 
+const bottomAnchor = ref(null)
+const loadingRef = ref(null)
+
 // 滚动到底部
+const shouldAutoScroll = ref(true)
+
+const handleScroll = (e) => {
+  const { scrollTop, scrollHeight, clientHeight } = e.target
+  // 如果距离底部小于 100px，则开启自动滚动
+  shouldAutoScroll.value = scrollHeight - scrollTop - clientHeight < 100
+}
+
 const scrollToBottom = async () => {
+  if (!shouldAutoScroll.value) return
+  
   await nextTick()
+
+  // 优先滚动到 Loading 元素
+  if (isLoading.value && loadingRef.value) {
+    loadingRef.value.scrollIntoView({ behavior: 'auto', block: 'end' })
+    return
+  }
+
   if (messagesArea.value) {
     messagesArea.value.scrollTop = messagesArea.value.scrollHeight
   }
+  
+  // 作为双重保险
+  if (bottomAnchor.value) {
+    bottomAnchor.value.scrollIntoView({ behavior: 'auto', block: 'end' })
+  }
 }
 
-watch(messages, scrollToBottom, { deep: true })
+watch(messages, () => {
+  scrollToBottom()
+}, { deep: true })
 
 // 加载智能体
 const loadAgent = async () => {
@@ -141,6 +169,7 @@ const sendMessage = async () => {
   
   const aiMessageId = Date.now() + 1
   messages.value.push({ id: aiMessageId, role: 'assistant', content: '' })
+  shouldAutoScroll.value = true
   isLoading.value = true
 
   try {
@@ -161,6 +190,7 @@ const sendMessage = async () => {
       if (done) break
       fullResponse += decoder.decode(value, { stream: true })
       messages.value[messages.value.length - 1].content = fullResponse
+      scrollToBottom()
     }
   } catch (error) {
     console.error(error)

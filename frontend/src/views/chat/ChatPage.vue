@@ -40,22 +40,35 @@
         <PromptShortcut class="intro-prompt" :list="introPrompt.list" :direction="introPrompt.direction" @itemClick="onSubmit($event.label)" />
       </div>
       <!-- 消息列表区域 -->
-      <div class="messages-area">
-        <div class="bubble-list">
-          <div
-            v-for="message in messages"
-            :key="message.id"
-            :class="['bubble', message.role === 'user' ? 'bubble-user' : 'bubble-assistant']"
+      <DynamicScroller
+        :items="messages"
+        :min-item-size="50"
+        class="messages-area"
+        ref="dynamicScroller"
+        @scroll.native="handleScroll"
+      >
+        <template #default="{ item, index, active }">
+          <DynamicScrollerItem
+            :item="item"
+            :active="active"
+            :size-dependencies="[
+              item.content,
+            ]"
+            :data-index="index"
           >
-            <div class="bubble-content" v-html="renderMessageContent(message.content)"></div>
-          </div>
-          <div v-if="isLoading" class="bubble bubble-assistant">
-            <div class="bubble-content">
-              <Loader />
-            </div>
-          </div>
-        </div>
-      </div>
+            <MessageItem :message="item" />
+          </DynamicScrollerItem>
+        </template>
+        
+        <template #after>
+           <div v-if="isLoading" ref="loadingRef" class="bubble bubble-assistant loading-bubble" style="margin: 1.5rem;">
+             <div class="bubble-content">
+               <Loader />
+             </div>
+           </div>
+           <div ref="bottomAnchor" style="height: 1px; width: 100%;"></div>
+         </template>
+      </DynamicScroller>
 
       <!-- 固定在底部的输入框 -->
       <div class="input-area">
@@ -85,12 +98,18 @@
         </div>
       </div>
     </div>
-    <ChatHistoryDrawer :open="openHistory" :user-id="userId" :provider="selectedProvider" @close="openHistory = false" />
+    <ChatHistoryDrawer 
+      :open="openHistory" 
+      :user-id="userId" 
+      :provider="selectedProvider" 
+      @close="openHistory = false" 
+      @select-conversation="onSelectConversation"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { Volume2, VolumeX } from 'lucide-vue-next'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
@@ -98,6 +117,7 @@ import { Loader } from '@/components/ai-elements/loader'
 import XSender from '@/components/chat/XSender.vue'
 import ChatHistoryDrawer from '@/components/chat/ChatHistoryDrawer.vue'
 import PromptShortcut from '@/components/chat/PromptShortcut.vue'
+import MessageItem from '@/components/chat/MessageItem.vue'
 
 const userId = 'user_' + Math.random().toString(36).substr(2, 9)
 const isOnline = ref(true)
@@ -108,13 +128,17 @@ const providers = ref([
 ])
 const openHistory = ref(false)
 const startPage = ref(true)
+const dynamicScroller = ref(null)
 
 const messages = ref([])
+// 当前会话 ID
+const currentConversationId = ref(null)
 
 const inputText = ref('')
 const isLoading = ref(false)
 const ttsEnabled = ref(false)
 const isSpeaking = ref(false)
+
 
 const introPrompt = {
   direction: 'horizontal',
@@ -276,6 +300,9 @@ async function textToSpeech(text) {
   
   // 开始处理队列
   processTTSQueue()
+
+  // 滚动到底部
+  scrollToBottom()
 }
 
 // 发送消息
@@ -286,6 +313,9 @@ async function sendMessage() {
   startPage.value = false
   await sendMessageToAI(text)
   inputText.value = ''
+  
+  // 滚动到底部
+  scrollToBottom()
 }
 
 // 自动提交（语音识别后）
@@ -309,12 +339,19 @@ async function sendMessageToAI(text) {
       content: text
     })
     
+    // 立即滚动
+    scrollToBottom()
+    
     const aiMessageId = Date.now() + 1
     messages.value.push({
       id: aiMessageId,
       role: 'assistant',
       content: ''
     })
+    
+    // 再次滚动以显示新消息气泡
+    shouldAutoScroll.value = true
+    scrollToBottom()
     
     isLoading.value = true
 
@@ -326,7 +363,8 @@ async function sendMessageToAI(text) {
       body: JSON.stringify({
         userId,
         message: text,
-        provider: selectedProvider.value
+        provider: selectedProvider.value,
+        conversationId: currentConversationId.value
       })
     })
 
@@ -334,10 +372,18 @@ async function sendMessageToAI(text) {
       throw new Error('Request failed')
     }
 
+    // 获取并保存 conversationId
+    const convId = response.headers.get('X-Conversation-Id')
+    if (convId) {
+      currentConversationId.value = convId
+    }
+
     const reader = response.body.getReader()
     const decoder = new TextDecoder()
     let fullResponse = ''
     let lastSentenceEnd = 0
+    // 用于控制流式输出时的滚动频率
+    let scrollThrottle = 0 
 
     while (true) {
       const { done, value } = await reader.read()
@@ -349,6 +395,7 @@ async function sendMessageToAI(text) {
       const lastMessage = messages.value[messages.value.length - 1]
       if (lastMessage && lastMessage.role === 'assistant') {
         lastMessage.content = fullResponse
+        scrollToBottom()
       }
       
       // 如果启用了 TTS，检查是否有完整的句子
@@ -381,11 +428,51 @@ async function sendMessageToAI(text) {
     }
     
     isLoading.value = false
+    
+    // 确保滚动到底部
+    scrollToBottom()
+
   } catch (error) {
     console.error('Failed to send message', error)
     isOnline.value = false
     isLoading.value = false
   }
+}
+
+// 滚动到底部
+const shouldAutoScroll = ref(true)
+
+const bottomAnchor = ref(null)
+const loadingRef = ref(null)
+
+function handleScroll(e) {
+  const target = e.target || e.srcElement
+  if (!target) return
+  const { scrollTop, scrollHeight, clientHeight } = target
+  // 如果距离底部小于 150px，则开启自动滚动
+  shouldAutoScroll.value = scrollHeight - scrollTop - clientHeight < 150
+}
+
+function scrollToBottom() {
+  if (!shouldAutoScroll.value) return
+  
+  nextTick(() => {
+    // 优先滚动到 Loading 元素
+    if (isLoading.value && loadingRef.value) {
+      loadingRef.value.scrollIntoView({ behavior: 'auto', block: 'end' })
+      return
+    }
+
+    // 其次使用 DynamicScroller 的方法
+    if (dynamicScroller.value) {
+      dynamicScroller.value.scrollToBottom()
+    }
+    
+    // 作为双重保险，滚动锚点元素
+    if (bottomAnchor.value) {
+      bottomAnchor.value.scrollIntoView({ behavior: 'auto', block: 'end' })
+    }
+  })
 }
 
 function onSubmit(val) {
@@ -396,27 +483,37 @@ function onSubmit(val) {
 function newConversation() {
   startPage.value = true
   messages.value = []
+  currentConversationId.value = null
 }
 
-const renderMessageContent = (content) => {
-  if (!content) return ''
-  
+async function onSelectConversation(conversationId) {
+  openHistory.value = false
+  isLoading.value = true
   try {
-    marked.setOptions({
-      gfm: true,
-      breaks: true,
-      smartLists: true,
-      smartypants: true,
+    const q = new URLSearchParams({ 
+        userId, 
+        provider: selectedProvider.value,
+        conversationId
     })
+    const res = await fetch(`/api/chat/history?${q.toString()}`)
+    const data = await res.json()
     
-    let html = marked.parse(content)
-    html = DOMPurify.sanitize(html)
+    messages.value = Array.isArray(data.messages) ? data.messages : []
+    currentConversationId.value = conversationId
+    startPage.value = false
     
-    return html
-  } catch (error) {
-    console.warn('Markdown conversion failed:', error)
-    return content
+    // 滚动到底部
+    scrollToBottom()
+  } catch (e) {
+    console.error('Failed to load conversation:', e)
+  } finally {
+    isLoading.value = false
   }
+}
+
+// 不再需要在 ChatPage 中渲染 markdown，移至 MessageItem 组件
+const renderMessageContent = (content) => {
+  return content
 }
 
 onMounted(() => {
@@ -439,6 +536,10 @@ onMounted(() => {
   flex-direction: column;
   height: calc(100vh - 60px);
   background: #f7fafc;
+}
+
+.scroller {
+  height: 100%;
 }
 
 .assistant-header {

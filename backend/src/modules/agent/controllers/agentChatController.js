@@ -87,6 +87,19 @@ export async function handleGetAgentChatHistory(req, res) {
 async function getRAGContext(agent, userMessage) {
     if (agent.knowledgeBaseId && userMessage) {
         try {
+            // 检查是否需要调用知识库（简单的启发式方法：消息长度或关键词）
+            // 以后可以升级为 AI 意图识别，但目前先做一个基础过滤
+            const query = userMessage.trim();
+            
+            // 如果消息太短（例如：你好、哈哈、OK），不触发知识库检索
+            if (query.length < 2) return '';
+            
+            // 排除一些过于通用的闲聊词
+            const generalChatWords = ['你好', '您好', '在吗', 'hello', 'hi', 'hey', '谢谢', '感谢', '再见', 'bye'];
+            if (generalChatWords.some(word => query.toLowerCase() === word)) {
+                return '';
+            }
+
             // 提取知识库 ID（处理 populate 后的对象情况）
             const kbId = (typeof agent.knowledgeBaseId === 'object' && agent.knowledgeBaseId !== null) 
                 ? (agent.knowledgeBaseId.id || agent.knowledgeBaseId._id) 
@@ -186,8 +199,17 @@ export async function handleAgentChat(req, res) {
         }
         
         // RAG 检索
-        const ragContext = await getRAGContext(agent, message);
-        
+        let ragContext = '';
+        const isGreeting = (text) => {
+            const query = text.trim().toLowerCase();
+            const greetings = ['你好', '您好', '在吗', 'hello', 'hi', 'hey', '谢谢', '感谢', '再见', 'bye'];
+            return query.length < 2 || greetings.some(g => query === g);
+        };
+
+        if (!isGreeting(message)) {
+            ragContext = await getRAGContext(agent, message);
+        }
+
         // 添加用户消息
         const userMsg = { role: "user", content: message };
         conversationHistory.push(userMsg);
@@ -406,7 +428,16 @@ export async function handleAgentChatInConversation(req, res) {
         }
 
         // RAG 检索
-        const ragContext = await getRAGContext(agent, message);
+        let ragContext = '';
+        const isGreeting = (text) => {
+            const query = text.trim().toLowerCase();
+            const greetings = ['你好', '您好', '在吗', 'hello', 'hi', 'hey', '谢谢', '感谢', '再见', 'bye'];
+            return query.length < 2 || greetings.some(g => query === g);
+        };
+
+        if (!isGreeting(message)) {
+            ragContext = await getRAGContext(agent, message);
+        }
 
         const userMsg = { role: 'user', content: message };
         newMessages.push(userMsg);

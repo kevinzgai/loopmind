@@ -1,25 +1,57 @@
 import Conversation from "../models/ConversationSchema.js";
 
-export async function getOrCreateConversation(userId, provider) {
-    let conversation = await Conversation.findOne({ userId, provider });
-    if (!conversation) {
-        conversation = new Conversation({
-            userId,
-            provider,
-            title: "新对话",
-            messages: [],
-            messageCount: 0,
-        });
-    }
+export async function createConversation(userId, provider) {
+    const conversation = new Conversation({
+        userId,
+        provider,
+        title: "新对话",
+        messages: [],
+        messageCount: 0,
+    });
+    await conversation.save();
     return conversation;
 }
 
-export async function appendConversationMessages(userId, provider, messages) {
+export async function getConversations(userId, provider) {
+    const query = { userId };
+    if (provider) {
+        query.provider = provider;
+    }
+    // 排除 Agent 聊天记录 (如果有 agentId 则是 agent 聊天)
+    query.agentId = { $exists: false };
+    
+    return Conversation.find(query)
+        .sort({ updatedAt: -1 })
+        .select('_id title messageCount updatedAt createdAt provider');
+}
+
+export async function appendConversationMessages(userId, provider, messages, conversationId) {
     if (!messages || messages.length === 0) {
         return null;
     }
 
-    const conversation = await getOrCreateConversation(userId, provider);
+    let conversation;
+    if (conversationId) {
+        conversation = await Conversation.findOne({ _id: conversationId, userId });
+    } else {
+        // 兼容旧逻辑：如果没有 ID，查找最近的一个或者创建一个
+        conversation = await Conversation.findOne({ userId, provider }).sort({ updatedAt: -1 });
+    }
+
+    if (!conversation) {
+        conversation = await createConversation(userId, provider);
+    }
+
+    // 自动更新标题：如果是新对话的第一条用户消息
+    if (conversation.messages.length === 0 && messages.some(m => m.role === 'user')) {
+        const firstUserMsg = messages.find(m => m.role === 'user');
+        if (firstUserMsg && firstUserMsg.content) {
+             let newTitle = firstUserMsg.content.substring(0, 20);
+             if (firstUserMsg.content.length > 20) newTitle += '...';
+             conversation.title = newTitle;
+        }
+    }
+
     conversation.messages.push(...messages);
     conversation.messageCount = conversation.messages.length;
     conversation.updatedAt = new Date();
@@ -27,8 +59,16 @@ export async function appendConversationMessages(userId, provider, messages) {
     return conversation;
 }
 
-export async function getConversationMessages(userId, provider) {
-    const conversation = await Conversation.findOne({ userId, provider });
+export async function getConversationMessages(userId, provider, conversationId) {
+    let conversation;
+    
+    if (conversationId) {
+        conversation = await Conversation.findOne({ _id: conversationId, userId });
+    } else {
+        // 兼容旧逻辑：获取最近的一个
+        conversation = await Conversation.findOne({ userId, provider }).sort({ updatedAt: -1 });
+    }
+
     if (!conversation) {
         return [];
     }
@@ -147,7 +187,8 @@ export async function deleteAgentConversation(userId, agentId, conversationId) {
 }
 
 export default {
-    getOrCreateConversation,
+    createConversation,
+    getConversations,
     appendConversationMessages,
     getConversationMessages,
     getOrCreateAgentConversation,

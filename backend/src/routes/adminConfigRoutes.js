@@ -2,8 +2,74 @@ import express from 'express';
 import { authenticateToken } from '../shared/middleware/authMiddleware.js';
 import { authorizeAdmin } from '../shared/middleware/authMiddleware.js';
 import { getConfigUnmasked, updateConfig } from '../services/configService.js';
+import path from 'path';
+import fs from 'fs';
+import readline from 'readline';
 
 const router = express.Router();
+
+// ... (保留之前的 get/put config 路由)
+
+/**
+ * @api {get} /admin/logs 获取系统日志
+ * @apiName GetSystemLogs
+ * @apiGroup Admin
+ * @apiDescription 获取最近的系统日志（需要管理员权限）
+ * @apiHeader {String} Authorization Bearer Token
+ *
+ * @apiSuccess {Array} logs 日志列表
+ */
+router.get('/logs', authenticateToken, authorizeAdmin, async (req, res) => {
+  try {
+    const logDir = 'logs';
+    if (!fs.existsSync(logDir)) {
+      return res.json({ logs: [] });
+    }
+
+    // 找到最新的综合日志文件 combined-YYYY-MM-DD.log
+    const files = fs.readdirSync(logDir)
+      .filter(f => f.startsWith('combined-') && f.endsWith('.log'))
+      .sort()
+      .reverse(); // 最新的在前
+
+    if (files.length === 0) {
+      return res.json({ logs: [] });
+    }
+
+    const logFile = path.join(logDir, files[0]);
+    const logs = [];
+
+    // 读取最后 1000 行
+    const fileStream = fs.createReadStream(logFile);
+    const rl = readline.createInterface({
+      input: fileStream,
+      crlfDelay: Infinity
+    });
+
+    for await (const line of rl) {
+      try {
+        // 尝试解析日志格式
+        // 格式: 2025-01-28 16:00:00 [INFO]: message {meta}
+        const match = line.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) \[(\w+)\]: (.*)$/);
+        if (match) {
+          logs.push({
+            timestamp: match[1],
+            level: match[2].toLowerCase(),
+            message: match[3]
+          });
+        }
+      } catch (e) {
+        // 忽略解析错误
+      }
+    }
+    
+    // 只返回最后 200 条，避免前端压力过大
+    res.json({ logs: logs.slice(-200) });
+  } catch (err) {
+    console.error('❌ 获取系统日志失败:', err.message);
+    res.status(500).json({ error: { message: '服务器错误' } });
+  }
+});
 
 /**
  * @api {get} /admin/config 获取系统配置

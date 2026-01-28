@@ -13,6 +13,7 @@ import {
   handleQueryKB
 } from '../controllers/knowledgeController.js';
 import { authenticateToken as authenticate } from '../../../middleware/authMiddleware.js';
+import { uploadLimiter } from '../../../middleware/securityMiddleware.js';
 import path from 'path';
 import fs from 'fs';
 
@@ -95,7 +96,7 @@ router.delete('/:kbId', handleDeleteKB);
  *
  * @apiSuccess {Object} document 上传的文档信息
  */
-router.post('/:kbId/upload', upload.single('file'), handleUploadDoc);
+router.post('/:kbId/upload', uploadLimiter, upload.single('file'), handleUploadDoc);
 
 /**
  * @api {get} /knowledge/:kbId/documents 获取文档列表

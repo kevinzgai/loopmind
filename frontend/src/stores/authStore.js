@@ -145,6 +145,54 @@ export async function refreshToken() {
 }
 
 /**
+ * 更新个人资料
+ */
+export async function updateProfile(profileData) {
+  try {
+    isLoading.value = true
+    error.value = null
+
+    const response = await apiService.put('/auth/profile', profileData)
+    
+    user.value = response.user
+    localStorage.setItem('user', JSON.stringify(response.user))
+
+    console.log('✅ 个人资料更新成功')
+    return response.user
+  } catch (err) {
+    error.value = err.message
+    console.error('❌ 个人资料更新失败:', err.message)
+    throw err
+  } finally {
+    isLoading.value = false
+  }
+}
+
+/**
+ * 修改密码
+ */
+export async function changePassword(oldPassword, newPassword, confirmPassword) {
+  try {
+    isLoading.value = true
+    error.value = null
+
+    await apiService.post('/auth/change-password', {
+      oldPassword,
+      newPassword,
+      confirmPassword
+    })
+
+    console.log('✅ 密码修改成功')
+  } catch (err) {
+    error.value = err.message
+    console.error('❌ 密码修改失败:', err.message)
+    throw err
+  } finally {
+    isLoading.value = false
+  }
+}
+
+/**
  * 初始化认证状态（从本地存储恢复）
  */
 export function initializeAuth() {

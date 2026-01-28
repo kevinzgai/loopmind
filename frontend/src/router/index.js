@@ -49,7 +49,13 @@ const routes = [
     }
   },
   {
-    path: '/admin/system',
+      path: '/profile',
+      name: 'Profile',
+      component: () => import('../views/auth/ProfilePage.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/admin/system',
     name: 'AdminSystem',
     component: AdminSystemPage,
     meta: {

@@ -7,14 +7,15 @@ import {
 } from '../services/aiService.js';
 import { getConfigMasked } from '../services/configService.js';
 import {
-    getConversationMessages,
-    appendConversationMessages
+    appendConversationMessages,
+    createConversation,
+    getConversations
 } from '../services/conversationService.js';
 
 // 处理聊天消息（支持流式响应）
 export async function handleChatMessage(req, res) {
     try {
-        const { message, userId, stream, prompt, text, provider, systemPrompt } = req.body;
+        const { message, userId, stream, prompt, text, provider, systemPrompt, conversationId } = req.body;
 
         const userMessage = message || prompt || text;
         const aiProvider = provider || 'deepseek';
@@ -25,13 +26,22 @@ export async function handleChatMessage(req, res) {
 
         const dbUserId = req.user && req.user.userId ? req.user.userId : null;
 
-        console.log('📨 Received request:', { userId, dbUserId, message: userMessage, provider: aiProvider, hasSystemPrompt: !!systemPrompt });
+        console.log('📨 Received request:', { userId, dbUserId, message: userMessage, provider: aiProvider, hasSystemPrompt: !!systemPrompt, conversationId });
 
         let conversationHistory;
         let newMessages = [];
+        let currentConversationId = conversationId;
 
         if (dbUserId) {
-            const persistedMessages = await getConversationMessages(dbUserId, aiProvider);
+            // 如果是已登录用户
+            if (!currentConversationId) {
+                // 如果没有提供 conversationId，创建一个新会话
+                const conv = await createConversation(dbUserId, aiProvider);
+                currentConversationId = conv._id.toString();
+            }
+
+            // 获取历史消息
+            const persistedMessages = await getConversationMessages(dbUserId, aiProvider, currentConversationId);
             conversationHistory = [...persistedMessages];
 
             if (systemPrompt && conversationHistory.length === 0) {
@@ -43,7 +53,13 @@ export async function handleChatMessage(req, res) {
             const userChatMessage = { role: "user", content: userMessage };
             conversationHistory.push(userChatMessage);
             newMessages.push(userChatMessage);
+            
+            // 保存用户消息
+            await appendConversationMessages(dbUserId, aiProvider, newMessages, currentConversationId);
+            newMessages = []; // 清空，准备存 AI 回复
+
         } else {
+            // 匿名用户 (内存存储，暂不支持持久化)
             conversationHistory = getConversationHistory(userId, aiProvider);
 
             if (systemPrompt && conversationHistory.length === 0) {
@@ -56,6 +72,8 @@ export async function handleChatMessage(req, res) {
         res.setHeader('Content-Type', 'text/plain; charset=utf-8');
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('Connection', 'keep-alive');
+        // 返回 conversationId 给前端，以便下次使用
+        res.setHeader('X-Conversation-Id', currentConversationId || '');
 
         const streamResponse = await callAIStream(conversationHistory, aiProvider);
 
@@ -69,10 +87,10 @@ export async function handleChatMessage(req, res) {
             }
         }
 
-        if (dbUserId) {
+        if (dbUserId && currentConversationId) {
             const assistantMessage = { role: "assistant", content: fullResponse };
             newMessages.push(assistantMessage);
-            await appendConversationMessages(dbUserId, aiProvider, newMessages);
+            await appendConversationMessages(dbUserId, aiProvider, newMessages, currentConversationId);
         } else {
             addMessageToHistory(userId, { role: "assistant", content: fullResponse }, aiProvider);
         }
@@ -91,14 +109,15 @@ export async function handleChatMessage(req, res) {
 
 export async function getChatHistory(req, res) {
     try {
-        const { provider, userId } = req.query;
+        const { provider, userId, conversationId } = req.query;
         const aiProvider = provider || 'deepseek';
         const dbUserId = req.user && req.user.userId ? req.user.userId : null;
 
         let messages;
 
         if (dbUserId) {
-            messages = await getConversationMessages(dbUserId, aiProvider);
+             // 如果已登录，优先使用 conversationId 获取，如果没传则获取最近的一个
+            messages = await getConversationMessages(dbUserId, aiProvider, conversationId);
         } else if (userId) {
             messages = getConversationHistory(userId, aiProvider);
         } else {
@@ -108,6 +127,21 @@ export async function getChatHistory(req, res) {
         res.json({ provider: aiProvider, messages });
     } catch (error) {
         console.error('❌ Error getting chat history:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+}
+
+export async function getUserConversations(req, res) {
+    try {
+        const dbUserId = req.user && req.user.userId;
+        if (!dbUserId) {
+             return res.status(401).json({ error: 'Unauthorized' });
+        }
+        const { provider } = req.query;
+        const conversations = await getConversations(dbUserId, provider);
+        res.json({ conversations });
+    } catch (error) {
+        console.error('❌ Error getting conversations:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 }

@@ -1,15 +1,15 @@
-// 错误处理中间件
-export function errorHandler(err, req, res, next) {
-    console.error('Error:', err);
-    
-    // 检查响应是否已经发送
-    if (res.headersSent) {
-        return next(err);
-    }
-    
-    // 发送错误响应
-    res.status(500).json({ 
-        error: 'Internal server error',
-        message: err.message 
-    });
-}
+import logger from '../../utils/logger.js';
+
+export const errorHandler = (err, req, res, next) => {
+  logger.error(`${err.status || 500} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`);
+  console.error(err.stack);
+
+  const statusCode = err.status || 500;
+  res.status(statusCode).json({
+    error: {
+      message: err.message || 'Internal Server Error',
+      status: statusCode,
+    },
+  });
+};
+

@@ -107,10 +107,18 @@
           <span class="icon">🔍</span>
           向量模型 (Embedding)
         </div>
+        <div 
+          class="nav-item" 
+          :class="{ active: activeTab === 'logs' }"
+          @click="activeTab = 'logs'"
+        >
+          <span class="icon">📊</span>
+          系统日志
+        </div>
       </div>
 
       <!-- 内容区域 -->
-      <form class="content-area" @submit.prevent="save" autocomplete="off">
+      <form v-show="activeTab !== 'logs'" class="content-area" @submit.prevent="save" autocomplete="off">
         <!-- 通用设置 -->
         <div v-show="activeTab === 'general'" class="config-section">
           <div class="section-header">
@@ -549,7 +557,7 @@
         </div>
 
         <!-- 底部操作栏 -->
-        <div class="actions-bar">
+        <div v-if="activeTab !== 'logs'" class="actions-bar">
           <div v-if="message" class="status-message success">
             <span class="icon">✅</span> {{ message }}
           </div>
@@ -561,16 +569,87 @@
           </button>
         </div>
       </form>
+
+      <!-- 日志查看器 (独立于 form) -->
+      <div v-show="activeTab === 'logs'" class="content-area logs-area">
+        <div class="section-header">
+          <h2>系统日志</h2>
+          <div class="logs-actions">
+            <select v-model="logLevel" class="select-input log-filter">
+              <option value="all">所有级别</option>
+              <option value="info">INFO</option>
+              <option value="warn">WARN</option>
+              <option value="error">ERROR</option>
+            </select>
+            <button class="btn-refresh" @click="fetchLogs" :disabled="logsLoading">
+              {{ logsLoading ? '加载中...' : '刷新日志' }}
+            </button>
+          </div>
+        </div>
+        
+        <div class="logs-container" ref="logsContainer">
+          <div v-if="logs.length === 0" class="no-logs">暂无日志</div>
+          <div v-else class="log-list">
+            <div v-for="(log, index) in filteredLogs" :key="index" class="log-item" :class="log.level">
+              <span class="log-time">{{ log.timestamp }}</span>
+              <span class="log-level">{{ log.level.toUpperCase() }}</span>
+              <span class="log-message">{{ log.message }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import apiService from '@/services/apiService.js'
 import { isAdmin, token } from '@/stores/authStore.js'
 
 const activeTab = ref('general')
+// ... (保留其他响应式变量)
+
+// 日志相关
+const logs = ref([])
+const logsLoading = ref(false)
+const logLevel = ref('all')
+const logsContainer = ref(null)
+
+const filteredLogs = computed(() => {
+  if (logLevel.value === 'all') return logs.value
+  return logs.value.filter(log => log.level === logLevel.value)
+})
+
+async function fetchLogs() {
+  if (activeTab.value !== 'logs') return
+  
+  logsLoading.value = true
+  try {
+    const res = await apiService.get('/admin/logs')
+    logs.value = res.logs || []
+    
+    // 自动滚动到底部
+    setTimeout(() => {
+      if (logsContainer.value) {
+        logsContainer.value.scrollTop = logsContainer.value.scrollHeight
+      }
+    }, 100)
+  } catch (e) {
+    console.error('获取日志失败:', e)
+  } finally {
+    logsLoading.value = false
+  }
+}
+
+watch(activeTab, (val) => {
+  if (val === 'logs') {
+    fetchLogs()
+  }
+})
+
+// ... (保留其他函数)
+
 const form = ref({
   provider: 'deepseek',
   deepseek: { apiKey: '', baseURL: '', model: 'deepseek-chat' },
@@ -746,45 +825,61 @@ onMounted(() => {
 
 <style scoped>
 .admin-system-page {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
+  width: 100%;
+  height: calc(100vh - 60px); /* 减去导航栏高度 */
+  margin: 0;
+  padding: 0;
   color: #1a202c;
+  background: #f7fafc;
+  overflow: hidden;
 }
 
 .header {
-  margin-bottom: 2rem;
+  padding: 1.5rem 2rem;
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 0;
 }
 
 .title {
-  font-size: 1.875rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: #2d3748;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 
 .subtitle-text {
   color: #718096;
-  font-size: 1rem;
+  font-size: 0.875rem;
 }
 
 .config-container {
   display: flex;
-  gap: 2rem;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  min-height: 600px;
+  height: calc(100% - 85px); /* 减去 header 高度 */
+  background: white;
+  border-radius: 0;
+  box-shadow: none;
+  min-height: auto;
   overflow: hidden;
 }
 
 /* Sidebar Styles */
 .sidebar {
   width: 240px;
-  background: #f7fafc;
+  background: #fff;
   border-right: 1px solid #e2e8f0;
-  padding: 1.5rem 0;
+  padding: 1rem 0;
   flex-shrink: 0;
+}
+
+/* Content Area Styles */
+.content-area {
+  flex: 1;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background: #f7fafc;
 }
 
 .nav-divider {
@@ -808,28 +903,19 @@ onMounted(() => {
 }
 
 .nav-item:hover {
-  background: #edf2f7;
+  background: #f7fafc;
   color: #2d3748;
 }
 
 .nav-item.active {
-  background: #fff;
+  background: #ebf8ff;
   color: #3182ce;
   border-left-color: #3182ce;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
 .nav-item .icon {
   margin-right: 0.75rem;
   font-size: 1.2rem;
-}
-
-/* Content Area Styles */
-.content-area {
-  flex: 1;
-  padding: 2rem;
-  display: flex;
-  flex-direction: column;
 }
 
 .section-header {
@@ -851,6 +937,11 @@ onMounted(() => {
 
 .card {
   max-width: 800px;
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e2e8f0;
 }
 
 .field {
@@ -986,4 +1077,75 @@ input:focus,
     border-bottom-color: #3182ce;
   }
 }
+
+/* 日志查看器样式 */
+.logs-area {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.logs-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.log-filter {
+  width: 120px;
+  padding: 0.5rem;
+}
+
+.btn-refresh {
+  padding: 0.5rem 1rem;
+  background: #f7fafc;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #4a5568;
+}
+
+.btn-refresh:hover {
+  background: #edf2f7;
+}
+
+.logs-container {
+  flex: 1;
+  background: #1a202c;
+  color: #e2e8f0;
+  padding: 1rem;
+  border-radius: 8px;
+  overflow-y: auto;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.9rem;
+  max-height: 500px;
+}
+
+.no-logs {
+  text-align: center;
+  color: #718096;
+  margin-top: 2rem;
+}
+
+.log-item {
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+  word-break: break-all;
+}
+
+.log-time {
+  color: #718096;
+  margin-right: 0.5rem;
+}
+
+.log-level {
+  font-weight: bold;
+  margin-right: 0.5rem;
+  min-width: 50px;
+  display: inline-block;
+}
+
+.log-item.info .log-level { color: #48bb78; }
+.log-item.warn .log-level { color: #ecc94b; }
+.log-item.error .log-level { color: #f56565; }
 </style>

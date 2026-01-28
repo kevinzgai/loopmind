@@ -9,6 +9,12 @@ import KnowledgeBase from '../models/KnowledgeBaseSchema.js';
 import KnowledgeDocument from '../models/KnowledgeDocumentSchema.js';
 import KnowledgeChunk from '../models/KnowledgeChunkSchema.js';
 import { generateEmbeddings } from './embeddingService.js';
+import { 
+  upsertChunks, 
+  deleteChunksByDocId, 
+  deleteChunksByKbId, 
+  searchVector 
+} from './vectorStoreService.js';
 
 /**
  * 知识库业务服务
@@ -82,7 +88,6 @@ export async function processDocument(docId) {
     doc.charCount = text.length;
 
     // 2. 文本切分
-    // BGE-large-zh-v1.5 上限 512 token，为安全起见设置较小的 chunk size
     const splitter = new RecursiveCharacterTextSplitter({
       chunkSize: 400,
       chunkOverlap: 50,
@@ -108,7 +113,12 @@ export async function processDocument(docId) {
         }
       }));
 
-      await KnowledgeChunk.insertMany(chunkDocs);
+      // 3.1 存入 MongoDB (作为元数据备份和管理)
+      const savedChunks = await KnowledgeChunk.insertMany(chunkDocs);
+      
+      // 3.2 存入 LanceDB (用于向量搜索)
+      // 使用 savedChunks 以获取 MongoDB 生成的 _id
+      await upsertChunks(savedChunks);
     }
 
     doc.status = 'completed';
@@ -135,10 +145,13 @@ export async function deleteDocument(docId) {
 
   const kbId = doc.kbId;
 
-  // 1. 删除向量块
+  // 1. 删除向量块 (MongoDB)
   await KnowledgeChunk.deleteMany({ docId });
+  
+  // 2. 删除向量块 (LanceDB)
+  await deleteChunksByDocId(docId);
 
-  // 2. 删除本地物理文件
+  // 3. 删除本地物理文件
   if (doc.originalPath) {
     try {
       await fs.unlink(doc.originalPath);
@@ -147,10 +160,10 @@ export async function deleteDocument(docId) {
     }
   }
 
-  // 3. 删除文档记录
+  // 4. 删除文档记录
   await KnowledgeDocument.findByIdAndDelete(docId);
 
-  // 4. 更新知识库统计
+  // 5. 更新知识库统计
   await updateKnowledgeBaseStats(kbId);
 }
 
@@ -163,6 +176,9 @@ export async function deleteKnowledgeBase(kbId) {
   for (const doc of docs) {
     await deleteDocument(doc._id);
   }
+  
+  // 额外清理 LanceDB 中可能残留的该知识库数据
+  await deleteChunksByKbId(kbId);
 
   // 2. 删除知识库记录
   await KnowledgeBase.findByIdAndDelete(kbId);
@@ -187,40 +203,57 @@ export async function updateKnowledgeBaseStats(kbId) {
  * 语义搜索
  */
 export async function searchKnowledge(kbId, queryVector, limit = 5) {
-  // 注意：如果是本地 MongoDB，不支持直接的向量搜索，
-  // 只能进行全量召回或简单的文本匹配。
-  // 这里实现一个简单的内存向量余弦相似度搜索（适用于中小规模数据）
-  
   try {
-    // 1. 获取该知识库所有片段（只查询必要字段以减少传输）
-    const chunks = await KnowledgeChunk.find({ kbId })
-      .select('content embedding docId metadata')
-      .lean();
-
-    if (!chunks || chunks.length === 0) {
-      return [];
+    // 使用 LanceDB 进行向量搜索
+    const results = await searchVector(kbId, queryVector, limit);
+    
+    // 如果 LanceDB 返回结果，直接使用
+    if (results && results.length > 0) {
+      return results;
+    }
+    
+    // 如果 LanceDB 无结果（可能是旧数据未迁移），尝试回退到 MongoDB 内存搜索（仅当 LanceDB 确实为空时）
+    // 但为了避免复杂性，建议用户重新处理文档或运行迁移。
+    // 这里我们可以做一个简单的检查：如果 MongoDB 有数据但 LanceDB 没有，提示警告
+    const count = await KnowledgeChunk.countDocuments({ kbId });
+    if (count > 0 && (!results || results.length === 0)) {
+      console.warn(`⚠️ 知识库 ${kbId} 在 MongoDB 中有数据但在 LanceDB 中未找到，可能需要重新索引。`);
+      // 临时降级：内存搜索 (为了兼容性保留)
+      return await fallbackMemorySearch(kbId, queryVector, limit);
     }
 
-    // 2. 计算余弦相似度
-    const scoredChunks = chunks.map(chunk => {
-      const score = cosineSimilarity(queryVector, chunk.embedding);
-      return { ...chunk, score };
-    });
-
-    // 3. 排序并取 Top K
-    scoredChunks.sort((a, b) => b.score - a.score);
-    
-    // 4. 返回结果（去掉 embedding 字段以减小响应体积）
-    return scoredChunks.slice(0, limit).map(chunk => {
-      const { embedding, ...rest } = chunk;
-      return rest;
-    });
+    return results;
 
   } catch (error) {
     console.error('❌ 向量搜索失败:', error);
     // 降级策略：返回最新记录
     return await KnowledgeChunk.find({ kbId }).limit(limit).lean();
   }
+}
+
+/**
+ * 内存搜索降级方案 (仅用于迁移过渡期)
+ */
+async function fallbackMemorySearch(kbId, queryVector, limit) {
+  const chunks = await KnowledgeChunk.find({ kbId })
+    .select('content embedding docId metadata')
+    .lean();
+
+  if (!chunks || chunks.length === 0) {
+    return [];
+  }
+
+  const scoredChunks = chunks.map(chunk => {
+    const score = cosineSimilarity(queryVector, chunk.embedding);
+    return { ...chunk, score };
+  });
+
+  scoredChunks.sort((a, b) => b.score - a.score);
+  
+  return scoredChunks.slice(0, limit).map(chunk => {
+    const { embedding, ...rest } = chunk;
+    return rest;
+  });
 }
 
 /**

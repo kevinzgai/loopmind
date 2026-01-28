@@ -20,9 +20,6 @@ importers:
       ai:
         specifier: ^6.0.6
         version: 6.0.48(zod@4.3.6)
-      ant-design-vue:
-        specifier: ^4.2.6
-        version: 4.2.6(vue@3.5.27(typescript@5.9.3))
       ant-design-x-vue:
         specifier: ^1.5.0
         version: 1.6.0(ant-design-vue@4.2.6(vue@3.5.27(typescript@5.9.3)))(vue@3.5.27(typescript@5.9.3))
@@ -65,6 +62,9 @@ importers:
       vue-stick-to-bottom:
         specifier: ^0.1.0
         version: 0.1.0(vue@3.5.27(typescript@5.9.3))
+      vue-virtual-scroller:
+        specifier: 2.0.0-beta.8
+        version: 2.0.0-beta.8(vue@3.5.27(typescript@5.9.3))
       vue3-scroll-picker:
         specifier: ^0.1.15
         version: 0.1.15
@@ -1609,6 +1609,9 @@ packages:
     resolution: {integrity: sha512-ZDY+bPm5zTTF+YpCrAU9nK0UgICYPT0QtT1NZWFv4s++TNkcgVaT0g6+4R2uI4MjQjzysHB1zxuWL50hzaeXiw==}
     engines: {node: '>= 0.6'}
 
+  mitt@2.1.0:
+    resolution: {integrity: sha512-ILj2TpLiysu2wkBbWjAmww7TkZb65aiQO+DkVdUTBpBXq+MHYiETENkKFMtsJZX1Lf4pe4QOrTSjIfUwN5lRdg==}
+
   mlly@1.8.0:
     resolution: {integrity: sha512-l8D9ODSRWLe2KHJSifWGwBqpTZXIXTeo8mlKjY+E2HAakaTeNpqAyBZ8GSqLzHgw4XmHmC8whvpjJNMbFZN7/g==}
 
@@ -2064,6 +2067,16 @@ packages:
       '@vue/composition-api':
         optional: true
 
+  vue-observe-visibility@2.0.0-alpha.1:
+    resolution: {integrity: sha512-flFbp/gs9pZniXR6fans8smv1kDScJ8RS7rEpMjhVabiKeq7Qz3D9+eGsypncjfIyyU84saU88XZ0zjbD6Gq/g==}
+    peerDependencies:
+      vue: ^3.0.0
+
+  vue-resize@2.0.0-alpha.1:
+    resolution: {integrity: sha512-7+iqOueLU7uc9NrMfrzbG8hwMqchfVfSzpVlCMeJQe4pyibqyoifDNbKTZvwxZKDvGkB+PdFeKvnGZMoEb8esg==}
+    peerDependencies:
+      vue: ^3.0.0
+
   vue-router@4.6.4:
     resolution: {integrity: sha512-Hz9q5sa33Yhduglwz6g9skT8OBPii+4bFn88w6J+J4MfEo4KRRpmiNG/hHHkdbRFlLBOqxN8y8gf2Fb0MTUgVg==}
     peerDependencies:
@@ -2079,6 +2092,11 @@ packages:
     engines: {node: '>=10.15.0'}
     peerDependencies:
       vue: ^3.0.0
+
+  vue-virtual-scroller@2.0.0-beta.8:
+    resolution: {integrity: sha512-b8/f5NQ5nIEBRTNi6GcPItE4s7kxNHw2AIHLtDp+2QvqdTjVN0FgONwX9cr53jWRgnu+HRLPaWDOR2JPI5MTfQ==}
+    peerDependencies:
+      vue: ^3.2.0
 
   vue3-scroll-picker@0.1.15:
     resolution: {integrity: sha512-Wa7e6nZVP+CAlBKX6neZf9Qcp8NjVvWcUrxqEsyEgI1hd8DJx84pMyYvovr7Q7Hc2TpA0bt9iZv/QXwXI413aQ==}
@@ -3850,6 +3868,8 @@ snapshots:
     dependencies:
       mime-db: 1.52.0
 
+  mitt@2.1.0: {}
+
   mlly@1.8.0:
     dependencies:
       acorn: 8.15.0
@@ -4372,6 +4392,14 @@ snapshots:
     dependencies:
       vue: 3.5.27(typescript@5.9.3)
 
+  vue-observe-visibility@2.0.0-alpha.1(vue@3.5.27(typescript@5.9.3)):
+    dependencies:
+      vue: 3.5.27(typescript@5.9.3)
+
+  vue-resize@2.0.0-alpha.1(vue@3.5.27(typescript@5.9.3)):
+    dependencies:
+      vue: 3.5.27(typescript@5.9.3)
+
   vue-router@4.6.4(vue@3.5.27(typescript@5.9.3)):
     dependencies:
       '@vue/devtools-api': 6.6.4
@@ -4385,6 +4413,13 @@ snapshots:
     dependencies:
       is-plain-object: 3.0.1
       vue: 3.5.27(typescript@5.9.3)
+
+  vue-virtual-scroller@2.0.0-beta.8(vue@3.5.27(typescript@5.9.3)):
+    dependencies:
+      mitt: 2.1.0
+      vue: 3.5.27(typescript@5.9.3)
+      vue-observe-visibility: 2.0.0-alpha.1(vue@3.5.27(typescript@5.9.3))
+      vue-resize: 2.0.0-alpha.1(vue@3.5.27(typescript@5.9.3))
 
   vue3-scroll-picker@0.1.15: {}
 

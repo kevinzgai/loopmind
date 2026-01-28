@@ -12,7 +12,10 @@
             <router-link to="/knowledge" class="nav-link">知识库</router-link>
             <router-link v-if="isAdmin" to="/admin/system" class="nav-link">系统配置</router-link>
             <div class="nav-user">
-              <span class="username">{{ currentUser?.username }}</span>
+              <router-link to="/profile" class="nav-link username-link">
+                <span class="user-avatar">{{ currentUser?.profile?.avatar || '👤' }}</span>
+                <span class="username">{{ currentUser?.username }}</span>
+              </router-link>
               <button @click="handleLogout" class="nav-btn">登出</button>
             </div>
           </template>
@@ -116,6 +119,24 @@ body {
 
 .username {
   font-size: 14px;
+}
+
+.username-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none !important;
+}
+
+.user-avatar {
+  font-size: 18px;
+  background: rgba(255, 255, 255, 0.2);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
 }
 
 .nav-btn {

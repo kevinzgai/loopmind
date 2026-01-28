@@ -1,6 +1,7 @@
 import { Router } from 'express';
-import { handleChatMessage, getChatHistory, getProviders } from '../controllers/chatController.js';
+import { handleChatMessage, getChatHistory, getProviders, getUserConversations } from '../controllers/chatController.js';
 import { optionalAuthenticateToken } from '../shared/middleware/authMiddleware.js';
+import { chatLimiter } from '../middleware/securityMiddleware.js';
 
 const router = Router();
 
@@ -18,7 +19,7 @@ const router = Router();
  *
  * @apiSuccess {String} reply AI回复内容
  */
-router.post('/', optionalAuthenticateToken, handleChatMessage);
+router.post('/', chatLimiter, optionalAuthenticateToken, handleChatMessage);
 
 /**
  * @api {get} /chat/history 获取聊天历史
@@ -30,6 +31,18 @@ router.post('/', optionalAuthenticateToken, handleChatMessage);
  * @apiSuccess {Array} history 聊天记录列表
  */
 router.get('/history', optionalAuthenticateToken, getChatHistory);
+
+/**
+ * @api {get} /chat/conversations 获取对话列表
+ * @apiName GetConversations
+ * @apiGroup Chat
+ * @apiDescription 获取用户的对话列表
+ * @apiHeader {String} [Authorization] Bearer Token
+ * @apiParam {String} [provider] AI提供商
+ *
+ * @apiSuccess {Array} conversations 对话列表
+ */
+router.get('/conversations', optionalAuthenticateToken, getUserConversations);
 
 /**
  * @api {get} /chat/providers 获取AI提供商列表

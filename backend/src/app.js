@@ -12,12 +12,20 @@ import knowledgeRoutes from './modules/knowledge/routes/knowledgeRoutes.js';
 import adminConfigRoutes from './routes/adminConfigRoutes.js';
 import { errorHandler } from './shared/middleware/errorHandler.js';
 import { errorHandler as authErrorHandler } from './shared/middleware/authMiddleware.js';
+import { setupSecurityMiddleware } from './middleware/securityMiddleware.js';
+import { requestLogger } from './utils/logger.js';
 
 // 获取__dirname的ES模块等价物
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+
+// 日志中间件
+app.use(requestLogger);
+
+// 安全中间件 (包含 Helmet, MongoSanitize, HPP, 全局限流)
+setupSecurityMiddleware(app);
 
 // 中间件
 app.use(cors());

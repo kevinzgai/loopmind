@@ -50,7 +50,7 @@
  </template>
 
 <script setup>
-import { ref, computed, watch, onUnmounted, nextTick } from 'vue'
+import { ref, computed, watch, onUnmounted, nextTick, onMounted } from 'vue'
 
 const props = defineProps({
   modelValue: { type: String, default: '' },
@@ -69,6 +69,7 @@ const intermediateText = ref('')
 const audioLevel = ref(0)
 
 let ws = null
+let reconnectTimer = null
 let audioContext = null
 let analyser = null
 let processor = null
@@ -86,13 +87,51 @@ const displayText = computed(() => {
 watch(() => props.modelValue, v => { text.value = v })
 watch(text, v => emit('update:modelValue', v))
 
+function setupWebSocket() {
+  if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return
+
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  const wsUrl = `${protocol}//${window.location.host}/ws-asr-stream`
+  
+  ws = new WebSocket(wsUrl)
+  
+  ws.onopen = () => {
+    console.log('✅ ASR WebSocket Connected')
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer)
+      reconnectTimer = null
+    }
+  }
+  
+  ws.onclose = () => {
+    console.log('🔌 ASR WebSocket Closed')
+    ws = null
+    // Auto reconnect if in voice mode
+    if (inputMode.value === 'voice') {
+      reconnectTimer = setTimeout(() => {
+        console.log('🔄 Reconnecting ASR WebSocket...')
+        setupWebSocket()
+      }, 2000)
+    }
+  }
+  
+  ws.onerror = (err) => {
+    console.error('❌ ASR WebSocket Error', err)
+    ws && ws.close()
+  }
+  
+  ws.onmessage = handleWebSocketMessage
+}
+
 function toggleInputMode() {
   if (inputMode.value === 'text') {
     inputMode.value = 'voice'
+    setupWebSocket()
   } else {
     inputMode.value = 'text'
     stopRecording()
-    nextTick(() => {})
+    // Optional: Close connection to save resources
+    // if (ws) { ws.close(); ws = null }
   }
 }
 
@@ -104,19 +143,35 @@ function emitSubmit() {
 function handleWebSocketMessage(event) {
   try {
     const data = JSON.parse(event.data)
-    if (data.type === 'intermediate') {
+    if (data.type === 'started') {
+      isConnecting.value = false
+      isRecording.value = true
+    } else if (data.type === 'intermediate') {
       intermediateText.value = data.text
     } else if (data.type === 'result') {
       if (data.text) {
         recognizedText.value += (recognizedText.value ? ' ' : '') + data.text
         intermediateText.value = ''
       }
+    } else if (data.type === 'completed') {
+       // Session ended
+    } else if (data.type === 'error') {
+       console.error('ASR Error:', data.message)
+       stopRecording()
     }
   } catch {}
 }
 
 async function startRecording() {
   if (isRecording.value || isConnecting.value) return
+  
+  // Ensure WS is connected
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    setupWebSocket()
+    // If backend supports buffering/auto-start, we can proceed. 
+    // But safer to wait or rely on buffering.
+  }
+
   try {
     isConnecting.value = true
     recognizedText.value = ''
@@ -130,22 +185,12 @@ async function startRecording() {
     analyser.fftSize = 256
     source.connect(analyser)
     visualizeAudio()
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const wsUrl = `${protocol}//${window.location.host}/ws-asr-stream`
-    ws = new WebSocket(wsUrl)
-    ws.onopen = () => {
-      isConnecting.value = false
-      isRecording.value = true
+    
+    // Send Start Signal
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'start' }))
     }
-    ws.onmessage = handleWebSocketMessage
-    ws.onerror = () => {
-      stopRecording()
-      isConnecting.value = false
-    }
-    ws.onclose = () => {
-      isRecording.value = false
-      isConnecting.value = false
-    }
+
     processor = audioContext.createScriptProcessor(4096, 1, 1)
     processor.onaudioprocess = e => {
       if (ws && ws.readyState === WebSocket.OPEN) {
@@ -171,10 +216,15 @@ function stopRecording() {
     cancelAnimationFrame(animationId)
     animationId = null
   }
+  
+  // Send Stop Signal
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({ type: 'stop' }))
+    
+    // Do NOT close WS here
+    
+    // Wait for final result logic
     setTimeout(() => {
-      if (ws) { ws.close(); ws = null }
       let finalText = recognizedText.value
       if (intermediateText.value) {
         finalText += (finalText ? ' ' : '') + intermediateText.value
@@ -186,6 +236,7 @@ function stopRecording() {
       }
     }, 800)
   }
+  
   if (processor) { processor.disconnect(); processor = null }
   if (analyser) { analyser.disconnect(); analyser = null }
   if (audioContext) { audioContext.close(); audioContext = null }
@@ -195,29 +246,19 @@ function stopRecording() {
   audioLevel.value = 0
 }
 
-function visualizeAudio() {
-  if (!analyser) return
-  const bufferLength = analyser.frequencyBinCount
-  const dataArray = new Uint8Array(bufferLength)
-  const draw = () => {
-    if (!analyser || !isRecording.value) return
-    animationId = requestAnimationFrame(draw)
-    analyser.getByteFrequencyData(dataArray)
-    const average = dataArray.reduce((a, b) => a + b, 0) / bufferLength
-    audioLevel.value = Math.min(100, (average / 255) * 100)
+onMounted(() => {
+  if (inputMode.value === 'voice') {
+    setupWebSocket()
   }
-  draw()
-}
-
-function handleVoiceButtonDown(e) {
-  startRecording()
-}
-function handleVoiceButtonUp(e) {
-  stopRecording()
-}
+})
 
 onUnmounted(() => {
+  if (reconnectTimer) clearTimeout(reconnectTimer)
   stopRecording()
+  if (ws) {
+    ws.close()
+    ws = null
+  }
 })
 </script>
 

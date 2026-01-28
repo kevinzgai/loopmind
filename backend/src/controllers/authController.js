@@ -4,7 +4,8 @@ import {
   logout,
   refreshToken,
   changePassword,
-  getUserInfo
+  getUserInfo,
+  updateUserProfile
 } from '../services/authServiceDB.js';
 
 /**
@@ -211,11 +212,34 @@ export async function handleChangePassword(req, res, next) {
   }
 }
 
+/**
+ * 更新用户个人资料
+ * PUT /api/auth/profile
+ */
+export async function handleUpdateProfile(req, res, next) {
+  try {
+    const userId = req.user.userId;
+    const { bio, avatar } = req.body;
+
+    // 更新用户资料
+    const user = await updateUserProfile(userId, { bio, avatar });
+
+    res.status(200).json({
+      message: '个人资料更新成功',
+      user
+    });
+  } catch (error) {
+    console.error('❌ 更新个人资料失败:', error.message);
+    next(error);
+  }
+}
+
 export default {
   handleRegister,
   handleLogin,
   handleLogout,
   handleRefreshToken,
   handleGetCurrentUser,
-  handleChangePassword
+  handleChangePassword,
+  handleUpdateProfile
 };

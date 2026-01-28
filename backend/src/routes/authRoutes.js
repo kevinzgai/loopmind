@@ -5,9 +5,11 @@ import {
   handleLogout,
   handleRefreshToken,
   handleGetCurrentUser,
-  handleChangePassword
+  handleChangePassword,
+  handleUpdateProfile
 } from '../controllers/authController.js';
 import { authenticateToken } from '../shared/middleware/authMiddleware.js';
+import { authLimiter } from '../middleware/securityMiddleware.js';
 
 const router = express.Router();
 
@@ -24,7 +26,7 @@ const router = express.Router();
  * @apiSuccess {String} message 注册成功消息
  * @apiSuccess {Object} user 用户信息
  */
-router.post('/register', handleRegister);
+router.post('/register', authLimiter, handleRegister);
 
 /**
  * @api {post} /auth/login 用户登录
@@ -38,7 +40,7 @@ router.post('/register', handleRegister);
  * @apiSuccess {String} token 访问 Token
  * @apiSuccess {Object} user 用户信息
  */
-router.post('/login', handleLogin);
+router.post('/login', authLimiter, handleLogin);
 
 /**
  * @api {post} /auth/refresh 刷新 Token
@@ -80,5 +82,11 @@ router.post('/logout', authenticateToken, handleLogout);
  * 修改密码
  */
 router.post('/change-password', authenticateToken, handleChangePassword);
+
+/**
+ * PUT /api/auth/profile
+ * 更新个人资料
+ */
+router.put('/profile', authenticateToken, handleUpdateProfile);
 
 export default router;

@@ -308,6 +308,35 @@ export async function clearAllTokens() {
   }
 }
 
+/**
+ * 更新用户资料
+ */
+export async function updateUserProfile(userId, profileData) {
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new Error('用户不存在');
+    }
+
+    // 更新个人简介
+    if (profileData.bio !== undefined) {
+      user.profile.bio = profileData.bio;
+    }
+
+    // 更新头像
+    if (profileData.avatar !== undefined) {
+      user.profile.avatar = profileData.avatar;
+    }
+
+    await user.save();
+    console.log(`✅ 用户资料更新成功: ${user.username}`);
+    return user.toJSON();
+  } catch (error) {
+    console.error('❌ 更新用户资料失败:', error.message);
+    throw error;
+  }
+}
+
 export default {
   register,
   login,
@@ -316,6 +345,7 @@ export default {
   refreshToken,
   changePassword,
   getUserInfo,
+  updateUserProfile,
   getTokenInfo,
   clearAllTokens
 };

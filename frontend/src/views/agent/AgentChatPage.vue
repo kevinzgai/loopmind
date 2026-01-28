@@ -89,7 +89,7 @@
           </div>
         </div>
         <div class="chat-main">
-          <div class="messages-area">
+          <div class="messages-area" ref="messagesArea" @scroll="handleScroll">
             <!-- 欢迎页展示 -->
             <div v-if="messages.length === 0 && agent" class="intro-container">
               <McIntroduction 
@@ -118,11 +118,12 @@
               >
                 <div class="bubble-content" v-html="renderMessageContent(message.content)"></div>
               </div>
-              <div v-if="isLoading" class="bubble bubble-assistant">
+              <div v-if="isLoading" ref="loadingRef" class="bubble bubble-assistant">
                 <div class="bubble-content">
                   <Loader />
                 </div>
               </div>
+              <div ref="bottomAnchor" style="height: 1px; width: 100%;"></div>
             </div>
           </div>
           <div class="input-area">
@@ -152,7 +153,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, nextTick, watch } from 'vue'
 import { useRoute, onBeforeRouteLeave } from 'vue-router'
 import { Volume2, VolumeX, Trash2 } from 'lucide-vue-next'
 import { marked } from 'marked'
@@ -204,6 +205,44 @@ const ttsEnabled = ref(false)
 const isSpeaking = ref(false)
 const conversations = ref([])
 const activeConversationId = ref(null)
+
+const messagesArea = ref(null)
+const loadingRef = ref(null)
+const bottomAnchor = ref(null)
+const shouldAutoScroll = ref(true)
+
+function handleScroll(e) {
+  const target = e.target || e.srcElement
+  if (!target) return
+  const { scrollTop, scrollHeight, clientHeight } = target
+  // 如果距离底部小于 150px，则开启自动滚动
+  shouldAutoScroll.value = scrollHeight - scrollTop - clientHeight < 150
+}
+
+const scrollToBottom = async () => {
+  if (!shouldAutoScroll.value) return
+  
+  await nextTick()
+
+  // 优先滚动到 Loading 元素
+  if (isLoading.value && loadingRef.value) {
+    loadingRef.value.scrollIntoView({ behavior: 'auto', block: 'end' })
+    return
+  }
+
+  if (messagesArea.value) {
+    messagesArea.value.scrollTop = messagesArea.value.scrollHeight
+  }
+  
+  // 作为双重保险
+  if (bottomAnchor.value) {
+    bottomAnchor.value.scrollIntoView({ behavior: 'auto', block: 'end' })
+  }
+}
+
+watch(messages, () => {
+  scrollToBottom()
+}, { deep: true })
 
 // 智能体介绍描述（Markdown 格式）
 const agentDescription = computed(() => {
@@ -481,6 +520,7 @@ async function sendMessageToAI(text) {
       content: ''
     })
     
+    shouldAutoScroll.value = true
     isLoading.value = true
 
     const url = token.value && activeConversationId.value 
@@ -518,6 +558,7 @@ async function sendMessageToAI(text) {
       const lastMessage = messages.value[messages.value.length - 1]
       if (lastMessage && lastMessage.role === 'assistant') {
         lastMessage.content = fullResponse
+        scrollToBottom()
       }
       
       // 如果启用了 TTS，检查是否有完整的句子
