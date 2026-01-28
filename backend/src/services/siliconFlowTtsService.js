@@ -19,18 +19,14 @@ const client = new OpenAI({
  * 文字转语音
  * @param {string} text - 要转换的文字
  * @param {Object} options - 配置选项
- * @param {Object} config - 服务配置 (apiKey, baseURL, ttsModel)
  * @returns {Promise<Buffer>} 音频数据
  */
-export async function textToSpeech(text, options = {}, config = {}) {
+export async function textToSpeech(text, options = {}) {
   try {
-    const apiKey = config.apiKey || SILICONFLOW_API_KEY;
-    const baseURL = config.baseURL || SILICONFLOW_BASE_URL;
-    const model = options.model || config.ttsModel || SILICONFLOW_TTS_MODEL;
-
     const {
       voice = "anna",
-      speed = 150, // 默认语速 150
+      model = SILICONFLOW_TTS_MODEL,
+      speed = 1.0,
       gain = 0.0,
       response_format = "mp3",
       sample_rate = 44100,
@@ -66,25 +62,31 @@ export async function textToSpeech(text, options = {}, config = {}) {
       pureVoiceName = "anna";
     }
 
-    // 处理语速参数 (前端 50-400, 150 为正常; OpenAI/SiliconFlow 范围 0.25-4.0, 1.0 为正常)
+    // 重新组合为标准格式: "模型名称:音色名称"
+    const fullVoice = `${model}:${pureVoiceName}`;
+
+    // 处理语速参数 (OpenAI 范围 0.25-4.0，阿里云范围 -500-500)
     let finalSpeed = parseFloat(speed);
-    if (finalSpeed >= 50 && finalSpeed <= 400) {
-      if (finalSpeed <= 150) {
-        // 50~150 映射到 0.25~1.0
-        finalSpeed = 0.25 + ((finalSpeed - 50) / 100) * 0.75;
+
+    // 如果语速看起来是阿里云范围 (-500 到 500)
+    if (finalSpeed > 4 || finalSpeed < 0.25) {
+      if (finalSpeed === 0) {
+        finalSpeed = 1.0; // 阿里云 0 是正常语速
+      } else if (finalSpeed > 0) {
+        // 映射 0~500 到 1.0~4.0
+        finalSpeed = 1.0 + (finalSpeed / 500) * 3.0;
       } else {
-        // 150~400 映射到 1.0~4.0
-        finalSpeed = 1.0 + ((finalSpeed - 150) / 250) * 3.0;
+        // 映射 -500~0 到 0.25~1.0
+        finalSpeed = 1.0 + (finalSpeed / 500) * 0.75;
       }
-    } else if (finalSpeed < 50) {
-      // 如果传进来的是已经映射过的值（如 1.0），则保持原样
-      finalSpeed = Math.max(0.25, Math.min(4.0, finalSpeed));
     }
+
+    // 最终强制限制在 0.25 - 4.0 之间，避免 API 报错
     finalSpeed = Math.max(0.25, Math.min(4.0, finalSpeed));
 
-    console.log("🔊 硅基流动 TTS 开始转换 (FishAudio):", {
+    console.log("🔊 硅基流动 TTS 开始转换 (CosyVoice2):", {
       text: text.substring(0, 50),
-      voice: `fishaudio:${pureVoiceName.toLowerCase()}`,
+      voice: fullVoice,
       model,
       speed: finalSpeed,
       originalSpeed: speed,
@@ -92,20 +94,21 @@ export async function textToSpeech(text, options = {}, config = {}) {
     });
 
     // 使用自定义请求以支持 gain 和 sample_rate 等 OpenAI SDK 不直接支持的参数
-    const fetchResponse = await fetch(`${baseURL}/audio/speech`, {
+    const fetchResponse = await fetch(`${SILICONFLOW_BASE_URL}/audio/speech`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${SILICONFLOW_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model,
+        model: model,
+        voice: fullVoice,
         input: text,
-        voice: `fishaudio:${pureVoiceName.toLowerCase()}`,
         speed: finalSpeed,
-        gain,
-        response_format,
-        sample_rate,
+        gain: gain,
+        response_format: response_format,
+        sample_rate: sample_rate,
+        stream: false,
       }),
     });
 

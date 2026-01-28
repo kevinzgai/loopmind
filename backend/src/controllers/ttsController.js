@@ -7,8 +7,7 @@ import {
   textToSpeech as siliconTextToSpeech,
   getSupportedVoices as getSiliconVoices,
 } from "../services/siliconFlowTtsService.js";
-import { textToSpeech as openAiTextToSpeech } from "../services/ttsService.js";
-import { getConfigUnmasked } from "../services/configService.js";
+import { SILICONFLOW_API_KEY } from "../config/config.js";
 
 /**
  * 处理文字转语音请求
@@ -21,84 +20,34 @@ export async function handleTextToSpeech(req, res) {
       return res.status(400).json({ error: "Missing text parameter" });
     }
 
-    // 获取系统配置
-    const config = await getConfigUnmasked();
-    const speechConfig = config.speech || {};
-    const ttsProvider = speechConfig.ttsProvider || "siliconflow";
-
-    // 处理音色和语速的回退逻辑：请求参数 > 系统配置提供商默认值 > 系统全局默认值
-    const effectiveVoice =
-      voice ||
-      speechConfig[ttsProvider]?.ttsVoice ||
-      (ttsProvider === "siliconflow"
-        ? "anna"
-        : ttsProvider === "aliyun"
-          ? "xiaoxian"
-          : ttsProvider === "openai"
-            ? "alloy"
-            : "zh-CN-XiaoxiaoNeural");
-
-    const effectiveSpeechRate =
-      speechRate || speechConfig[ttsProvider]?.speechRate || 150;
-
     console.log("📨 收到 TTS 请求:", {
       text: text.substring(0, 50),
-      voice: effectiveVoice,
-      speechRate: effectiveSpeechRate,
+      voice,
       format,
-      provider: ttsProvider,
     });
 
     let audioBuffer;
 
-    if (ttsProvider === "siliconflow") {
-      console.log("🚀 使用硅基流动 TTS 服务");
-      audioBuffer = await siliconTextToSpeech(
-        text,
-        {
-          voice: effectiveVoice,
-          speed: effectiveSpeechRate,
-        },
-        speechConfig.siliconflow,
-      );
-    } else if (ttsProvider === "aliyun") {
-      console.log("☁️ 使用阿里云 TTS 服务");
-      audioBuffer = await aliTextToSpeech(
-        text,
-        {
-          voice: effectiveVoice,
-          format: format || "mp3",
-          volume: volume ?? speechConfig.aliyun?.volume,
-          speechRate: effectiveSpeechRate,
-          pitchRate: pitchRate ?? speechConfig.aliyun?.pitchRate,
-        },
-        speechConfig.aliyun,
-      );
-    } else if (ttsProvider === "openai") {
-      console.log("🤖 使用 OpenAI TTS 服务");
-      audioBuffer = await openAiTextToSpeech(
-        text,
-        {
-          voice: effectiveVoice,
-          model: speechConfig.openai?.ttsModel || "tts-1",
-          speed: effectiveSpeechRate,
-        },
-        speechConfig.openai,
-      );
-    } else if (ttsProvider === "edge") {
-      console.log("🌐 使用 Edge TTS 服务 (尚未实现，回退到硅基流动)");
-      audioBuffer = await siliconTextToSpeech(
-        text,
-        {
-          voice: effectiveVoice,
-          speed: effectiveSpeechRate,
-        },
-        speechConfig.siliconflow,
-      );
+speechRate || 1.0,
+      });
     } else {
-      return res.status(400).json({
-        error: "Unsupported TTS provider",
-        message: `不支持的 TTS 提供商: ${ttsProvider}`,
+      console.log("☁️ 使用阿里云 TTS 服务");
+      // 检查阿里云配置
+      if (!checkAliConfig()) {
+        return res.status(500).json({
+          error: "TTS service not configured",
+          message:
+            "TTS 服务未配置。请提供 SILICONFLOW_API_KEY 或配置阿里云 TTS。",
+        });
+      }
+
+      audioBuffer = await aliTextToSpeech(text, {
+        voice,
+        format: format || "mp3",
+        volume,
+        speechRate,
+        pitchRate,
+>>>>>>> f6e64c2 (feat: 完善系统配置页面与智能体表单)
       });
     }
 
@@ -137,86 +86,33 @@ export async function handleTextToSpeechStream(req, res) {
       return res.status(400).json({ error: "Missing text parameter" });
     }
 
-    // 获取系统配置
-    const config = await getConfigUnmasked();
-    const speechConfig = config.speech || {};
-    const ttsProvider = speechConfig.ttsProvider || "siliconflow";
-
-    // 处理音色和语速的回退逻辑：请求参数 > 系统配置提供商默认值 > 系统全局默认值
-    const effectiveVoice =
-      voice ||
-      speechConfig[ttsProvider]?.ttsVoice ||
-      (ttsProvider === "siliconflow"
-        ? "anna"
-        : ttsProvider === "aliyun"
-          ? "xiaoxian"
-          : ttsProvider === "openai"
-            ? "alloy"
-            : "zh-CN-XiaoxiaoNeural");
-
-    const effectiveSpeechRate =
-      speechRate || speechConfig[ttsProvider]?.speechRate || 150;
-
-    console.log("📨 收到流式 TTS 请求:", {
-      text: text.substring(0, 50),
-      voice: effectiveVoice,
-      speechRate: effectiveSpeechRate,
-      format,
-      provider: ttsProvider,
-    });
+    console.log("📨 收到流式 TTS 请求");
 
     let audioBuffer;
 
-    if (ttsProvider === "siliconflow") {
+    // 优先使用硅基流动
+    if (SILICONFLOW_API_KEY) {
       console.log("🚀 使用硅基流动 TTS 服务 (Stream 模拟)");
-      audioBuffer = await siliconTextToSpeech(
-        text,
-        {
-          voice: effectiveVoice,
-          speed: effectiveSpeechRate,
-        },
-        speechConfig.siliconflow,
-      );
-    } else if (ttsProvider === "aliyun") {
-      console.log("☁️ 使用阿里云 TTS 服务 (Stream 模拟)");
-      audioBuffer = await aliTextToSpeech(
-        text,
-        {
-          voice: effectiveVoice,
-          format: format || "mp3",
-          volume: volume ?? speechConfig.aliyun?.volume,
-          speechRate: effectiveSpeechRate,
-          pitchRate: pitchRate ?? speechConfig.aliyun?.pitchRate,
-        },
-        speechConfig.aliyun,
-      );
-    } else if (ttsProvider === "openai") {
-      console.log("🤖 使用 OpenAI TTS 服务 (Stream 模拟)");
-      audioBuffer = await openAiTextToSpeech(
-        text,
-        {
-          voice: effectiveVoice,
-          model: speechConfig.openai?.ttsModel || "tts-1",
-          speed: effectiveSpeechRate,
-        },
-        speechConfig.openai,
-      );
-    } else if (ttsProvider === "edge") {
-      console.log(
-        "🌐 使用 Edge TTS 服务 (Stream 模拟 - 尚未实现，回退到硅基流动)",
-      );
-      audioBuffer = await siliconTextToSpeech(
-        text,
-        {
-          voice: effectiveVoice,
-          speed: effectiveSpeechRate,
-        },
-        speechConfig.siliconflow,
-      );
+      audioBuffer = await siliconTextToSpeech(text, {
+        voice: voice || "anna",
+        speed: speechRate || 1.0,
+      });
     } else {
-      return res.status(400).json({
-        error: "Unsupported TTS provider",
-        message: `不支持的 TTS 提供商: ${ttsProvider}`,
+      // 检查阿里云配置
+      if (!checkAliConfig()) {
+        return res.status(500).json({
+          error: "TTS service not configured",
+          message: "TTS 服务未配置",
+        });
+      }
+
+      // 阿里云 TTS 不支持真正的流式，但我们可以快速返回
+      audioBuffer = await aliTextToSpeech(text, {
+        voice,
+        format: format || "mp3",
+        volume,
+        speechRate,
+        pitchRate,
       });
     }
 
@@ -249,12 +145,8 @@ export async function handleTextToSpeechStream(req, res) {
  */
 export async function handleGetVoices(req, res) {
   try {
-    const config = await getConfigUnmasked();
-    const speechConfig = config.speech || {};
-    const ttsProvider = speechConfig.ttsProvider || "siliconflow";
-
     let voices = [];
-    if (ttsProvider === "siliconflow") {
+    if (SILICONFLOW_API_KEY) {
       voices = getSiliconVoices();
     } else {
       voices = getAliVoices();

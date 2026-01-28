@@ -234,9 +234,9 @@
               </label>
               <div class="flex gap-2">
                 <div class="flex-1 relative">
-                  <select v-model="form.voice"
+                  <select v-model="form.voice" required
                     class="w-full pl-4 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none cursor-pointer text-sm">
-                    <option value="">跟随系统默认</option>
+                    <option value="" disabled>请选择音色</option>
                     <optgroup v-for="cat in voiceCategories" :key="cat.category" :label="cat.category">
                       <option v-for="voice in cat.voices" :key="voice.id" :value="voice.id">
                         {{ voice.name }} ({{ voice.type }})
