@@ -10,6 +10,7 @@ const RegisterPage = () => import('@/views/auth/RegisterPage.vue')
 const AgentFormPage = () => import('@/views/agent/AgentFormPage.vue')
 const MyAgentsPage = () => import('@/views/agent/MyAgentsPage.vue')
 const AgentChatPage = () => import('@/views/agent/AgentChatPage.vue')
+const AgentWidgetPage = () => import('@/views/agent/AgentWidgetPage.vue')
 const AdminSystemPage = () => import('@/views/admin/AdminSystemPage.vue')
 const KnowledgePage = () => import('@/views/knowledge/KnowledgePage.vue')
 
@@ -81,6 +82,14 @@ const routes = [
     component: AgentChatPage,
     meta: {
       title: '智能体对话'
+    }
+  },
+  {
+    path: '/agent/:agentId/widget',
+    name: 'AgentWidget',
+    component: AgentWidgetPage,
+    meta: {
+      title: '智能体助手'
     }
   },
   {

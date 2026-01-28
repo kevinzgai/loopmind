@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chart AI 插件测试页面</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background-color: #f4f7f6;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        .content {
+            margin-top: 20px;
+        }
+        .card {
+            border: 1px solid #e1e4e8;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .badge {
+            background: #e1f5fe;
+            color: #0288d1;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 插件嵌入测试</h1>
+        <div class="content">
+            <p>这是一个模拟的第三方网站页面，用于测试 <strong>Chart AI 智能体插件</strong> 的嵌入效果。</p>
+            
+            <div class="card">
+                <h3>如何测试？</h3>
+                <p>1. 确保您的前端开发服务器正在运行（例如在 <code>https://192.168.3.5:5173</code>）。</p>
+                <p>2. 观察页面<strong>右下角</strong>，应该会出现一个圆形的聊天气泡图标。</p>
+                <p>3. 点击图标，即可展开智能体对话框。</p>
+            </div>
+
+            <div class="card">
+                <h3>测试状态</h3>
+                <p>当前测试 ID: <span class="badge">697999ee5796c23ad60bc360</span></p>
+                <p>资源地址: <code>https://192.168.3.5:5173/widget.js</code></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 智能体插件脚本 -->
+    <script src="https://192.168.3.5:5173/widget.js" data-agent-id="697999ee5796c23ad60bc360"></script>
+</body>
+</html>

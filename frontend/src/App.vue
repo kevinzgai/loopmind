@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <nav class="navbar">
+    <nav v-if="!isWidgetPage" class="navbar">
       <div class="nav-container">
         <router-link to="/" class="nav-brand" style="text-decoration: none; color: white;">AI Chat</router-link>
         <div class="nav-menu">
@@ -29,11 +29,14 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { onMounted, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { initializeAuth, logout, isAuthenticated, currentUser, isAdmin } from '@/stores/authStore.js'
 
 const router = useRouter()
+const route = useRoute()
+
+const isWidgetPage = computed(() => route.path.includes('/widget'))
 
 onMounted(() => {
   // 初始化认证状态

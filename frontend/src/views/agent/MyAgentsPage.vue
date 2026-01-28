@@ -71,6 +71,12 @@
             编辑
           </router-link>
           <button
+            @click="showEmbedModal(agent)"
+            class="action-btn embed-btn"
+          >
+            嵌入
+          </button>
+          <button
             v-if="!agent.isPublished"
             @click="handlePublish(agent.id)"
             class="action-btn publish-btn"
@@ -117,11 +123,33 @@
         下一页
       </button>
     </div>
+
+    <!-- 嵌入代码弹窗 -->
+    <div v-if="showingEmbedModal" class="modal-overlay" @click="showingEmbedModal = false">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3>获取嵌入代码</h3>
+          <button class="close-btn" @click="showingEmbedModal = false">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-desc">将以下代码复制并粘贴到您网站的 <code>&lt;body&gt;</code> 标签底部：</p>
+          <div class="code-block">
+            <pre><code>{{ embedCode }}</code></pre>
+            <button class="copy-btn" @click="copyEmbedCode">
+              {{ copied ? '已复制!' : '复制代码' }}
+            </button>
+          </div>
+          <div class="preview-note">
+            💡 提示：该插件会在页面右下角显示一个聊天气泡。
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { token } from '@/stores/authStore.js'
 import { getUserAgents, publishAgent, unpublishAgent, deleteAgent } from '@/services/agentService.js'
@@ -138,6 +166,33 @@ const pages = ref(0)
 const publishingId = ref(null)
 const unpublishingId = ref(null)
 const deletingId = ref(null)
+
+// 嵌入代码弹窗相关
+const showingEmbedModal = ref(false)
+const selectedAgent = ref(null)
+const copied = ref(false)
+
+const embedCode = computed(() => {
+  if (!selectedAgent.value) return ''
+  const baseUrl = window.location.origin
+  return `<script src="${baseUrl}/widget.js" data-agent-id="${selectedAgent.value.id}"><\/script>`
+})
+
+const showEmbedModal = (agent) => {
+  selectedAgent.value = agent
+  showingEmbedModal.value = true
+  copied.value = false
+}
+
+const copyEmbedCode = async () => {
+  try {
+    await navigator.clipboard.writeText(embedCode.value)
+    copied.value = true
+    setTimeout(() => { copied.value = false }, 2000)
+  } catch (err) {
+    console.error('复制失败:', err)
+  }
+}
 
 const getModelName = (model) => {
   const models = {
@@ -493,6 +548,15 @@ onMounted(() => {
   background: #bbdefb;
 }
 
+.embed-btn {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.embed-btn:hover {
+  background: #ffe0b2;
+}
+
 .publish-btn {
   background: #f3e5f5;
   color: #7b1fa2;
@@ -571,5 +635,105 @@ onMounted(() => {
   .agents-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* 弹窗样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.modal-header {
+  padding: 1.25rem;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #999;
+  cursor: pointer;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-desc {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+.code-block {
+  position: relative;
+  background: #1e293b;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.code-block pre {
+  margin: 0;
+  color: #e2e8f0;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.copy-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.preview-note {
+  font-size: 12px;
+  color: #999;
+  background: #f8fafc;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border-left: 4px solid #6366f1;
 }
 </style>
