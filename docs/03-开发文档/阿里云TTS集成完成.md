@@ -24,9 +24,9 @@
 ### 3. 环境配置
 在 `backend/.env` 中配置了正确的凭证：
 ```env
-ALI_TTS_ACCESS_KEY_ID=LTAI5tD55kDDXChSkjoZMzg7
-ALI_TTS_ACCESS_KEY_SECRET=umRbtpQzDLUwg4dQwkDVN6jOlaz2Km
-ALI_TTS_APP_KEY=FbaIcFGAP44rsdnY
+ALI_TTS_ACCESS_KEY_ID=your_access_key_id
+ALI_TTS_ACCESS_KEY_SECRET=your_access_key_secret
+ALI_TTS_APP_KEY=your_app_key
 ```
 
 ## 📊 测试结果

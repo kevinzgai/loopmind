@@ -13,7 +13,7 @@
 ## ✅ 你已提供的配置
 
 ```
-ALI_TTS_ACCESS_KEY_SECRET=sk-8426340d2dbc422bbc56e832582a6d40
+ALI_TTS_ACCESS_KEY_SECRET=your_access_key_secret
 ```
 
 这个看起来是 **AccessKey Secret**（访问密钥）。
@@ -80,7 +80,7 @@ ALI_TTS_ACCESS_KEY_SECRET=sk-8426340d2dbc422bbc56e832582a6d40
 ```env
 # 阿里云 TTS 配置
 ALI_TTS_ACCESS_KEY_ID=LTAI5tXXXXXXXXXXXXXX
-ALI_TTS_ACCESS_KEY_SECRET=sk-8426340d2dbc422bbc56e832582a6d40
+ALI_TTS_ACCESS_KEY_SECRET=your_access_key_secret
 ALI_TTS_APP_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
@@ -109,7 +109,7 @@ ALI_TTS_APP_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 ```env
 ALI_TTS_ACCESS_KEY_ID=你的AccessKeyID
-ALI_TTS_ACCESS_KEY_SECRET=sk-8426340d2dbc422bbc56e832582a6d40
+ALI_TTS_ACCESS_KEY_SECRET=your_access_key_secret
 ALI_TTS_APP_KEY=你的AppKey
 ```
 
@@ -143,7 +143,7 @@ ALI_TTS_APP_KEY=你的AppKey
 我就可以帮你完成配置！
 
 当前已有：
-- ✅ AccessKey Secret: sk-8426340d2dbc422bbc56e832582a6d40
+- ✅ AccessKey Secret: your_access_key_secret
 - ❌ AccessKey ID: 待提供
 - ❌ AppKey: 待提供
 
