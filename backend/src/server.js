@@ -4,7 +4,8 @@ import { WebSocketServer } from 'ws';
 import { PORT } from './config/config.js';
 import { connectDatabase, disconnectDatabase } from './config/database.js';
 // 使用完整版本
-import { handleStreamConnection } from './services/aliAsrStreamService.js';
+import { handleStreamConnection as handleAliAsrStream } from './services/aliAsrStreamService.js';
+import { handleStreamConnection as handleSiliconAsrStream } from './services/siliconFlowAsrStreamService.js';
 import { createTTSStream, sendTextWithStart, sendComplete, parseMessage } from './services/aliTtsStreamService.js';
 import { v4 as uuidv4 } from 'uuid';
 import User from './models/UserSchema.js';
@@ -23,8 +24,14 @@ wss.on('connection', (ws, req) => {
     console.log('📞 收到 WebSocket 连接请求，路径:', path);
     
     if (path === '/ws-asr-stream') {
-        console.log('✅ 阿里云流式 ASR 客户端已连接');
-        handleStreamConnection(ws);
+        console.log('✅ 流式 ASR 客户端已连接 (优先使用硅基流动)');
+        // 检查硅基流动配置
+        if (process.env.SILICONFLOW_API_KEY && process.env.SILICONFLOW_API_KEY !== 'sk-jpoxqccvcdgotfwsnysjeuwtovqxffzfxpomwtcjrlloymfb_placeholder') {
+            handleSiliconAsrStream(ws);
+        } else {
+            console.log('⚠️ 硅基流动未配置，尝试使用阿里云');
+            handleAliAsrStream(ws);
+        }
     } else if (path.startsWith('/ws-tts-stream')) {
         console.log('✅ 阿里云流式 TTS 客户端已连接');
         handleTTSStreamConnection(ws, req);
