@@ -24,10 +24,13 @@ function getConfig() {
  * 文件语音识别
  * @param {Buffer} audioBuffer - 音频文件数据
  * @param {Object} options - 配置选项
+ * @param {Object} config - 服务配置 (apiKey, baseURL, asrModel)
  * @returns {Promise<string>} 识别结果文本
  */
-export async function recognizeFile(audioBuffer, options = {}) {
-  const { apiKey, baseURL, model: defaultModel } = getConfig();
+export async function recognizeFile(audioBuffer, options = {}, config = {}) {
+  const apiKey = config.apiKey || process.env.SILICONFLOW_API_KEY;
+  const baseURL = config.baseURL || process.env.SILICONFLOW_BASE_URL || "https://api.siliconflow.cn/v1";
+  const defaultModel = config.asrModel || process.env.SILICONFLOW_ASR_MODEL || "FunAudioLLM/SenseVoiceSmall";
 
   if (!apiKey) {
     throw new Error("硅基流动 API Key 未配置");

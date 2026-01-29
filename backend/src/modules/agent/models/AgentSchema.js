@@ -51,12 +51,10 @@ const agentSchema = new mongoose.Schema(
       maxlength: [500, '初始记忆最多 500 个字符']
     },
     voice: {
-      type: String,
-      default: 'xiaoxian'
+      type: String
     },
     speechRate: {
-      type: Number,
-      default: 150
+      type: Number
     },
     knowledgeBaseId: {
       type: mongoose.Schema.Types.ObjectId,

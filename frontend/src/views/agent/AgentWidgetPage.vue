@@ -16,14 +16,14 @@
       <div class="widget-header">
         <div class="agent-info">
           <div class="agent-avatar-mini">
-            <img v-if="agent?.avatar && (agent.avatar.startsWith('http') || agent.avatar.startsWith('data:'))" 
-                 :src="agent.avatar" :alt="agent.name" />
+            <img v-if="agent?.avatar && (agent.avatar.startsWith('http') || agent.avatar.startsWith('data:'))"
+              :src="agent.avatar" :alt="agent.name" />
             <span v-else>{{ agent?.avatar || '🤖' }}</span>
           </div>
           <span class="agent-name">{{ agent?.name }}</span>
         </div>
         <div class="header-actions">
-           <button @click="toggleTTS" class="icon-btn" :class="{ 'active': ttsEnabled }">
+          <button @click="toggleTTS" class="icon-btn" :class="{ 'active': ttsEnabled }">
             <Volume2 v-if="ttsEnabled" :size="16" />
             <VolumeX v-else :size="16" />
           </button>
@@ -36,13 +36,10 @@
           <div class="welcome-icon">{{ agent?.avatar || '🤖' }}</div>
           <p class="welcome-text">{{ agent?.initialMemory || 'Hi! 有什么我可以帮你的吗？' }}</p>
         </div>
-        
+
         <div class="bubble-list">
-          <div
-            v-for="message in messages"
-            :key="message.id"
-            :class="['bubble', message.role === 'user' ? 'bubble-user' : 'bubble-assistant']"
-          >
+          <div v-for="message in messages" :key="message.id"
+            :class="['bubble', message.role === 'user' ? 'bubble-user' : 'bubble-assistant']">
             <div class="bubble-content" v-html="renderMessageContent(message.content)"></div>
           </div>
           <div v-if="isLoading" ref="loadingRef" class="bubble bubble-assistant">
@@ -57,14 +54,8 @@
       <!-- 输入区域 -->
       <div class="input-area">
         <div class="input-wrapper">
-          <textarea 
-            v-model="inputText"
-            @keydown.enter.prevent="sendMessage"
-            placeholder="输入消息..."
-            :disabled="isLoading"
-            rows="1"
-            ref="inputRef"
-          ></textarea>
+          <textarea v-model="inputText" @keydown.enter.prevent="sendMessage" placeholder="输入消息..." :disabled="isLoading"
+            rows="1" ref="inputRef"></textarea>
           <button @click="sendMessage" :disabled="!inputText.trim() || isLoading" class="send-btn">
             <Send :size="18" />
           </button>
@@ -94,8 +85,111 @@ const messages = ref([])
 const inputText = ref('')
 const isLoading = ref(false)
 const ttsEnabled = ref(false)
+const isSpeaking = ref(false)
 const messagesArea = ref(null)
 const inputRef = ref(null)
+
+let audioQueue = []
+let isPlayingQueue = false
+let ttsRequestQueue = []
+let activeTTSRequests = 0
+const MAX_CONCURRENT_TTS = 1
+
+// 停止所有音频播放
+const stopAllAudio = () => {
+  audioQueue.forEach(audio => {
+    audio.pause()
+    audio.currentTime = 0
+  })
+  audioQueue = []
+  ttsRequestQueue = []
+  isPlayingQueue = false
+  isSpeaking.value = false
+}
+
+// 播放单个音频
+const playAudio = (audio) => {
+  return new Promise((resolve, reject) => {
+    audio.onended = () => resolve()
+    audio.onerror = () => reject(new Error('音频播放失败'))
+    audio.play().catch(reject)
+  })
+}
+
+// 播放音频队列
+const playAudioQueue = async () => {
+  if (isPlayingQueue || audioQueue.length === 0) return
+
+  isPlayingQueue = true
+  isSpeaking.value = true
+
+  while (audioQueue.length > 0) {
+    const audio = audioQueue.shift()
+    if (audio) {
+      try {
+        await playAudio(audio)
+      } catch (error) {
+        console.error('播放音频失败:', error)
+      }
+    }
+  }
+
+  isPlayingQueue = false
+  isSpeaking.value = false
+}
+
+// 处理 TTS 请求队列
+const processTTSQueue = async () => {
+  while (ttsRequestQueue.length > 0 && activeTTSRequests < MAX_CONCURRENT_TTS) {
+    const task = ttsRequestQueue.shift()
+    if (task) {
+      activeTTSRequests++
+      try {
+        await task()
+      } catch (error) {
+        console.error('TTS 任务执行失败:', error)
+      } finally {
+        activeTTSRequests--
+        if (ttsRequestQueue.length > 0) {
+          processTTSQueue()
+        }
+      }
+    }
+  }
+}
+
+// 文本转语音（添加到队列）
+const textToSpeech = async (text) => {
+  if (!ttsEnabled.value || !text.trim()) return
+
+  const ttsTask = async () => {
+    try {
+      const response = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: text,
+          voice: agent.value?.voice,
+          speechRate: agent.value?.speechRate
+        })
+      })
+
+      if (!response.ok) throw new Error('TTS 请求失败')
+
+      const blob = await response.blob()
+      const audioUrl = URL.createObjectURL(blob)
+      const audio = new Audio(audioUrl)
+
+      audioQueue.push(audio)
+      playAudioQueue()
+    } catch (error) {
+      console.error('TTS 转换失败:', error)
+    }
+  }
+
+  ttsRequestQueue.push(ttsTask)
+  processTTSQueue()
+}
 
 // 匿名用户 ID
 const getAnonymousUserId = () => {
@@ -122,7 +216,7 @@ const handleScroll = (e) => {
 
 const scrollToBottom = async () => {
   if (!shouldAutoScroll.value) return
-  
+
   await nextTick()
 
   // 优先滚动到 Loading 元素
@@ -134,7 +228,7 @@ const scrollToBottom = async () => {
   if (messagesArea.value) {
     messagesArea.value.scrollTop = messagesArea.value.scrollHeight
   }
-  
+
   // 作为双重保险
   if (bottomAnchor.value) {
     bottomAnchor.value.scrollIntoView({ behavior: 'auto', block: 'end' })
@@ -166,13 +260,14 @@ const sendMessage = async () => {
 
   inputText.value = ''
   messages.value.push({ id: Date.now(), role: 'user', content: text })
-  
+
   const aiMessageId = Date.now() + 1
   messages.value.push({ id: aiMessageId, role: 'assistant', content: '' })
   shouldAutoScroll.value = true
   isLoading.value = true
 
   try {
+    stopAllAudio()
     const response = await fetch(`/api/agent/${agentId}/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -184,13 +279,39 @@ const sendMessage = async () => {
     const reader = response.body.getReader()
     const decoder = new TextDecoder()
     let fullResponse = ''
+    let lastSentenceEnd = 0
 
     while (true) {
       const { done, value } = await reader.read()
       if (done) break
-      fullResponse += decoder.decode(value, { stream: true })
+      const chunk = decoder.decode(value, { stream: true })
+      fullResponse += chunk
       messages.value[messages.value.length - 1].content = fullResponse
       scrollToBottom()
+
+      // 如果启用了 TTS，检查是否有完整的句子
+      if (ttsEnabled.value) {
+        const sentenceEndRegex = /[。！？.!?]+/g
+        let match
+        while ((match = sentenceEndRegex.exec(fullResponse)) !== null) {
+          const endIndex = match.index + match[0].length
+          if (endIndex > lastSentenceEnd) {
+            const sentence = fullResponse.substring(lastSentenceEnd, endIndex).trim()
+            if (sentence.length > 0) {
+              textToSpeech(sentence)
+            }
+            lastSentenceEnd = endIndex
+          }
+        }
+      }
+    }
+
+    // 处理最后可能剩余的文本
+    if (ttsEnabled.value && lastSentenceEnd < fullResponse.length) {
+      const remainingText = fullResponse.substring(lastSentenceEnd).trim()
+      if (remainingText.length > 0) {
+        textToSpeech(remainingText)
+      }
     }
   } catch (error) {
     console.error(error)
@@ -200,7 +321,12 @@ const sendMessage = async () => {
   }
 }
 
-const toggleTTS = () => { ttsEnabled.value = !ttsEnabled.value }
+const toggleTTS = () => {
+  ttsEnabled.value = !ttsEnabled.value
+  if (!ttsEnabled.value) {
+    stopAllAudio()
+  }
+}
 
 const renderMessageContent = (content) => {
   if (!content) return ''
@@ -417,20 +543,26 @@ textarea {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-:deep(.bubble-content) p { margin: 0; }
-:deep(.bubble-content) pre { 
-  background: #f1f1f1; 
-  padding: 8px; 
-  border-radius: 4px; 
-  overflow-x: auto; 
+:deep(.bubble-content) p {
+  margin: 0;
+}
+
+:deep(.bubble-content) pre {
+  background: #f1f1f1;
+  padding: 8px;
+  border-radius: 4px;
+  overflow-x: auto;
   margin: 5px 0;
 }
-:deep(.bubble-content) code { 
-  background: #f1f1f1; 
-  padding: 2px 4px; 
+
+:deep(.bubble-content) code {
+  background: #f1f1f1;
+  padding: 2px 4px;
   border-radius: 3px;
 }
 </style>

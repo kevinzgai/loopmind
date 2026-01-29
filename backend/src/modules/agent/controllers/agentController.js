@@ -8,9 +8,9 @@ import {
   unpublishAgent,
   deleteAgent,
   getOrCreateMemory,
-  getUserMemory
-} from '../services/agentService.js';
-import { callAI } from '../../../services/aiService.js';
+  getUserMemory,
+} from "../services/agentService.js";
+import { callAI } from "../../../services/aiService.js";
 
 /**
  * 智能体控制器
@@ -27,9 +27,9 @@ export async function handleGenerateAgentConfig(req, res, next) {
     if (!prompt) {
       return res.status(400).json({
         error: {
-          message: 'Prompt is required',
-          code: 'MISSING_PROMPT'
-        }
+          message: "Prompt is required",
+          code: "MISSING_PROMPT",
+        },
       });
     }
 
@@ -49,27 +49,26 @@ The JSON must have these fields:
 Return ONLY the raw JSON string. Do not include markdown formatting like \`\`\`json.`;
 
     const aiResponse = await callAI([
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: prompt }
+      { role: "system", content: systemPrompt },
+      { role: "user", content: prompt },
     ]);
 
     let configStr = aiResponse.choices[0].message.content.trim();
     // Clean up markdown if present
-    if (configStr.startsWith('```json')) {
-      configStr = configStr.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-    } else if (configStr.startsWith('```')) {
-        configStr = configStr.replace(/^```\s*/, '').replace(/\s*```$/, '');
+    if (configStr.startsWith("```json")) {
+      configStr = configStr.replace(/^```json\s*/, "").replace(/\s*```$/, "");
+    } else if (configStr.startsWith("```")) {
+      configStr = configStr.replace(/^```\s*/, "").replace(/\s*```$/, "");
     }
 
     const config = JSON.parse(configStr);
 
     res.status(200).json({
-      message: 'Agent config generated',
-      config
+      message: "Agent config generated",
+      config,
     });
-
   } catch (error) {
-    console.error('❌ Failed to generate agent config:', error);
+    console.error("❌ Failed to generate agent config:", error);
     next(error);
   }
 }
@@ -81,15 +80,26 @@ Return ONLY the raw JSON string. Do not include markdown formatting like \`\`\`j
 export async function handleCreateAgent(req, res, next) {
   try {
     const userId = req.user.userId;
-    const { name, description, avatar, category, model, personality, initialMemory, voice, speechRate, knowledgeBaseId } = req.body;
+    const {
+      name,
+      description,
+      avatar,
+      category,
+      model,
+      personality,
+      initialMemory,
+      voice,
+      speechRate,
+      knowledgeBaseId,
+    } = req.body;
 
     // 验证必填字段
     if (!name) {
       return res.status(400).json({
         error: {
-          message: '智能体名称不能为空',
-          code: 'MISSING_NAME'
-        }
+          message: "智能体名称不能为空",
+          code: "MISSING_NAME",
+        },
       });
     }
 
@@ -97,21 +107,21 @@ export async function handleCreateAgent(req, res, next) {
       name,
       description,
       avatar,
-      category: category || '生活',
-      model: model || 'deepseek',
+      category: category || "生活",
+      model: model || "deepseek",
       personality,
       initialMemory,
-      voice: voice || 'xiaoxian',
-      speechRate: speechRate || 150,
-      knowledgeBaseId
+      voice,
+      speechRate,
+      knowledgeBaseId,
     });
 
     res.status(201).json({
-      message: '智能体创建成功',
-      agent
+      message: "智能体创建成功",
+      agent,
     });
   } catch (error) {
-    console.error('❌ 创建智能体失败:', error.message);
+    console.error("❌ 创建智能体失败:", error.message);
     next(error);
   }
 }
@@ -127,15 +137,15 @@ export async function handleGetUserAgents(req, res, next) {
 
     const result = await getUserAgents(userId, {
       page: parseInt(page),
-      limit: parseInt(limit)
+      limit: parseInt(limit),
     });
 
     res.status(200).json({
-      message: '获取用户智能体列表成功',
-      ...result
+      message: "获取用户智能体列表成功",
+      ...result,
     });
   } catch (error) {
-    console.error('❌ 获取用户智能体列表失败:', error.message);
+    console.error("❌ 获取用户智能体列表失败:", error.message);
     next(error);
   }
 }
@@ -151,15 +161,15 @@ export async function handleGetPublishedAgents(req, res, next) {
     const result = await getPublishedAgents({
       page: parseInt(page),
       limit: parseInt(limit),
-      category
+      category,
     });
 
     res.status(200).json({
-      message: '获取已发布智能体列表成功',
-      ...result
+      message: "获取已发布智能体列表成功",
+      ...result,
     });
   } catch (error) {
-    console.error('❌ 获取已发布智能体列表失败:', error.message);
+    console.error("❌ 获取已发布智能体列表失败:", error.message);
     next(error);
   }
 }
@@ -175,11 +185,11 @@ export async function handleGetAgent(req, res, next) {
     const agent = await getAgent(agentId);
 
     res.status(200).json({
-      message: '获取智能体详情成功',
-      agent
+      message: "获取智能体详情成功",
+      agent,
     });
   } catch (error) {
-    console.error('❌ 获取智能体详情失败:', error.message);
+    console.error("❌ 获取智能体详情失败:", error.message);
     next(error);
   }
 }
@@ -197,11 +207,11 @@ export async function handleUpdateAgent(req, res, next) {
     const agent = await updateAgent(agentId, userId, updateData);
 
     res.status(200).json({
-      message: '智能体更新成功',
-      agent
+      message: "智能体更新成功",
+      agent,
     });
   } catch (error) {
-    console.error('❌ 更新智能体失败:', error.message);
+    console.error("❌ 更新智能体失败:", error.message);
     next(error);
   }
 }
@@ -218,11 +228,11 @@ export async function handlePublishAgent(req, res, next) {
     const agent = await publishAgent(agentId, userId);
 
     res.status(200).json({
-      message: '智能体发布成功',
-      agent
+      message: "智能体发布成功",
+      agent,
     });
   } catch (error) {
-    console.error('❌ 发布智能体失败:', error.message);
+    console.error("❌ 发布智能体失败:", error.message);
     next(error);
   }
 }
@@ -239,11 +249,11 @@ export async function handleUnpublishAgent(req, res, next) {
     const agent = await unpublishAgent(agentId, userId);
 
     res.status(200).json({
-      message: '智能体下架成功',
-      agent
+      message: "智能体下架成功",
+      agent,
     });
   } catch (error) {
-    console.error('❌ 下架智能体失败:', error.message);
+    console.error("❌ 下架智能体失败:", error.message);
     next(error);
   }
 }
@@ -256,7 +266,7 @@ export async function handleDeleteAgent(req, res, next) {
 
     res.status(200).json(result);
   } catch (error) {
-    console.error('❌ 删除智能体失败:', error.message);
+    console.error("❌ 删除智能体失败:", error.message);
     next(error);
   }
 }
@@ -273,18 +283,18 @@ export async function handleGetMemory(req, res, next) {
     const memory = await getUserMemory(agentId, userId);
 
     res.status(200).json({
-      message: '获取记忆成功',
+      message: "获取记忆成功",
       memory: memory || {
         agentId,
         userId,
-        content: '',
+        content: "",
         contentLength: 0,
         conversationCount: 0,
-        keywords: []
-      }
+        keywords: [],
+      },
     });
   } catch (error) {
-    console.error('❌ 获取记忆失败:', error.message);
+    console.error("❌ 获取记忆失败:", error.message);
     next(error);
   }
 }
@@ -298,5 +308,5 @@ export default {
   handlePublishAgent,
   handleUnpublishAgent,
   handleDeleteAgent,
-  handleGetMemory
+  handleGetMemory,
 };

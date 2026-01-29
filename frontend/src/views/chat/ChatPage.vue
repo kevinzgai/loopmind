@@ -271,9 +271,7 @@ async function textToSpeech(text) {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          text: text,
-          voice: 'xiaoxian',  // 使用小贤音色
-          speechRate: 150      // 语速 150
+          text: text
         })
       })
       
