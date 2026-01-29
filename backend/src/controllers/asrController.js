@@ -1,7 +1,7 @@
-import { recognizeFile as aliRecognizeFile } from '../services/aliAsrService.js';
-import { recognizeFile as siliconRecognizeFile } from '../services/siliconFlowAsrService.js';
-import { convertToPcm } from '../utils/audioConverter.js';
-import { SILICONFLOW_API_KEY } from '../config/config.js';
+import { recognizeFile as aliRecognizeFile } from "../services/aliAsrService.js";
+import { recognizeFile as siliconRecognizeFile } from "../services/siliconFlowAsrService.js";
+import { convertToPcm } from "../utils/audioConverter.js";
+import { getConfigUnmasked } from "../services/configService.js";
 
 /**
  * 处理语音识别请求
@@ -18,81 +18,12 @@ export async function handleRecognition(req, res) {
     console.log("📋 Content-Type:", req.headers["content-type"]);
     console.log("⚙️ ASR Provider:", asrProvider);
 
-        // 从请求中获取格式参数（优先级更高）
-        if (req.body.format) {
-            format = req.body.format;
-        }
-
-        console.log('🎤 原始音频数据大小:', audioBuffer.length, 'bytes');
-        console.log('⚙️ 音频格式:', format);
-
-        // 检查音频数据大小
-        if (audioBuffer.length < 100) {
-            return res.status(400).json({
-                error: 'Audio data too small',
-                message: '音频数据太小，请确保录音时间足够长'
-            });
-        }
-
-        // 获取识别选项
-        const sampleRate = parseInt(req.body.sampleRate) || 16000;
-        
-        // 决定使用哪个 ASR 服务
-        // 优先使用硅基流动，如果配置了 Key 的话
-        const useSiliconFlow = !!SILICONFLOW_API_KEY;
-        let result;
-
-        if (useSiliconFlow) {
-            console.log('🚀 使用硅基流动 ASR 服务');
-            result = await siliconRecognizeFile(audioBuffer, {
-                format: format,
-                sampleRate: sampleRate
-            });
-        } else {
-            console.log('☁️ 使用阿里云 ASR 服务');
-            let pcmBuffer = audioBuffer;
-            if (format === 'webm' || format === 'mp3' || format === 'ogg' || format === 'wav') {
-                console.log('🔄 正在转换音频格式:', format, '→ PCM');
-                try {
-                    pcmBuffer = await convertToPcm(audioBuffer, format, {
-                        sampleRate: sampleRate,
-                        channels: 1,
-                        bitDepth: 16
-                    });
-                    console.log('✅ 音频转换完成，PCM 数据大小:', pcmBuffer.length, 'bytes');
-                } catch (convertError) {
-                    console.error('❌ 音频转换失败:', convertError);
-                    return res.status(400).json({
-                        error: 'Audio conversion failed',
-                        message: `音频转换失败: ${convertError.message}。请尝试使用 WAV 格式或确保录音数据完整。`
-                    });
-                }
-            }
-
-            const options = {
-                format: 'pcm',
-                sampleRate: sampleRate,
-                enablePunctuationPrediction: req.body.enablePunctuation !== false,
-                enableInverseTextNormalization: req.body.enableITN !== false
-            };
-            result = await aliRecognizeFile(pcmBuffer, options);
-        }
-
-        console.log('✅ 识别成功:', result);
-
-        // 返回结果
-        res.json({
-            success: true,
-            text: result,
-            timestamp: new Date().toISOString()
-        });
-
-    } catch (error) {
-        console.error('❌ ASR 请求处理失败:', error);
-        res.status(500).json({
-            error: 'Recognition failed',
-            message: error.message
-        });
+    // 检查是否有音频数据
+    if (!req.file && !req.body.audio) {
+      return res.status(400).json({
+        error: "No audio data",
+        message: "未提供音频数据",
+      });
     }
 
     // 获取音频数据

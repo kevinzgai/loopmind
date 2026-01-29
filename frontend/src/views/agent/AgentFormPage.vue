@@ -63,8 +63,8 @@ const form = reactive({
   model: 'deepseek',
   personality: '',
   initialMemory: '',
-  voice: 'xiaoxian',
-  speechRate: 130,
+  voice: '',
+  speechRate: 150,
   knowledgeBaseId: null
 })
 

@@ -49,7 +49,10 @@
           Ollama 本地
         </div>
         <div class="nav-divider">语音服务</div>
-
+        <div class="nav-item" :class="{ active: activeTab === 'speech' }" @click="activeTab = 'speech'">
+          <span class="icon">🔊</span>
+          语音服务 (TTS/ASR)
+        </div>
         <div class="nav-item" :class="{ active: activeTab === 'seedAsr' }" @click="activeTab = 'seedAsr'">
           <span class="icon">🎙️</span>
           Seed ASR
@@ -671,18 +674,28 @@
                 </a>
               </label>
               <div class="input-group">
-                <input :type="showEmbeddingKey ? 'text' : 'password'" v-model="form.embedding.apiKey"
-                  placeholder="请输入 API Key" autocomplete="new-password" />
-                <button class="toggle-btn" @click="showEmbeddingKey = !showEmbeddingKey">
-                  {{ showEmbeddingKey ? '隐藏' : '显示' }}
+                <input :type="showSpeechSiliconKey ? 'text' : 'password'" v-model="form.speech.siliconflow.apiKey"
+                  placeholder="请输入 SiliconFlow API Key" autocomplete="new-password" />
+                <button class="toggle-btn" @click="showSpeechSiliconKey = !showSpeechSiliconKey">
+                  {{ showSpeechSiliconKey ? '隐藏' : '显示' }}
                 </button>
               </div>
             </div>
             <div class="field">
               <label>Base URL</label>
-              <input type="text" v-model="form.embedding.baseURL"
-                placeholder="例如: https://dashscope.aliyuncs.com/compatible-mode/v1" />
-              <p class="help-text">如果不填写，将默认使用 OpenAI 官方地址</p>
+              <input type="text" v-model="form.speech.siliconflow.baseURL"
+                placeholder="https://api.siliconflow.cn/v1" />
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="field">
+                <label>TTS 模型</label>
+                <input type="text" v-model="form.speech.siliconflow.ttsModel"
+                  placeholder="FunAudioLLM/CosyVoice2-0.5B" />
+              </div>
+              <div class="field">
+                <label>默认音色 (Voice ID)</label>
+                <input type="text" v-model="form.speech.siliconflow.ttsVoice" placeholder="anna" />
+              </div>
             </div>
             <div class="field">
               <div class="flex justify-between items-center mb-2">
