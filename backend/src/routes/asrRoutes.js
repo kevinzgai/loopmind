@@ -23,7 +23,7 @@ const upload = multer({
  *
  * @apiSuccess {String} text 识别出的文本
  */
-router.post('/', upload.single('audio'), handleRecognition);
+router.post('/', upload.single('file'), handleRecognition);
 
 // 健康检查
 /**

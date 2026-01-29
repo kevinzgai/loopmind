@@ -10,7 +10,21 @@ import { textToSpeech as openAiTextToSpeech } from "../services/ttsService.js";
 import { getConfigUnmasked } from "../services/configService.js";
 
 /**
- * 处理文字转语音请求
+ * @api {post} /external/tts 文字转语音
+ * @apiName TextToSpeech
+ * @apiGroup ExternalTTS
+ * @apiVersion 1.0.0
+ * 
+ * @apiHeader {String} X-API-Key API 访问密钥
+ * 
+ * @apiBody {String} text 要转换的文本
+ * @apiBody {String} [voice] 音色ID (如 'anna', 'xiaoxian')
+ * @apiBody {Number} [speechRate] 语速 (默认 150)
+ * @apiBody {Number} [volume] 音量
+ * @apiBody {String} [format='mp3'] 音频格式 (mp3/wav)
+ * @apiBody {String} [provider] 服务提供商 (siliconflow/aliyun/openai)
+ * 
+ * @apiSuccess {Buffer} audio 音频二进制数据
  */
 export async function handleTextToSpeech(req, res) {
   try {
@@ -23,7 +37,8 @@ export async function handleTextToSpeech(req, res) {
     // 获取系统配置
     const config = await getConfigUnmasked();
     const speechConfig = config.speech || {};
-    const ttsProvider = speechConfig.ttsProvider || "siliconflow";
+    // 优先使用请求参数中的 provider，否则使用系统配置
+    const ttsProvider = req.body.provider || speechConfig.ttsProvider || "siliconflow";
 
     // 处理音色和语速的回退逻辑：请求参数 > 系统配置提供商默认值 > 系统全局默认值
     const effectiveVoice =
@@ -244,7 +259,17 @@ export async function handleTextToSpeechStream(req, res) {
 }
 
 /**
- * 获取支持的语音列表
+ * @api {get} /external/tts/voices 获取音色列表
+ * @apiName GetVoices
+ * @apiGroup ExternalTTS
+ * @apiVersion 1.0.0
+ * 
+ * @apiHeader {String} X-API-Key API 访问密钥
+ * 
+ * @apiSuccess {Object[]} voices 音色列表
+ * @apiSuccess {String} voices.id 音色ID
+ * @apiSuccess {String} voices.name 音色名称
+ * @apiSuccess {String} voices.lang 语言
  */
 export async function handleGetVoices(req, res) {
   try {

@@ -13,6 +13,7 @@ const AgentChatPage = () => import('@/views/agent/AgentChatPage.vue')
 const AgentWidgetPage = () => import('@/views/agent/AgentWidgetPage.vue')
 const AdminSystemPage = () => import('@/views/admin/AdminSystemPage.vue')
 const KnowledgePage = () => import('@/views/knowledge/KnowledgePage.vue')
+const AgentCapabilitiesPage = () => import('@/views/agent/AgentCapabilitiesPage.vue')
 
 const routes = [
   {
@@ -113,6 +114,15 @@ const routes = [
     component: KnowledgePage,
     meta: {
       title: '知识库管理',
+      requiresAuth: true
+    }
+  },
+  {
+    path: '/agent/capabilities',
+    name: 'AgentCapabilities',
+    component: AgentCapabilitiesPage,
+    meta: {
+      title: '智能体能力矩阵',
       requiresAuth: true
     }
   },

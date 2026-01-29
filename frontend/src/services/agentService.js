@@ -22,7 +22,7 @@ export async function generateAgentConfig(prompt) {
 /**
  * 创建智能体
  */
-export async function createAgent(agentData, token) {
+export async function createAgent(agentData) {
   try {
     return await apiService.post(`${API_BASE}/create`, agentData)
   } catch (error) {
@@ -34,7 +34,7 @@ export async function createAgent(agentData, token) {
 /**
  * 获取用户的智能体列表
  */
-export async function getUserAgents(token, page = 1, limit = 10) {
+export async function getUserAgents(page = 1, limit = 10) {
   try {
     return await apiService.get(`${API_BASE}/my-agents`, { page, limit })
   } catch (error) {
@@ -74,7 +74,7 @@ export async function getAgent(agentId) {
 /**
  * 更新智能体
  */
-export async function updateAgent(agentId, updateData, token) {
+export async function updateAgent(agentId, updateData) {
   try {
     return await apiService.put(`${API_BASE}/${agentId}`, updateData)
   } catch (error) {
@@ -86,7 +86,7 @@ export async function updateAgent(agentId, updateData, token) {
 /**
  * 发布智能体
  */
-export async function publishAgent(agentId, token) {
+export async function publishAgent(agentId) {
   try {
     return await apiService.post(`${API_BASE}/${agentId}/publish`)
   } catch (error) {
@@ -98,7 +98,7 @@ export async function publishAgent(agentId, token) {
 /**
  * 下架智能体
  */
-export async function unpublishAgent(agentId, token) {
+export async function unpublishAgent(agentId) {
   try {
     return await apiService.post(`${API_BASE}/${agentId}/unpublish`)
   } catch (error) {
@@ -107,7 +107,7 @@ export async function unpublishAgent(agentId, token) {
   }
 }
 
-export async function deleteAgent(agentId, token) {
+export async function deleteAgent(agentId) {
   try {
     return await apiService.delete(`${API_BASE}/${agentId}`)
   } catch (error) {
@@ -119,7 +119,7 @@ export async function deleteAgent(agentId, token) {
 /**
  * 获取用户与智能体的记忆
  */
-export async function getMemory(agentId, token) {
+export async function getMemory(agentId) {
   try {
     return await apiService.get(`${API_BASE}/${agentId}/memory`)
   } catch (error) {

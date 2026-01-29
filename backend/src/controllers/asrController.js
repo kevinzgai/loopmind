@@ -4,7 +4,23 @@ import { convertToPcm } from "../utils/audioConverter.js";
 import { getConfigUnmasked } from "../services/configService.js";
 
 /**
- * 处理语音识别请求
+ * @api {post} /external/asr 语音识别
+ * @apiName AudioRecognition
+ * @apiGroup ExternalASR
+ * @apiVersion 1.0.0
+ * 
+ * @apiHeader {String} X-API-Key API 访问密钥
+ * @apiHeader {String} Content-Type multipart/form-data 或 application/json
+ * 
+ * @apiBody {File} [file] 音频文件 (multipart/form-data)
+ * @apiBody {String} [audio] Base64编码的音频数据 (application/json)
+ * @apiBody {String} [format] 音频格式 (如 'wav', 'mp3', 'pcm')
+ * @apiBody {Number} [sampleRate=16000] 采样率
+ * @apiBody {String} [provider] 服务提供商 (siliconflow/aliyun)
+ * 
+ * @apiSuccess {Boolean} success 请求是否成功
+ * @apiSuccess {String} text 识别结果文本
+ * @apiSuccess {String} timestamp 时间戳
  */
 export async function handleRecognition(req, res) {
   try {
@@ -13,7 +29,8 @@ export async function handleRecognition(req, res) {
     // 获取系统配置
     const config = await getConfigUnmasked();
     const speechConfig = config.speech || {};
-    const asrProvider = speechConfig.asrProvider || "siliconflow";
+    // 优先使用请求体中的 provider，否则使用系统默认配置
+    const asrProvider = req.body.provider || speechConfig.asrProvider || "siliconflow";
 
     console.log("📋 Content-Type:", req.headers["content-type"]);
     console.log("⚙️ ASR Provider:", asrProvider);

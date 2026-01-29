@@ -74,8 +74,8 @@ apiClient.interceptors.response.use(
 // 统一请求方法封装
 export default {
   // GET 请求
-  get(url, params = {}) {
-    return apiClient.get(url, { params })
+  get(url, params = {}, options = {}) {
+    return apiClient.get(url, { params, ...options })
   },
   
   // POST 请求
@@ -89,8 +89,8 @@ export default {
   },
   
   // DELETE 请求
-  delete(url, params = {}) {
-    return apiClient.delete(url, { params })
+  delete(url, options = {}) {
+    return apiClient.delete(url, options)
   },
   
   // PATCH 请求

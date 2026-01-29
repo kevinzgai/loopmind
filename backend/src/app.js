@@ -11,6 +11,7 @@ import agentRoutes from './modules/agent/routes/agentRoutes.js';
 import knowledgeRoutes from './modules/knowledge/routes/knowledgeRoutes.js';
 import adminConfigRoutes from './routes/adminConfigRoutes.js';
 import externalRoutes from './routes/externalRoutes.js';
+import apiKeyRoutes from './routes/apiKeyRoutes.js';
 import { errorHandler } from './shared/middleware/errorHandler.js';
 import { errorHandler as authErrorHandler } from './shared/middleware/authMiddleware.js';
 import { setupSecurityMiddleware } from './middleware/securityMiddleware.js';
@@ -48,6 +49,7 @@ app.use('/api/tts', ttsRoutes);
 app.use('/api/voice', voiceRoutes);
 app.use('/api/asr', asrRoutes);
 app.use('/api/external', externalRoutes);
+app.use('/api/api-key', apiKeyRoutes);
 
 // 健康检查接口
 app.get('/api/health', (req, res) => {

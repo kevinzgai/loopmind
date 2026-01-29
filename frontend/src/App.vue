@@ -9,6 +9,7 @@
           <template v-if="isAuthenticated">
             <router-link to="/chat" class="nav-link">对话</router-link>
             <router-link to="/agent/my-agents" class="nav-link">我的智能体</router-link>
+            <router-link to="/agent/capabilities" class="nav-link">能力矩阵</router-link>
             <router-link to="/knowledge" class="nav-link">知识库</router-link>
             <router-link v-if="isAdmin" to="/admin/system" class="nav-link">系统配置</router-link>
             <div class="nav-user">
