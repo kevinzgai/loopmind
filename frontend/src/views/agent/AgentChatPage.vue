@@ -456,8 +456,8 @@ async function textToSpeech(text) {
         },
         body: JSON.stringify({
           text: text,
-          voice: agent.value.voice || 'xiaoxian',
-          speechRate: agent.value.speechRate || 150
+          voice: agent.value.voice,
+          speechRate: agent.value.speechRate
         })
       })
       

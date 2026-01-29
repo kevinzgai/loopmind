@@ -63,8 +63,8 @@ const form = reactive({
   model: 'deepseek',
   personality: '',
   initialMemory: '',
-  voice: 'xiaoxian',
-  speechRate: 130,
+  voice: '',
+  speechRate: 150,
   knowledgeBaseId: null
 })
 
@@ -93,7 +93,7 @@ const loadAgent = async () => {
     form.model = result.model || defaultProvider.value || 'deepseek'
     form.personality = result.personality || ''
     form.initialMemory = result.initialMemory || ''
-    form.voice = result.voice || 'xiaoxian'
+    form.voice = result.voice || ''
     form.speechRate = result.speechRate || 150
     // 如果后端 populate 了 knowledgeBaseId，它是一个对象；否则是 ID 字符串
     if (result.knowledgeBaseId && typeof result.knowledgeBaseId === 'object') {

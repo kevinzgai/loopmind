@@ -49,6 +49,10 @@
           Ollama 本地
         </div>
         <div class="nav-divider">语音服务</div>
+        <div class="nav-item" :class="{ active: activeTab === 'speech' }" @click="activeTab = 'speech'">
+          <span class="icon">🔊</span>
+          语音服务 (TTS/ASR)
+        </div>
         <div class="nav-item" :class="{ active: activeTab === 'seedAsr' }" @click="activeTab = 'seedAsr'">
           <span class="icon">🎙️</span>
           Seed ASR
@@ -145,6 +149,17 @@
               <input type="text" v-model="form.deepseek.model" placeholder="或自定义填写模型标识" />
               <p class="help-text">选择 DeepSeek 模型版本</p>
             </div>
+            <div class="field mt-6 pt-4 border-t border-dashed border-gray-200 flex items-center gap-4">
+              <button type="button"
+                class="px-4 py-1.5 bg-white border border-blue-500 text-blue-500 rounded-md text-sm font-medium transition-all hover:bg-blue-50 disabled:border-gray-200 disabled:text-gray-300 disabled:cursor-not-allowed"
+                @click="testConnection('deepseek')" :disabled="testingProvider === 'deepseek' || !form.deepseek.apiKey">
+                {{ testingProvider === 'deepseek' ? '测试中...' : '测试连接' }}
+              </button>
+              <span v-if="testResults.deepseek" class="text-sm font-medium"
+                :class="testResults.deepseek.success ? 'text-green-600' : 'text-red-600'">
+                {{ testResults.deepseek.success ? '✅ 连接成功' : '❌ ' + testResults.deepseek.message }}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -194,6 +209,17 @@
               <input type="text" v-model="form.qwen.model" placeholder="或自定义填写模型标识" />
               <p class="help-text">选择通义千问模型版本</p>
             </div>
+            <div class="field mt-6 pt-4 border-t border-dashed border-gray-200 flex items-center gap-4">
+              <button type="button"
+                class="px-4 py-1.5 bg-white border border-blue-500 text-blue-500 rounded-md text-sm font-medium transition-all hover:bg-blue-50 disabled:border-gray-200 disabled:text-gray-300 disabled:cursor-not-allowed"
+                @click="testConnection('qwen')" :disabled="testingProvider === 'qwen' || !form.qwen.apiKey">
+                {{ testingProvider === 'qwen' ? '测试中...' : '测试连接' }}
+              </button>
+              <span v-if="testResults.qwen" class="text-sm font-medium"
+                :class="testResults.qwen.success ? 'text-green-600' : 'text-red-600'">
+                {{ testResults.qwen.success ? '✅ 连接成功' : '❌ ' + testResults.qwen.message }}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -235,6 +261,17 @@
               <input type="text" v-model="form.doubao.model" placeholder="或自定义填写模型标识" />
               <p class="help-text">选择火山引擎模型版本</p>
             </div>
+            <div class="field mt-6 pt-4 border-t border-dashed border-gray-200 flex items-center gap-4">
+              <button type="button"
+                class="px-4 py-1.5 bg-white border border-blue-500 text-blue-500 rounded-md text-sm font-medium transition-all hover:bg-blue-50 disabled:border-gray-200 disabled:text-gray-300 disabled:cursor-not-allowed"
+                @click="testConnection('doubao')" :disabled="testingProvider === 'doubao' || !form.doubao.apiKey">
+                {{ testingProvider === 'doubao' ? '测试中...' : '测试连接' }}
+              </button>
+              <span v-if="testResults.doubao" class="text-sm font-medium"
+                :class="testResults.doubao.success ? 'text-green-600' : 'text-red-600'">
+                {{ testResults.doubao.success ? '✅ 连接成功' : '❌ ' + testResults.doubao.message }}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -274,6 +311,17 @@
               </select>
               <input type="text" v-model="form.glm.model" placeholder="或自定义填写模型标识" />
               <p class="help-text">选择GLM模型版本</p>
+            </div>
+            <div class="field mt-6 pt-4 border-t border-dashed border-gray-200 flex items-center gap-4">
+              <button type="button"
+                class="px-4 py-1.5 bg-white border border-blue-500 text-blue-500 rounded-md text-sm font-medium transition-all hover:bg-blue-50 disabled:border-gray-200 disabled:text-gray-300 disabled:cursor-not-allowed"
+                @click="testConnection('glm')" :disabled="testingProvider === 'glm' || !form.glm.apiKey">
+                {{ testingProvider === 'glm' ? '测试中...' : '测试连接' }}
+              </button>
+              <span v-if="testResults.glm" class="text-sm font-medium"
+                :class="testResults.glm.success ? 'text-green-600' : 'text-red-600'">
+                {{ testResults.glm.success ? '✅ 连接成功' : '❌ ' + testResults.glm.message }}
+              </span>
             </div>
           </div>
         </div>
@@ -325,6 +373,18 @@
               <input type="text" v-model="form.embedding.model" placeholder="或自定义填写模型标识" required />
               <p class="help-text">选择 Embedding 模型版本</p>
             </div>
+            <div class="field mt-6 pt-4 border-t border-dashed border-gray-200 flex items-center gap-4">
+              <button type="button"
+                class="px-4 py-1.5 bg-white border border-blue-500 text-blue-500 rounded-md text-sm font-medium transition-all hover:bg-blue-50 disabled:border-gray-200 disabled:text-gray-300 disabled:cursor-not-allowed"
+                @click="testConnection('embedding')"
+                :disabled="testingProvider === 'embedding' || !form.embedding.apiKey">
+                {{ testingProvider === 'embedding' ? '测试中...' : '测试连接' }}
+              </button>
+              <span v-if="testResults.embedding" class="text-sm font-medium"
+                :class="testResults.embedding.success ? 'text-green-600' : 'text-red-600'">
+                {{ testResults.embedding.success ? '✅ 连接成功' : '❌ ' + testResults.embedding.message }}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -364,6 +424,17 @@
               </select>
               <input type="text" v-model="form.moonshot.model" placeholder="或自定义填写模型标识" />
               <p class="help-text">选择Moonshot模型版本</p>
+            </div>
+            <div class="field mt-6 pt-4 border-t border-dashed border-gray-200 flex items-center gap-4">
+              <button type="button"
+                class="px-4 py-1.5 bg-white border border-blue-500 text-blue-500 rounded-md text-sm font-medium transition-all hover:bg-blue-50 disabled:border-gray-200 disabled:text-gray-300 disabled:cursor-not-allowed"
+                @click="testConnection('moonshot')" :disabled="testingProvider === 'moonshot' || !form.moonshot.apiKey">
+                {{ testingProvider === 'moonshot' ? '测试中...' : '测试连接' }}
+              </button>
+              <span v-if="testResults.moonshot" class="text-sm font-medium"
+                :class="testResults.moonshot.success ? 'text-green-600' : 'text-red-600'">
+                {{ testResults.moonshot.success ? '✅ 连接成功' : '❌ ' + testResults.moonshot.message }}
+              </span>
             </div>
           </div>
         </div>
@@ -406,6 +477,18 @@
               <input type="text" v-model="form.modelscope.model" placeholder="或自定义填写模型标识" />
               <p class="help-text">选择ModelScope模型版本</p>
             </div>
+            <div class="field mt-6 pt-4 border-t border-dashed border-gray-200 flex items-center gap-4">
+              <button type="button"
+                class="px-4 py-1.5 bg-white border border-blue-500 text-blue-500 rounded-md text-sm font-medium transition-all hover:bg-blue-50 disabled:border-gray-200 disabled:text-gray-300 disabled:cursor-not-allowed"
+                @click="testConnection('modelscope')"
+                :disabled="testingProvider === 'modelscope' || !form.modelscope.apiKey">
+                {{ testingProvider === 'modelscope' ? '测试中...' : '测试连接' }}
+              </button>
+              <span v-if="testResults.modelscope" class="text-sm font-medium"
+                :class="testResults.modelscope.success ? 'text-green-600' : 'text-red-600'">
+                {{ testResults.modelscope.success ? '✅ 连接成功' : '❌ ' + testResults.modelscope.message }}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -446,6 +529,17 @@
               <input type="text" v-model="form.minimax.model" placeholder="或自定义填写模型标识" />
               <p class="help-text">选择MiniMax模型版本</p>
             </div>
+            <div class="field mt-6 pt-4 border-t border-dashed border-gray-200 flex items-center gap-4">
+              <button type="button"
+                class="px-4 py-1.5 bg-white border border-blue-500 text-blue-500 rounded-md text-sm font-medium transition-all hover:bg-blue-50 disabled:border-gray-200 disabled:text-gray-300 disabled:cursor-not-allowed"
+                @click="testConnection('minimax')" :disabled="testingProvider === 'minimax' || !form.minimax.apiKey">
+                {{ testingProvider === 'minimax' ? '测试中...' : '测试连接' }}
+              </button>
+              <span v-if="testResults.minimax" class="text-sm font-medium"
+                :class="testResults.minimax.success ? 'text-green-600' : 'text-red-600'">
+                {{ testResults.minimax.success ? '✅ 连接成功' : '❌ ' + testResults.minimax.message }}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -464,6 +558,17 @@
               <label>Model</label>
               <input type="text" v-model="form.ollama.model" placeholder="例如: llama3.1:8b 或 qwen2.5:7b" />
               <p class="help-text">在本机通过 ollama pull 获取的模型名称，例如 llama3.1:8b</p>
+            </div>
+            <div class="field mt-6 pt-4 border-t border-dashed border-gray-200 flex items-center gap-4">
+              <button type="button"
+                class="px-4 py-1.5 bg-white border border-blue-500 text-blue-500 rounded-md text-sm font-medium transition-all hover:bg-blue-50 disabled:border-gray-200 disabled:text-gray-300 disabled:cursor-not-allowed"
+                @click="testConnection('ollama')" :disabled="testingProvider === 'ollama'">
+                {{ testingProvider === 'ollama' ? '测试中...' : '测试连接' }}
+              </button>
+              <span v-if="testResults.ollama" class="text-sm font-medium"
+                :class="testResults.ollama.success ? 'text-green-600' : 'text-red-600'">
+                {{ testResults.ollama.success ? '✅ 连接成功' : '❌ ' + testResults.ollama.message }}
+              </span>
             </div>
           </div>
         </div>
@@ -516,34 +621,236 @@
           </div>
         </div>
 
-        <!-- Embedding 设置 -->
-        <div v-show="activeTab === 'embedding'" class="config-section">
+        <!-- 语音服务 (TTS/ASR) 设置 -->
+        <div v-show="activeTab === 'speech'" class="config-section">
           <div class="section-header">
-            <h2>向量模型 (Embedding) 配置</h2>
-            <p>配置用于知识库 RAG 的向量化模型。建议使用阿里云 DashScope 或 OpenAI。</p>
+            <h2>系统语音服务配置</h2>
+            <p>配置全系统通用的文字转语音 (TTS) 与语音识别 (ASR) 服务</p>
           </div>
-          <div class="card">
+
+          <!-- TTS 提供商 -->
+          <div class="card mb-6">
+            <h3 class="text-lg font-medium mb-4 flex items-center gap-2">
+              <span class="text-blue-500">🗣️</span> 文字转语音 (TTS)
+            </h3>
             <div class="field">
-              <label>API Key</label>
+              <label>TTS 服务提供商</label>
+              <select v-model="form.speech.ttsProvider" class="select-input">
+                <option value="siliconflow">硅基流动 (SiliconFlow)</option>
+                <option value="aliyun">阿里云 (Aliyun)</option>
+                <option value="openai">OpenAI (TTS-1)</option>
+                <option value="edge">Edge TTS (免费)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- ASR 提供商 -->
+          <div class="card mb-6">
+            <h3 class="text-lg font-medium mb-4 flex items-center gap-2">
+              <span class="text-blue-500">🎤</span> 语音识别 (ASR)
+            </h3>
+            <div class="field">
+              <label>ASR 服务提供商</label>
+              <select v-model="form.speech.asrProvider" class="select-input">
+                <option value="siliconflow">硅基流动 (SiliconFlow)</option>
+                <option value="aliyun">阿里云 (Aliyun)</option>
+                <option value="seed">Seed ASR</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 硅基流动语音配置 -->
+          <div class="card mb-6"
+            v-if="form.speech.ttsProvider === 'siliconflow' || form.speech.asrProvider === 'siliconflow'">
+            <h3 class="text-lg font-medium mb-4 flex items-center gap-2">
+              <span class="text-blue-500">🚀</span> 硅基流动语音参数
+            </h3>
+            <div class="field">
+              <label class="flex items-center justify-between">
+                <span>API Key</span>
+                <a href="https://cloud.siliconflow.cn/account/ak" target="_blank"
+                  class="text-xs text-blue-500 hover:underline flex items-center gap-1">
+                  获取 API Key ↗
+                </a>
+              </label>
               <div class="input-group">
-                <input :type="showEmbeddingKey ? 'text' : 'password'" v-model="form.embedding.apiKey"
-                  placeholder="请输入 API Key" autocomplete="new-password" />
-                <button class="toggle-btn" @click="showEmbeddingKey = !showEmbeddingKey">
-                  {{ showEmbeddingKey ? '隐藏' : '显示' }}
+                <input :type="showSpeechSiliconKey ? 'text' : 'password'" v-model="form.speech.siliconflow.apiKey"
+                  placeholder="请输入 SiliconFlow API Key" autocomplete="new-password" />
+                <button class="toggle-btn" @click="showSpeechSiliconKey = !showSpeechSiliconKey">
+                  {{ showSpeechSiliconKey ? '隐藏' : '显示' }}
                 </button>
               </div>
             </div>
             <div class="field">
               <label>Base URL</label>
-              <input type="text" v-model="form.embedding.baseURL"
-                placeholder="例如: https://dashscope.aliyuncs.com/compatible-mode/v1" />
-              <p class="help-text">如果不填写，将默认使用 OpenAI 官方地址</p>
+              <input type="text" v-model="form.speech.siliconflow.baseURL"
+                placeholder="https://api.siliconflow.cn/v1" />
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="field">
+                <label>TTS 模型</label>
+                <input type="text" v-model="form.speech.siliconflow.ttsModel"
+                  placeholder="FunAudioLLM/CosyVoice2-0.5B" />
+              </div>
+              <div class="field">
+                <label>默认音色 (Voice ID)</label>
+                <input type="text" v-model="form.speech.siliconflow.ttsVoice" placeholder="anna" />
+              </div>
             </div>
             <div class="field">
-              <label>Model</label>
-              <input type="text" v-model="form.embedding.model" placeholder="例如: text-embedding-v3" />
-              <p class="help-text">常用模型：text-embedding-v3 (阿里), text-embedding-3-small (OpenAI)</p>
+              <div class="flex justify-between items-center mb-2">
+                <label class="mb-0">默认语速</label>
+                <span class="text-xs font-bold text-blue-600 px-2 py-0.5 bg-blue-50 rounded">{{
+                  form.speech.siliconflow.speechRate }} 字/分</span>
+              </div>
+              <input type="range" v-model.number="form.speech.siliconflow.speechRate" min="50" max="400" step="10"
+                class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+              <div class="flex justify-between mt-1 text-[10px] text-gray-400">
+                <span>50 (极慢)</span>
+                <span>150 (正常)</span>
+                <span>400 (极快)</span>
+              </div>
             </div>
+            <div class="field">
+              <label>ASR 模型</label>
+              <input type="text" v-model="form.speech.siliconflow.asrModel" placeholder="FunAudioLLM/SenseVoiceSmall" />
+            </div>
+            <div class="field mt-6 pt-4 border-t border-dashed border-gray-200 flex items-center gap-4">
+              <button type="button"
+                class="px-4 py-1.5 bg-white border border-blue-500 text-blue-500 rounded-md text-sm font-medium transition-all hover:bg-blue-50 disabled:border-gray-200 disabled:text-gray-300 disabled:cursor-not-allowed"
+                @click="testConnection('speech-siliconflow')"
+                :disabled="testingProvider === 'speech-siliconflow' || !form.speech.siliconflow.apiKey">
+                {{ testingProvider === 'speech-siliconflow' ? '测试中...' : '测试连接' }}
+              </button>
+              <span v-if="testResults['speech-siliconflow']" class="text-sm font-medium"
+                :class="testResults['speech-siliconflow'].success ? 'text-green-600' : 'text-red-600'">
+                {{ testResults['speech-siliconflow'].success ? '✅ 连接成功' : '❌ ' +
+                  testResults['speech-siliconflow'].message }}
+              </span>
+            </div>
+          </div>
+
+          <!-- 阿里云语音配置 -->
+          <div class="card mb-6" v-if="form.speech.ttsProvider === 'aliyun' || form.speech.asrProvider === 'aliyun'">
+            <h3 class="text-lg font-medium mb-4 flex items-center gap-2">
+              <span class="text-blue-500">☁️</span> 阿里云语音参数
+            </h3>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="field">
+                <label>Access Key ID</label>
+                <div class="input-group">
+                  <input :type="showSpeechAliKey ? 'text' : 'password'" v-model="form.speech.aliyun.accessKeyId"
+                    placeholder="请输入 Access Key ID" autocomplete="new-password" />
+                </div>
+              </div>
+              <div class="field">
+                <label>Access Key Secret</label>
+                <div class="input-group">
+                  <input :type="showSpeechAliKey ? 'text' : 'password'" v-model="form.speech.aliyun.accessKeySecret"
+                    placeholder="请输入 Access Key Secret" autocomplete="new-password" />
+                  <button class="toggle-btn" @click="showSpeechAliKey = !showSpeechAliKey">
+                    {{ showSpeechAliKey ? '隐藏' : '显示' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="field">
+                <label>App Key</label>
+                <input type="text" v-model="form.speech.aliyun.appKey" placeholder="请输入 App Key" />
+              </div>
+              <div class="field">
+                <label>默认音色 (Voice ID)</label>
+                <input type="text" v-model="form.speech.aliyun.ttsVoice" placeholder="xiaoxian" />
+              </div>
+            </div>
+            <div class="field">
+              <div class="flex justify-between items-center mb-2">
+                <label class="mb-0">默认语速</label>
+                <span class="text-xs font-bold text-blue-600 px-2 py-0.5 bg-blue-50 rounded">{{
+                  form.speech.aliyun.speechRate }} 字/分</span>
+              </div>
+              <input type="range" v-model.number="form.speech.aliyun.speechRate" min="50" max="400" step="10"
+                class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+              <div class="flex justify-between mt-1 text-[10px] text-gray-400">
+                <span>50 (极慢)</span>
+                <span>150 (正常)</span>
+                <span>400 (极快)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- OpenAI TTS 配置 -->
+          <div class="card mb-6" v-if="form.speech.ttsProvider === 'openai'">
+            <h3 class="text-lg font-medium mb-4 flex items-center gap-2">
+              <span class="text-blue-500">🤖</span> OpenAI TTS 参数
+            </h3>
+            <div class="field">
+              <label>API Key</label>
+              <div class="input-group">
+                <input :type="showSpeechOpenAIKey ? 'text' : 'password'" v-model="form.speech.openai.apiKey"
+                  placeholder="请输入 OpenAI API Key" autocomplete="new-password" />
+                <button class="toggle-btn" @click="showSpeechOpenAIKey = !showSpeechOpenAIKey">
+                  {{ showSpeechOpenAIKey ? '隐藏' : '显示' }}
+                </button>
+              </div>
+            </div>
+            <div class="field">
+              <label>Base URL</label>
+              <input type="text" v-model="form.speech.openai.baseURL" placeholder="https://api.openai.com/v1" />
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="field">
+                <label>TTS 模型</label>
+                <input type="text" v-model="form.speech.openai.ttsModel" placeholder="tts-1" />
+              </div>
+              <div class="field">
+                <label>默认音色 (Voice ID)</label>
+                <input type="text" v-model="form.speech.openai.ttsVoice" placeholder="alloy" />
+              </div>
+            </div>
+            <div class="field">
+              <div class="flex justify-between items-center mb-2">
+                <label class="mb-0">默认语速</label>
+                <span class="text-xs font-bold text-blue-600 px-2 py-0.5 bg-blue-50 rounded">{{
+                  form.speech.openai.speechRate }} 字/分</span>
+              </div>
+              <input type="range" v-model.number="form.speech.openai.speechRate" min="50" max="400" step="10"
+                class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+              <div class="flex justify-between mt-1 text-[10px] text-gray-400">
+                <span>50 (极慢)</span>
+                <span>150 (正常)</span>
+                <span>400 (极快)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Edge TTS 配置 -->
+          <div class="card mb-6" v-if="form.speech.ttsProvider === 'edge'">
+            <h3 class="text-lg font-medium mb-4 flex items-center gap-2">
+              <span class="text-blue-500">🌐</span> Edge TTS 参数
+            </h3>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="field">
+                <label>默认音色 (Voice ID)</label>
+                <input type="text" v-model="form.speech.edge.ttsVoice" placeholder="zh-CN-XiaoxiaoNeural" />
+              </div>
+              <div class="field">
+                <div class="flex justify-between items-center mb-2">
+                  <label class="mb-0">默认语速</label>
+                  <span class="text-xs font-bold text-blue-600 px-2 py-0.5 bg-blue-50 rounded">{{
+                    form.speech.edge.speechRate }} 字/分</span>
+                </div>
+                <input type="range" v-model.number="form.speech.edge.speechRate" min="50" max="400" step="10"
+                  class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+                <div class="flex justify-between mt-1 text-[10px] text-gray-400">
+                  <span>50 (极慢)</span>
+                  <span>150 (正常)</span>
+                  <span>400 (极快)</span>
+                </div>
+              </div>
+            </div>
+            <p class="help-text">Edge TTS 免费提供，无需 API Key。常用音色：zh-CN-XiaoxiaoNeural, zh-CN-YunxiNeural</p>
           </div>
         </div>
 
@@ -566,6 +873,10 @@
         <div class="section-header">
           <h2>系统日志</h2>
           <div class="logs-actions">
+            <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+              <input type="checkbox" v-model="autoRefresh" class="rounded border-gray-300 text-blue-600" />
+              自动刷新 (5s)
+            </label>
             <select v-model="logLevel" class="select-input log-filter">
               <option value="all">所有级别</option>
               <option value="info">INFO</option>
@@ -606,6 +917,8 @@ const logs = ref([])
 const logsLoading = ref(false)
 const logLevel = ref('all')
 const logsContainer = ref(null)
+const autoRefresh = ref(false)
+let refreshTimer = null
 
 const filteredLogs = computed(() => {
   if (logLevel.value === 'all') return logs.value
@@ -633,9 +946,23 @@ async function fetchLogs() {
   }
 }
 
+watch(autoRefresh, (val) => {
+  if (val) {
+    refreshTimer = setInterval(fetchLogs, 5000) // 每5秒刷新一次
+  } else {
+    if (refreshTimer) {
+      clearInterval(refreshTimer)
+      refreshTimer = null
+    }
+  }
+})
+
 watch(activeTab, (val) => {
   if (val === 'logs') {
     fetchLogs()
+  } else {
+    // 离开日志页时停止自动刷新
+    autoRefresh.value = false
   }
 })
 
@@ -652,7 +979,37 @@ const form = ref({
   minimax: { apiKey: '', baseURL: '', model: 'abab6.5s-chat' },
   ollama: { apiKey: '', baseURL: 'http://localhost:11434/v1', model: 'llama3.1:8b' },
   embedding: { apiKey: '', baseURL: '', model: 'text-embedding-3-small' },
-  seedAsr: { appId: '', apiKey: '', apiSecret: '', apiUrl: '', resourceId: '', audioConfig: {} }
+  seedAsr: { appId: '', apiKey: '', apiSecret: '', apiUrl: '', resourceId: '', audioConfig: {} },
+  speech: {
+    ttsProvider: 'siliconflow',
+    asrProvider: 'siliconflow',
+    siliconflow: {
+      apiKey: '',
+      baseURL: '',
+      ttsModel: 'FunAudioLLM/CosyVoice2-0.5B',
+      ttsVoice: 'anna',
+      speechRate: 150,
+      asrModel: 'FunAudioLLM/SenseVoiceSmall'
+    },
+    aliyun: {
+      accessKeyId: '',
+      accessKeySecret: '',
+      appKey: '',
+      ttsVoice: 'xiaoxian',
+      speechRate: 150
+    },
+    openai: {
+      apiKey: '',
+      baseURL: '',
+      ttsModel: 'tts-1',
+      ttsVoice: 'alloy',
+      speechRate: 150
+    },
+    edge: {
+      ttsVoice: 'zh-CN-XiaoxiaoNeural',
+      speechRate: 150
+    }
+  }
 })
 
 const deepseekModels = [
@@ -724,9 +1081,51 @@ const showModelscopeKey = ref(false)
 const showMinimaxKey = ref(false)
 const showSeedAsrKey = ref(false)
 const showSeedAsrSecret = ref(false)
+const showSpeechSiliconKey = ref(false)
+const showSpeechAliKey = ref(false)
+const showSpeechOpenAIKey = ref(false)
 const loading = ref(false)
 const message = ref('')
 const error = ref('')
+
+// 连通性测试相关
+const testingProvider = ref('')
+const testResults = ref({}) // 存储各厂商的测试结果
+
+async function testConnection(provider) {
+  testingProvider.value = provider
+  testResults.value[provider] = null
+
+  try {
+    const config = {
+      provider,
+      apiKey: form.value[provider].apiKey,
+      baseURL: form.value[provider].baseURL,
+      model: form.value[provider].model
+    }
+
+    const res = await apiService.post('/admin/config/test-connection', config)
+    testResults.value[provider] = {
+      success: res.success,
+      message: res.message
+    }
+
+    if (res.success) {
+      setTimeout(() => {
+        if (testResults.value[provider]?.success) {
+          testResults.value[provider] = null
+        }
+      }, 5000)
+    }
+  } catch (e) {
+    testResults.value[provider] = {
+      success: false,
+      message: e.message || '测试失败'
+    }
+  } finally {
+    testingProvider.value = ''
+  }
+}
 
 async function load() {
   try {
@@ -776,6 +1175,36 @@ async function load() {
         form.value.embedding.model = res.config.embedding.model || 'text-embedding-3-small'
         form.value.embedding.apiKey = res.config.embedding.apiKey || ''
       }
+      if (res.config.speech) {
+        form.value.speech.ttsProvider = res.config.speech.ttsProvider || 'siliconflow'
+        form.value.speech.asrProvider = res.config.speech.asrProvider || 'siliconflow'
+        if (res.config.speech.siliconflow) {
+          form.value.speech.siliconflow.apiKey = res.config.speech.siliconflow.apiKey || ''
+          form.value.speech.siliconflow.baseURL = res.config.speech.siliconflow.baseURL || ''
+          form.value.speech.siliconflow.ttsModel = res.config.speech.siliconflow.ttsModel || 'FunAudioLLM/CosyVoice2-0.5B'
+          form.value.speech.siliconflow.ttsVoice = res.config.speech.siliconflow.ttsVoice || 'anna'
+          form.value.speech.siliconflow.speechRate = res.config.speech.siliconflow.speechRate || 150
+          form.value.speech.siliconflow.asrModel = res.config.speech.siliconflow.asrModel || 'FunAudioLLM/SenseVoiceSmall'
+        }
+        if (res.config.speech.aliyun) {
+          form.value.speech.aliyun.accessKeyId = res.config.speech.aliyun.accessKeyId || ''
+          form.value.speech.aliyun.accessKeySecret = res.config.speech.aliyun.accessKeySecret || ''
+          form.value.speech.aliyun.appKey = res.config.speech.aliyun.appKey || ''
+          form.value.speech.aliyun.ttsVoice = res.config.speech.aliyun.ttsVoice || 'xiaoxian'
+          form.value.speech.aliyun.speechRate = res.config.speech.aliyun.speechRate || 150
+        }
+        if (res.config.speech.openai) {
+          form.value.speech.openai.apiKey = res.config.speech.openai.apiKey || ''
+          form.value.speech.openai.baseURL = res.config.speech.openai.baseURL || ''
+          form.value.speech.openai.ttsModel = res.config.speech.openai.ttsModel || 'tts-1'
+          form.value.speech.openai.ttsVoice = res.config.speech.openai.ttsVoice || 'alloy'
+          form.value.speech.openai.speechRate = res.config.speech.openai.speechRate || 150
+        }
+        if (res.config.speech.edge) {
+          form.value.speech.edge.ttsVoice = res.config.speech.edge.ttsVoice || 'zh-CN-XiaoxiaoNeural'
+          form.value.speech.edge.speechRate = res.config.speech.edge.speechRate || 150
+        }
+      }
       form.value.seedAsr = res.config.seedAsr || form.value.seedAsr
     }
   } catch (e) {
@@ -788,6 +1217,26 @@ async function save() {
     loading.value = true
     message.value = ''
     error.value = ''
+
+    // 校验逻辑：确保选中的默认提供商已配置 API Key (Ollama 除外，通常不需要 Key)
+    const selectedProvider = form.value.provider
+    if (selectedProvider !== 'ollama') {
+      const providerConfig = form.value[selectedProvider]
+      if (!providerConfig || !providerConfig.apiKey) {
+        const providerName = {
+          deepseek: 'DeepSeek',
+          qwen: '通义千问',
+          doubao: '火山引擎',
+          glm: '智谱GLM',
+          moonshot: 'Kimi (Moonshot)',
+          modelscope: 'ModelScope (魔搭)',
+          minimax: 'MiniMax'
+        }[selectedProvider] || selectedProvider
+
+        throw new Error(`请先配置 ${providerName} 的 API Key，然后再将其设为默认提供商`)
+      }
+    }
+
     await apiService.put('/admin/config', form.value)
 
     await load()
@@ -1039,6 +1488,9 @@ input:focus,
   cursor: not-allowed;
 }
 
+/* 连通性测试样式 */
+/* 已移至 Tailwind */
+
 /* Responsive */
 @media (max-width: 768px) {
   .config-container {
@@ -1106,12 +1558,13 @@ input:focus,
   flex: 1;
   background: #1a202c;
   color: #e2e8f0;
-  padding: 1rem;
+  padding: 1.5rem;
   border-radius: 8px;
   overflow-y: auto;
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 0.9rem;
-  max-height: 500px;
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+  font-size: 0.85rem;
+  max-height: calc(100vh - 250px);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .no-logs {

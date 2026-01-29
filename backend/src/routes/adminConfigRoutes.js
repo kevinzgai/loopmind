@@ -1,10 +1,11 @@
-import express from 'express';
-import { authenticateToken } from '../shared/middleware/authMiddleware.js';
-import { authorizeAdmin } from '../shared/middleware/authMiddleware.js';
-import { getConfigUnmasked, updateConfig } from '../services/configService.js';
-import path from 'path';
-import fs from 'fs';
-import readline from 'readline';
+import express from "express";
+import { authenticateToken } from "../shared/middleware/authMiddleware.js";
+import { authorizeAdmin } from "../shared/middleware/authMiddleware.js";
+import { getConfigUnmasked, updateConfig } from "../services/configService.js";
+import { testConnectivity } from "../services/aiService.js";
+import path from "path";
+import fs from "fs";
+import readline from "readline";
 
 const router = express.Router();
 
@@ -19,16 +20,17 @@ const router = express.Router();
  *
  * @apiSuccess {Array} logs 日志列表
  */
-router.get('/logs', authenticateToken, authorizeAdmin, async (req, res) => {
+router.get("/logs", authenticateToken, authorizeAdmin, async (req, res) => {
   try {
-    const logDir = 'logs';
+    const logDir = "logs";
     if (!fs.existsSync(logDir)) {
       return res.json({ logs: [] });
     }
 
     // 找到最新的综合日志文件 combined-YYYY-MM-DD.log
-    const files = fs.readdirSync(logDir)
-      .filter(f => f.startsWith('combined-') && f.endsWith('.log'))
+    const files = fs
+      .readdirSync(logDir)
+      .filter((f) => f.startsWith("combined-") && f.endsWith(".log"))
       .sort()
       .reverse(); // 最新的在前
 
@@ -43,31 +45,33 @@ router.get('/logs', authenticateToken, authorizeAdmin, async (req, res) => {
     const fileStream = fs.createReadStream(logFile);
     const rl = readline.createInterface({
       input: fileStream,
-      crlfDelay: Infinity
+      crlfDelay: Infinity,
     });
 
     for await (const line of rl) {
       try {
         // 尝试解析日志格式
         // 格式: 2025-01-28 16:00:00 [INFO]: message {meta}
-        const match = line.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) \[(\w+)\]: (.*)$/);
+        const match = line.match(
+          /^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) \[(\w+)\]: (.*)$/,
+        );
         if (match) {
           logs.push({
             timestamp: match[1],
             level: match[2].toLowerCase(),
-            message: match[3]
+            message: match[3],
           });
         }
       } catch (e) {
         // 忽略解析错误
       }
     }
-    
+
     // 只返回最后 200 条，避免前端压力过大
     res.json({ logs: logs.slice(-200) });
   } catch (err) {
-    console.error('❌ 获取系统日志失败:', err.message);
-    res.status(500).json({ error: { message: '服务器错误' } });
+    console.error("❌ 获取系统日志失败:", err.message);
+    res.status(500).json({ error: { message: "服务器错误" } });
   }
 });
 
@@ -90,15 +94,47 @@ router.get('/logs', authenticateToken, authorizeAdmin, async (req, res) => {
  * @apiSuccess {Object} config.minimax MiniMax配置
  * @apiSuccess {Object} config.seedAsr SeedASR 语音配置
  */
-router.get('/config', authenticateToken, authorizeAdmin, async (req, res) => {
+router.get("/config", authenticateToken, authorizeAdmin, async (req, res) => {
   try {
     const cfg = await getConfigUnmasked();
-    res.json({ message: '获取系统配置成功', config: cfg });
+    res.json({ message: "获取系统配置成功", config: cfg });
   } catch (err) {
-    console.error('❌ 获取系统配置失败:', err.message);
-    res.status(500).json({ error: { message: '服务器错误' } });
+    console.error("❌ 获取系统配置失败:", err.message);
+    res.status(500).json({ error: { message: "服务器错误" } });
   }
 });
+
+/**
+ * @api {post} /admin/config/test-connection 测试 AI 连通性
+ * @apiName TestAIConnection
+ * @apiGroup Admin
+ * @apiDescription 测试指定 AI 提供商的配置是否可用
+ */
+router.post(
+  "/config/test-connection",
+  authenticateToken,
+  authorizeAdmin,
+  async (req, res) => {
+    try {
+      const { provider, apiKey, baseURL, model } = req.body;
+
+      if (!provider || !model) {
+        return res.status(400).json({ error: { message: "缺少必要参数" } });
+      }
+
+      const result = await testConnectivity({
+        provider,
+        apiKey,
+        baseURL,
+        model,
+      });
+      res.json(result);
+    } catch (err) {
+      console.error("❌ 测试连接失败:", err.message);
+      res.status(500).json({ error: { message: err.message || "测试失败" } });
+    }
+  },
+);
 
 /**
  * @api {put} /admin/config 更新系统配置
@@ -119,14 +155,14 @@ router.get('/config', authenticateToken, authorizeAdmin, async (req, res) => {
  *
  * @apiSuccess {String} message 成功消息
  */
-router.put('/config', authenticateToken, authorizeAdmin, async (req, res) => {
+router.put("/config", authenticateToken, authorizeAdmin, async (req, res) => {
   try {
     const payload = req.body || {};
     await updateConfig(payload);
-    res.json({ message: '系统配置已更新' });
+    res.json({ message: "系统配置已更新" });
   } catch (err) {
-    console.error('❌ 更新系统配置失败:', err.message);
-    res.status(400).json({ error: { message: err.message || '请求参数错误' } });
+    console.error("❌ 更新系统配置失败:", err.message);
+    res.status(400).json({ error: { message: err.message || "请求参数错误" } });
   }
 });
 
