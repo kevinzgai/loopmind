@@ -1,5 +1,4 @@
 import { 
-    callAIStream,
     getConversationHistory,
     addMessageToHistory
 } from '../../../services/aiService.js';
@@ -10,8 +9,6 @@ import { RunnableSequence, RunnablePassthrough } from "@langchain/core/runnables
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { HumanMessage, AIMessage, SystemMessage } from "@langchain/core/messages";
 import { getAgent, getOrCreateMemory, updateMemory, incrementUsageCount } from '../services/agentService.js';
-import { searchKnowledge } from '../../knowledge/services/knowledgeService.js';
-import { generateEmbedding } from '../../knowledge/services/embeddingService.js';
 import { 
     getAgentConversationMessages, 
     appendAgentConversationMessages,
@@ -88,71 +85,6 @@ export async function handleGetAgentChatHistory(req, res) {
 }
 
 /**
- * 获取 RAG 上下文
- */
-async function getRAGContext(agent, userMessage) {
-    if (agent.knowledgeBaseId && userMessage) {
-        try {
-            // 检查是否需要调用知识库（简单的启发式方法：消息长度或关键词）
-            // 以后可以升级为 AI 意图识别，但目前先做一个基础过滤
-            const query = userMessage.trim();
-            
-            // 如果消息太短（例如：你好、哈哈、OK），不触发知识库检索
-            if (query.length < 2) return '';
-            
-            // 排除一些过于通用的闲聊词
-            const generalChatWords = ['你好', '您好', '在吗', 'hello', 'hi', 'hey', '谢谢', '感谢', '再见', 'bye'];
-            if (generalChatWords.some(word => query.toLowerCase() === word)) {
-                return '';
-            }
-
-            // 提取知识库 ID（处理 populate 后的对象情况）
-            const kbId = (typeof agent.knowledgeBaseId === 'object' && agent.knowledgeBaseId !== null) 
-                ? (agent.knowledgeBaseId.id || agent.knowledgeBaseId._id) 
-                : agent.knowledgeBaseId;
-
-            console.log('🔍 正在检索知识库:', kbId);
-            const queryVector = await generateEmbedding(userMessage);
-            const chunks = await searchKnowledge(kbId, queryVector, 3);
-            
-            if (chunks && chunks.length > 0) {
-                const context = chunks.map(c => c.content).join('\n---\n');
-                console.log('✅ 知识库检索完成，注入上下文');
-                return `\n\n请参考以下背景知识来回答用户的问题。如果背景知识中没有相关信息，请诚实告知用户，不要编造。\n\n背景知识：\n${context}`;
-            }
-        } catch (error) {
-            console.warn('⚠️ 知识库检索失败:', error.message);
-        }
-    }
-    return '';
-}
-
-/**
- * 生成基础系统提示词（人设 + 记忆，不含 RAG）
- */
-async function getBaseSystemPrompt(agent, userId) {
-    let systemPrompt = `你是 ${agent.name}`;
-    
-    if (agent.personality) {
-        systemPrompt += `\n\n人设：${agent.personality}`;
-    }
-    
-    if (agent.initialMemory) {
-        systemPrompt += `\n\n初始记忆：${agent.initialMemory}`;
-    }
-
-    // 获取用户历史记忆
-    try {
-        const memory = await getOrCreateMemory(agent.id, userId);
-        if (memory && memory.content) {
-            systemPrompt += `\n\n与用户的历史记忆：${memory.content}`;
-        }
-    } catch (error) {}
-
-    return systemPrompt;
-}
-
-/**
  * 判断是否为问候语（跳过 RAG）
  */
 const isGreeting = (text) => {
@@ -165,6 +97,9 @@ const isGreeting = (text) => {
  * 使用 LangChain 处理智能体对话
  */
 async function handleAgentChatLangChain(req, res, agent, conversationHistory, message, dbUserId, conversationId) {
+    console.log(`\n--- 🦜 LangChain Agent Pipeline Start ---`);
+    console.log(`[1/6] 🤖 智能体信息:`, { name: agent.name, model: agent.model, hasKB: !!agent.knowledgeBaseId });
+    
     const model = await getModel(agent.model);
     const kbId = agent.knowledgeBaseId;
     
@@ -172,10 +107,14 @@ async function handleAgentChatLangChain(req, res, agent, conversationHistory, me
     let retriever = null;
     if (kbId && !isGreeting(message)) {
         const id = (typeof kbId === 'object') ? (kbId.id || kbId._id) : kbId;
+        console.log(`[2/6] 🔍 知识库检索准备中, ID: ${id}`);
         retriever = createRetriever(id.toString());
+    } else {
+        console.log(`[2/6] ⏭️ 跳过知识库检索 (未关联或为问候语)`);
     }
 
     // 2. 转换历史记录格式
+    console.log(`[3/6] 📜 历史对话加载中, 记录数: ${conversationHistory.length}`);
     const chatHistory = conversationHistory.map(msg => {
         if (msg.role === 'system') return new SystemMessage(msg.content);
         if (msg.role === 'user') return new HumanMessage(msg.content);
@@ -183,6 +122,7 @@ async function handleAgentChatLangChain(req, res, agent, conversationHistory, me
     });
 
     // 3. 构建 Prompt
+    console.log(`[4/6] 📝 构建 Prompt Template...`);
     const prompt = ChatPromptTemplate.fromMessages([
         ["system", agent.personality || "你是一个专业的 AI 助手。"],
         new MessagesPlaceholder("chat_history"),
@@ -191,15 +131,21 @@ async function handleAgentChatLangChain(req, res, agent, conversationHistory, me
     ]);
 
     // 4. 构建 Chain
+    console.log(`[5/6] ⛓️ 组装 LangChain RunnableSequence...`);
     const chain = RunnableSequence.from([
         {
             input: new RunnablePassthrough(),
             chat_history: () => chatHistory,
             rag_context: async (input) => {
                 if (!retriever) return "";
-                const docs = await retriever.getRelevantDocuments(input);
-                if (!docs.length) return "";
+                console.log(`   -> 🔎 正在执行向量检索: "${input.substring(0, 30)}..."`);
+                const docs = await retriever.invoke(input);
+                if (!docs.length) {
+                    console.log(`   -> ⚠️ 检索完成, 未找到相关内容`);
+                    return "";
+                }
                 const context = docs.map(d => d.pageContent).join("\n---\n");
+                console.log(`   -> ✅ 检索成功, 找到 ${docs.length} 个相关片段`);
                 return `\n\n请参考以下背景知识来回答问题：\n${context}`;
             }
         },
@@ -209,6 +155,7 @@ async function handleAgentChatLangChain(req, res, agent, conversationHistory, me
     ]);
 
     // 5. 流式输出
+    console.log(`[6/6] 🚀 发起模型请求并开始流式响应...`);
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     const stream = await chain.stream(message);
     let fullResponse = "";
@@ -217,6 +164,7 @@ async function handleAgentChatLangChain(req, res, agent, conversationHistory, me
         fullResponse += chunk;
         res.write(chunk);
     }
+    console.log(`\n--- ✅ LangChain Agent Pipeline End (Response: ${fullResponse.length} chars) ---\n`);
 
     // 6. 保存结果
     const assistantMsg = { role: "assistant", content: fullResponse };
