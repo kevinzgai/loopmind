@@ -1,7 +1,6 @@
 import {
   textToSpeech as aliTextToSpeech,
   getSupportedVoices as getAliVoices,
-  checkConfig as checkAliConfig,
 } from "../services/aliTtsService.js";
 import {
   textToSpeech as siliconTextToSpeech,
