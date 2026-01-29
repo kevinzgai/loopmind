@@ -63,6 +63,37 @@
         </form>
       </div>
 
+      <!-- API Key 管理卡片 -->
+      <div class="card api-key-card">
+        <h3>API 访问凭证</h3>
+        <p class="card-desc">用于第三方应用或工具调用智能体接口的授权码。</p>
+        <div class="api-key-box">
+          <div class="key-display">
+            <input 
+              :type="showApiKey ? 'text' : 'password'" 
+              v-model="apiKeyData.key" 
+              readonly 
+              class="key-input"
+            />
+            <button @click="showApiKey = !showApiKey" class="icon-btn">
+              {{ showApiKey ? '👁️‍🗨️' : '👁️' }}
+            </button>
+          </div>
+          <div class="key-actions">
+            <button @click="copyApiKey" class="btn-sm">复制</button>
+            <button @click="handleResetApiKey" class="btn-sm btn-danger" :disabled="isResetting">
+              {{ isResetting ? '重置中...' : '重置' }}
+            </button>
+            <router-link to="/agent/capabilities" class="btn-sm btn-link">去调试功能矩阵 ↗</router-link>
+          </div>
+        </div>
+        <div class="key-info" v-if="apiKeyData.createdAt">
+          <span>创建于: {{ formatDate(apiKeyData.createdAt, true) }}</span>
+          <span v-if="apiKeyData.lastUsedAt">最后使用: {{ formatDate(apiKeyData.lastUsedAt, true) }}</span>
+          <span v-else>从未被使用</span>
+        </div>
+      </div>
+
       <!-- 安全设置卡片 -->
       <div class="card security-card">
         <h3>修改密码</h3>
@@ -93,11 +124,19 @@ import { ref, onMounted, reactive } from 'vue'
 import { currentUser, updateProfile, changePassword } from '@/stores/authStore'
 import { getUserAgents } from '@/services/agentService'
 import { getKnowledgeBases } from '@/services/knowledgeService'
+import { getMyApiKey, resetMyApiKey } from '@/services/apiKeyService'
 
 const agentCount = ref(0)
 const kbCount = ref(0)
 const isUpdating = ref(false)
 const isChangingPassword = ref(false)
+const isResetting = ref(false)
+const showApiKey = ref(false)
+const apiKeyData = reactive({
+  key: '',
+  createdAt: '',
+  lastUsedAt: ''
+})
 
 const editForm = reactive({
   avatar: currentUser.value?.profile?.avatar || '',
@@ -119,10 +158,37 @@ onMounted(async () => {
     const kbResponse = await getKnowledgeBases()
     // 接口返回结构是 { kbs: [] }
     kbCount.value = kbResponse.kbs?.length || 0
+
+    // 获取 API Key
+    const keyRes = await getMyApiKey()
+    apiKeyData.key = keyRes.apiKey
+    apiKeyData.createdAt = keyRes.createdAt
+    apiKeyData.lastUsedAt = keyRes.lastUsedAt
   } catch (err) {
     console.error('获取统计数据失败:', err)
   }
 })
+
+const handleResetApiKey = async () => {
+  if (!confirm('确定要重置 API Key 吗？重置后旧的 Key 将立即失效。')) return
+  
+  try {
+    isResetting.value = true
+    const res = await resetMyApiKey()
+    apiKeyData.key = res.apiKey
+    apiKeyData.createdAt = res.createdAt
+    alert('API Key 已重置')
+  } catch (err) {
+    alert('重置失败: ' + err.message)
+  } finally {
+    isResetting.value = false
+  }
+}
+
+const copyApiKey = () => {
+  navigator.clipboard.writeText(apiKeyData.key)
+  alert('API Key 已复制到剪贴板')
+}
 
 const formatDate = (dateStr, time = false) => {
   if (!dateStr) return '未知'
@@ -339,6 +405,96 @@ input, textarea {
 .btn-secondary {
   background: #f1f5f9;
   color: #475569;
+}
+
+.api-key-card {
+  grid-column: 1 / -1;
+}
+
+.card-desc {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin-bottom: 1rem;
+}
+
+.api-key-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.key-display {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.key-input {
+  flex: 1;
+  background: white;
+  font-family: monospace;
+  font-size: 0.9rem;
+  padding: 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.key-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-sm {
+  padding: 0.4rem 1rem;
+  font-size: 0.875rem;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-sm:hover {
+  background: #f1f5f9;
+}
+
+.btn-danger {
+  color: #ef4444;
+  border-color: #fecaca;
+}
+
+.btn-danger:hover {
+  background: #fef2f2;
+}
+
+.btn-link {
+  text-decoration: none;
+  color: #4f46e5;
+  display: inline-flex;
+  align-items: center;
+}
+
+.key-info {
+  margin-top: 1rem;
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.75rem;
+  color: #94a3b8;
 }
 
 button:disabled {

@@ -156,12 +156,13 @@ export async function handleGetUserAgents(req, res, next) {
  */
 export async function handleGetPublishedAgents(req, res, next) {
   try {
-    const { page = 1, limit = 10, category } = req.query;
+    const { page = 1, limit = 10, category, search } = req.query;
 
     const result = await getPublishedAgents({
       page: parseInt(page),
       limit: parseInt(limit),
       category,
+      search,
     });
 
     res.status(200).json({

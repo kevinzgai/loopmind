@@ -62,12 +62,19 @@ export async function getUserAgents(userId, options = {}) {
  */
 export async function getPublishedAgents(options = {}) {
   try {
-    const { page = 1, limit = 10, category } = options;
+    const { page = 1, limit = 10, category, search } = options;
     const skip = (page - 1) * limit;
 
     const query = { isPublished: true };
     if (category && category !== '全部') {
       query.category = category;
+    }
+
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } }
+      ];
     }
 
     const agents = await Agent.find(query)
