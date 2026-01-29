@@ -1097,11 +1097,21 @@ async function testConnection(provider) {
   testResults.value[provider] = null
 
   try {
-    const config = {
-      provider,
-      apiKey: form.value[provider].apiKey,
-      baseURL: form.value[provider].baseURL,
-      model: form.value[provider].model
+    let config;
+    if (provider === 'speech-siliconflow') {
+      config = {
+        provider,
+        apiKey: form.value.speech.siliconflow.apiKey,
+        baseURL: form.value.speech.siliconflow.baseURL || 'https://api.siliconflow.cn/v1',
+        model: 'deepseek-ai/DeepSeek-V3' // 使用一个通用的对话模型来测试 API Key 连通性
+      }
+    } else {
+      config = {
+        provider,
+        apiKey: form.value[provider].apiKey,
+        baseURL: form.value[provider].baseURL,
+        model: form.value[provider].model
+      }
     }
 
     const res = await apiService.post('/admin/config/test-connection', config)
