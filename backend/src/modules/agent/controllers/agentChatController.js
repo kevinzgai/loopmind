@@ -236,66 +236,6 @@ export async function handleAgentChat(req, res) {
     }
 }
 
-/**
- * 更新用户记忆（异步处理）
- */
-async function updateUserMemory(agentId, userId, userMessage, aiResponse) {
-    try {
-        // 获取当前记忆
-        const memory = await getOrCreateMemory(agentId, userId);
-        
-        // 生成新的记忆条目
-        const newEntry = `用户: ${userMessage}\n助手: ${aiResponse}\n`;
-        
-        let updatedContent = memory.content || '';
-        updatedContent += newEntry;
-        
-        // 如果记忆超过 2000 字，进行压缩
-        if (updatedContent.length > 2000) {
-            updatedContent = await compressMemory(updatedContent);
-        }
-        
-        // 更新记忆
-        await updateMemory(agentId, userId, updatedContent);
-        
-        console.log('📝 用户记忆已更新');
-    } catch (error) {
-        console.error('❌ 更新用户记忆失败:', error);
-        throw error;
-    }
-}
-
-/**
- * 压缩记忆内容（简化版本）
- */
-async function compressMemory(content) {
-    try {
-        // 简单的压缩策略：保留最近的对话，总结较早的对话
-        const lines = content.split('\n').filter(line => line.trim());
-        
-        if (lines.length <= 20) {
-            return content; // 内容不多，不需要压缩
-        }
-        
-        // 保留最近的 10 条对话
-        const recentLines = lines.slice(-20);
-        const olderLines = lines.slice(0, -20);
-        
-        // 简单总结：提取关键信息
-        const summary = `[历史对话总结: 共${Math.floor(olderLines.length/2)}轮对话]`;
-        
-        const compressedContent = summary + '\n' + recentLines.join('\n');
-        
-        console.log('🗜️ 记忆已压缩:', `${content.length} -> ${compressedContent.length} 字符`);
-        
-        return compressedContent;
-    } catch (error) {
-        console.error('❌ 记忆压缩失败:', error);
-        // 压缩失败时，简单截取最后 1500 字符
-        return content.slice(-1500);
-    }
-}
-
 export default {
     handleAgentChat
 };
