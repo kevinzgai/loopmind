@@ -1,103 +1,171 @@
 <template>
   <div class="chat-page">
-    <div class="assistant-header">
-      <div class="assistant-title">AI 助手</div>
-      <div class="assistant-actions">
-        <div class="model-selector">
-          <select v-model="selectedProvider" @change="onProviderChange" class="model-select">
+    <div class="chat-header">
+      <div class="header-left">
+        <div class="logo">
+          <span class="logo-icon">🤖</span>
+          <span class="logo-text">MateChat</span>
+        </div>
+        <div class="provider-selector-wrapper">
+          <div class="provider-label">模型</div>
+          <select v-model="selectedProvider" @change="onProviderChange" class="provider-select">
             <option v-for="provider in providers" :key="provider.id" :value="provider.id">
-              {{ provider.name }} ({{ provider.model }})
+              {{ provider.name }}
             </option>
           </select>
         </div>
-        <button class="history-btn" @click="openHistory = true">历史</button>
+      </div>
+      <div class="header-right">
+        <button 
+          class="header-btn history-btn"
+          @click="openHistory = true"
+          title="历史记录"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+            <path d="M3 3v5h5"/>
+            <path d="M12 7v5l4 2"/>
+          </svg>
+        </button>
         <button 
           @click="toggleTTS" 
-          class="tts-toggle-btn"
+          class="header-btn tts-btn"
           :class="{ 'active': ttsEnabled, 'speaking': isSpeaking }"
           :title="ttsEnabled ? '关闭语音播报' : '开启语音播报'"
         >
-          <Volume2 v-if="ttsEnabled" :size="18" />
-          <VolumeX v-else :size="18" />
+          <svg v-if="ttsEnabled" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 11 15 11 19 16 19 21 15 21 15 9 13 9 18 5"/>
+          </svg>
+          <svg v-else xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 11 15 11 19 16 19 21 15 21 15 9 13 9 18 5"/>
+            <line x1="23" y1="9" x2="17" y2="15"/>
+            <line x1="17" y1="9" x2="23" y2="15"/>
+          </svg>
         </button>
-        <span class="status-badge" :class="{ 'online': isOnline }">
-          {{ isOnline ? '● 在线' : '○ 离线' }}
-        </span>
+        <div class="status-indicator" :class="{ 'online': isOnline }">
+          <span class="status-dot"></span>
+          <span class="status-text">{{ isOnline ? '在线' : '离线' }}</span>
+        </div>
       </div>
     </div>
 
     <div class="chat-container">
       <div v-if="startPage" class="intro-container">
-        <div class="intro-logo">
-          <div class="intro-logo-mark">🤖</div>
+        <div class="intro-logo-wrapper">
+          <div class="intro-logo">🤖</div>
         </div>
-        <div class="intro-title">MateChat</div>
-        <div class="intro-subtitle">Hi，欢迎使用 MateChat</div>
-        <div class="intro-desc">
+        <h1 class="intro-title">MateChat</h1>
+        <p class="intro-subtitle">Hi，欢迎使用 MateChat</p>
+        <div class="intro-description">
           <p>MateChat 可以辅助研发人员编码、查询知识和相关作业信息、编写文档等。</p>
           <p>作为 AI 模型，提供的答案可能不总是准确，但你的反馈可以帮助我们做得更好。</p>
         </div>
-        <PromptShortcut class="intro-prompt" :list="introPrompt.list" :direction="introPrompt.direction" @itemClick="onSubmit($event.label)" />
-      </div>
-      <!-- 消息列表区域 -->
-      <DynamicScroller
-        :items="messages"
-        :min-item-size="50"
-        class="messages-area"
-        ref="dynamicScroller"
-        @scroll.native="handleScroll"
-      >
-        <template #default="{ item, index, active }">
-          <DynamicScrollerItem
-            :item="item"
-            :active="active"
-            :size-dependencies="[
-              item.content,
-            ]"
-            :data-index="index"
-          >
-            <MessageItem :message="item" />
-          </DynamicScrollerItem>
-        </template>
-        
-        <template #after>
-           <div v-if="isLoading" ref="loadingRef" class="bubble bubble-assistant loading-bubble" style="margin: 1.5rem;">
-             <div class="bubble-content">
-               <Loader />
-             </div>
-           </div>
-           <div ref="bottomAnchor" style="height: 1px; width: 100%;"></div>
-         </template>
-      </DynamicScroller>
-
-      <!-- 固定在底部的输入框 -->
-      <div class="input-area">
-        <XSender
-          v-model="inputText"
-          :disabled="isLoading"
-          placeholder="输入消息..."
-          @submit="sendMessage"
-          @autoSubmit="handleAutoSubmit"
-        />
-        <div class="input-foot-wrapper">
-          <div class="input-foot-left">
-            <span v-for="(item, index) in inputFootIcons" :key="index">
-              <i>{{ item.icon }}</i>
-              {{ item.text }}
-            </span>
-            <span class="input-foot-dividing-line"></span>
-            <span class="input-foot-maxlength">{{ inputText.length }}/2000</span>
-          </div>
-          <div class="input-foot-right">
-            <button class="clear-btn" :disabled="!inputText" @click="inputText = ''">清空输入</button>
-          </div>
+        <div class="intro-prompts">
+          <PromptShortcut 
+            class="intro-prompt" 
+            :list="introPrompt.list" 
+            :direction="introPrompt.direction" 
+            @itemClick="onSubmit($event.label)" 
+          />
         </div>
-        <div class="shortcut" v-if="!startPage">
-          <PromptShortcut :list="simplePrompt" :direction="'horizontal'" @itemClick="onSubmit($event.label)" />
-          <button class="new-conv-btn" @click="newConversation">新建对话</button>
+      </div>
+
+      <div class="messages-wrapper">
+        <DynamicScroller
+          :items="messages"
+          :min-item-size="80"
+          class="messages-area"
+          ref="dynamicScroller"
+          @scroll.native="handleScroll"
+        >
+          <template #default="{ item, index, active }">
+            <DynamicScrollerItem
+              :item="item"
+              :active="active"
+              :size-dependencies="[item.content]"
+              :data-index="index"
+            >
+              <MessageItem :message="item" />
+            </DynamicScrollerItem>
+          </template>
+          
+          <template #after>
+            <div v-if="isLoading" ref="loadingRef" class="loading-container">
+              <div class="loading-bubble">
+                <Loader />
+              </div>
+            </div>
+            <div ref="bottomAnchor" class="bottom-anchor"></div>
+          </template>
+        </DynamicScroller>
+      </div>
+
+      <div class="input-container">
+        <div class="input-wrapper">
+          <div class="input-main">
+            <XSender
+              v-model="inputText"
+              :disabled="isLoading"
+              placeholder="输入消息..."
+              @submit="sendMessage"
+              @autoSubmit="handleAutoSubmit"
+            />
+          </div>
+          <div class="input-footer">
+            <div class="footer-left">
+              <span class="footer-info">
+                <span class="info-item">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <polyline points="10 9 9 9 8 9"/>
+                  </svg>
+                  Markdown
+                </span>
+                <span class="info-divider">|</span>
+                <span class="info-item">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="4" y1="9" x2="20" y2="9"/>
+                    <line x1="4" y1="15" x2="20" y2="15"/>
+                    <line x1="10" y1="3" x2="8" y2="21"/>
+                    <line x1="16" y1="3" x2="14" y2="21"/>
+                  </svg>
+                  Enter 发送
+                </span>
+              </span>
+              <span class="char-count">{{ inputText.length }}/2000</span>
+            </div>
+            <div class="footer-right">
+              <button 
+                class="clear-btn" 
+                :disabled="!inputText" 
+                @click="inputText = ''"
+                :class="{ 'disabled': !inputText }"
+              >
+                清空
+              </button>
+            </div>
+          </div>
+          <div class="shortcut-bar" v-if="!startPage">
+            <PromptShortcut 
+              :list="simplePrompt" 
+              :direction="'horizontal'" 
+              @itemClick="onSubmit($event.label)" 
+            />
+            <button class="new-chat-btn" @click="newConversation">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              新建对话
+            </button>
+          </div>
         </div>
       </div>
     </div>
+
     <ChatHistoryDrawer 
       :open="openHistory" 
       :user-id="userId" 
@@ -110,9 +178,6 @@
 
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
-import { Volume2, VolumeX } from 'lucide-vue-next'
-import { marked } from 'marked'
-import DOMPurify from 'dompurify'
 import { Loader } from '@/components/ai-elements/loader'
 import XSender from '@/components/chat/XSender.vue'
 import ChatHistoryDrawer from '@/components/chat/ChatHistoryDrawer.vue'
@@ -131,14 +196,12 @@ const startPage = ref(true)
 const dynamicScroller = ref(null)
 
 const messages = ref([])
-// 当前会话 ID
 const currentConversationId = ref(null)
 
 const inputText = ref('')
 const isLoading = ref(false)
 const ttsEnabled = ref(false)
 const isSpeaking = ref(false)
-
 
 const introPrompt = {
   direction: 'horizontal',
@@ -153,18 +216,13 @@ const simplePrompt = [
   { value: 'helpMd', icon: '⭐', label: '你可以帮我做些什么？' },
   { value: 'bindProjectSpace', icon: '📌', label: '怎么绑定项目空间' }
 ]
-const inputFootIcons = [
-  { icon: '📝', text: '支持 Markdown' },
-  { icon: '⌨️', text: 'Enter 发送' }
-]
 
 let audioQueue = []
 let isPlayingQueue = false
 let ttsRequestQueue = []
 let activeTTSRequests = 0
-const MAX_CONCURRENT_TTS = 1  // 体验版限制，最多同时 1 个请求
+const MAX_CONCURRENT_TTS = 1
 
-// 加载可用的 AI 提供商
 async function loadProviders() {
   try {
     const response = await fetch('/api/chat/providers')
@@ -177,13 +235,11 @@ async function loadProviders() {
   }
 }
 
-// 切换 AI 提供商
 function onProviderChange() {
   console.log('🔄 切换 AI 模型:', selectedProvider.value)
   stopAllAudio()
 }
 
-// 切换 TTS 开关
 function toggleTTS() {
   ttsEnabled.value = !ttsEnabled.value
   
@@ -192,7 +248,6 @@ function toggleTTS() {
   }
 }
 
-// 停止所有音频播放
 function stopAllAudio() {
   audioQueue.forEach(audio => {
     audio.pause()
@@ -204,7 +259,6 @@ function stopAllAudio() {
   isSpeaking.value = false
 }
 
-// 处理 TTS 请求队列
 async function processTTSQueue() {
   while (ttsRequestQueue.length > 0 && activeTTSRequests < MAX_CONCURRENT_TTS) {
     const task = ttsRequestQueue.shift()
@@ -216,7 +270,6 @@ async function processTTSQueue() {
         console.error('TTS 任务执行失败:', error)
       } finally {
         activeTTSRequests--
-        // 继续处理队列
         if (ttsRequestQueue.length > 0) {
           processTTSQueue()
         }
@@ -225,7 +278,6 @@ async function processTTSQueue() {
   }
 }
 
-// 播放音频队列
 async function playAudioQueue() {
   if (isPlayingQueue || audioQueue.length === 0) return
   
@@ -247,7 +299,6 @@ async function playAudioQueue() {
   isSpeaking.value = false
 }
 
-// 播放单个音频
 function playAudio(audio) {
   return new Promise((resolve, reject) => {
     audio.onended = () => resolve()
@@ -256,11 +307,9 @@ function playAudio(audio) {
   })
 }
 
-// 文本转语音（添加到队列）
 async function textToSpeech(text) {
   if (!ttsEnabled.value || !text.trim()) return
   
-  // 创建 TTS 任务并添加到队列
   const ttsTask = async () => {
     try {
       console.log('🔊 开始 TTS 请求:', text.substring(0, 20) + '...')
@@ -293,17 +342,11 @@ async function textToSpeech(text) {
     }
   }
   
-  // 添加到队列
   ttsRequestQueue.push(ttsTask)
-  
-  // 开始处理队列
   processTTSQueue()
-
-  // 滚动到底部
   scrollToBottom()
 }
 
-// 发送消息
 async function sendMessage() {
   const text = inputText.value.trim()
   if (!text || isLoading.value) return
@@ -312,11 +355,9 @@ async function sendMessage() {
   await sendMessageToAI(text)
   inputText.value = ''
   
-  // 滚动到底部
   scrollToBottom()
 }
 
-// 自动提交（语音识别后）
 async function handleAutoSubmit(text) {
   console.log('🎤 收到自动提交事件，文本:', text)
   if (!text || isLoading.value) {
@@ -326,7 +367,6 @@ async function handleAutoSubmit(text) {
   await sendMessageToAI(text)
 }
 
-// 发送消息到 AI
 async function sendMessageToAI(text) {
   try {
     stopAllAudio()
@@ -337,7 +377,6 @@ async function sendMessageToAI(text) {
       content: text
     })
     
-    // 立即滚动
     scrollToBottom()
     
     const aiMessageId = Date.now() + 1
@@ -347,7 +386,6 @@ async function sendMessageToAI(text) {
       content: ''
     })
     
-    // 再次滚动以显示新消息气泡
     shouldAutoScroll.value = true
     scrollToBottom()
     
@@ -370,7 +408,6 @@ async function sendMessageToAI(text) {
       throw new Error('Request failed')
     }
 
-    // 获取并保存 conversationId
     const convId = response.headers.get('X-Conversation-Id')
     if (convId) {
       currentConversationId.value = convId
@@ -380,7 +417,6 @@ async function sendMessageToAI(text) {
     const decoder = new TextDecoder()
     let fullResponse = ''
     let lastSentenceEnd = 0
-    // 用于控制流式输出时的滚动频率
     let scrollThrottle = 0 
 
     while (true) {
@@ -396,7 +432,6 @@ async function sendMessageToAI(text) {
         scrollToBottom()
       }
       
-      // 如果启用了 TTS，检查是否有完整的句子
       if (ttsEnabled.value) {
         const sentenceEndRegex = /[。！？.!?]+/g
         let match
@@ -416,7 +451,6 @@ async function sendMessageToAI(text) {
       }
     }
     
-    // 处理最后可能剩余的文本
     if (ttsEnabled.value && lastSentenceEnd < fullResponse.length) {
       const remainingText = fullResponse.substring(lastSentenceEnd).trim()
       if (remainingText.length > 0) {
@@ -426,8 +460,6 @@ async function sendMessageToAI(text) {
     }
     
     isLoading.value = false
-    
-    // 确保滚动到底部
     scrollToBottom()
 
   } catch (error) {
@@ -437,9 +469,7 @@ async function sendMessageToAI(text) {
   }
 }
 
-// 滚动到底部
 const shouldAutoScroll = ref(true)
-
 const bottomAnchor = ref(null)
 const loadingRef = ref(null)
 
@@ -447,7 +477,6 @@ function handleScroll(e) {
   const target = e.target || e.srcElement
   if (!target) return
   const { scrollTop, scrollHeight, clientHeight } = target
-  // 如果距离底部小于 150px，则开启自动滚动
   shouldAutoScroll.value = scrollHeight - scrollTop - clientHeight < 150
 }
 
@@ -455,18 +484,15 @@ function scrollToBottom() {
   if (!shouldAutoScroll.value) return
   
   nextTick(() => {
-    // 优先滚动到 Loading 元素
     if (isLoading.value && loadingRef.value) {
       loadingRef.value.scrollIntoView({ behavior: 'auto', block: 'end' })
       return
     }
 
-    // 其次使用 DynamicScroller 的方法
     if (dynamicScroller.value) {
       dynamicScroller.value.scrollToBottom()
     }
     
-    // 作为双重保险，滚动锚点元素
     if (bottomAnchor.value) {
       bottomAnchor.value.scrollIntoView({ behavior: 'auto', block: 'end' })
     }
@@ -500,7 +526,6 @@ async function onSelectConversation(conversationId) {
     currentConversationId.value = conversationId
     startPage.value = false
     
-    // 滚动到底部
     scrollToBottom()
   } catch (e) {
     console.error('Failed to load conversation:', e)
@@ -509,7 +534,6 @@ async function onSelectConversation(conversationId) {
   }
 }
 
-// 不再需要在 ChatPage 中渲染 markdown，移至 MessageItem 组件
 const renderMessageContent = (content) => {
   return content
 }
@@ -532,112 +556,121 @@ onMounted(() => {
 .chat-page {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: 100vh;
   @apply bg-background text-foreground;
 }
 
-.scroller {
-  height: 100%;
-}
-
-.assistant-header {
+.chat-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 1.5rem;
   @apply bg-card border-border;
-  border-bottom-width: 1px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid;
+  backdrop-filter: blur(12px);
+  background: hsl(var(--card) / 0.95);
+  position: sticky;
+  top: 0;
+  z-index: 50;
 }
 
-.assistant-title {
-  font-size: 1.125rem;
-  font-weight: 600;
-  @apply text-foreground;
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
 }
-.assistant-actions {
+
+.logo {
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-.model-selector {
+.logo-icon {
+  font-size: 1.5rem;
+}
+
+.logo-text {
+  font-size: 1.25rem;
+  font-weight: 700;
+  @apply text-foreground;
+}
+
+.provider-selector-wrapper {
   display: flex;
   align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  @apply bg-muted border-border;
+  border: 1px solid;
   border-radius: 0.5rem;
 }
 
-.model-label {
-  font-size: 0.875rem;
+.provider-label {
+  font-size: 0.75rem;
   font-weight: 600;
   @apply text-muted-foreground;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.model-select {
+.provider-select {
   padding: 0.25rem 0.5rem;
-  @apply border-input bg-background text-foreground;
-  border-width: 1px;
+  @apply bg-background text-foreground;
+  border: none;
   border-radius: 0.375rem;
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
-}
-
-.model-select:hover {
-  @apply border-primary;
-}
-
-.history-btn {
-  padding: 0.25rem 0.6rem;
-  @apply border-input bg-muted text-muted-foreground;
-  border-width: 1px;
-  border-radius: 6px;
-  font-size: 0.875rem;
-}
-.model-select:focus {
   outline: none;
-  @apply border-primary;
-  box-shadow: 0 0 0 3px hsla(var(--primary) / 0.1);
 }
 
-.status-badge {
-  padding: 0.25rem 0.75rem;
-  border-radius: 1rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  @apply bg-destructive/10 text-destructive;
-}
-.status-badge.online {
-  @apply bg-green-500/10 text-green-600;
+.provider-select:hover {
+  @apply bg-accent text-accent-foreground;
 }
 
-.tts-toggle-btn {
+.provider-select:focus {
+  @apply ring-2 ring-primary ring-offset-2;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.header-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 40px;
   height: 40px;
   border: none;
-  border-radius: 50%;
+  border-radius: 0.5rem;
   @apply bg-muted text-muted-foreground;
   cursor: pointer;
   transition: all 0.2s;
 }
 
-.tts-toggle-btn:hover {
+.header-btn:hover {
   @apply bg-accent text-accent-foreground;
+  transform: translateY(-1px);
 }
 
-.tts-toggle-btn.active {
+.header-btn:active {
+  transform: translateY(0);
+}
+
+.tts-btn.active {
   @apply bg-primary text-primary-foreground;
 }
 
-.tts-toggle-btn.active:hover {
+.tts-btn.active:hover {
   @apply bg-primary/90;
 }
 
-.tts-toggle-btn.speaking {
+.tts-btn.speaking {
   animation: pulse-speaking 1.5s ease-in-out infinite;
 }
 
@@ -652,183 +685,399 @@ onMounted(() => {
   }
 }
 
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  @apply bg-muted border-border;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  @apply bg-destructive;
+  transition: all 0.3s;
+}
+
+.status-indicator.online .status-dot {
+  @apply bg-green-500;
+  box-shadow: 0 0 0 3px hsl(142 76% 36% / 0.3);
+}
+
+.status-text {
+  @apply text-muted-foreground;
+}
+
 .chat-container {
   flex: 1;
   display: flex;
   flex-direction: column;
-  max-width: 1200px;
+  max-width: 100%;
   width: 100%;
-  margin: 0 auto;
-  padding: 0;
+  overflow: hidden;
+}
+
+.messages-wrapper {
+  flex: 1;
   overflow: hidden;
 }
 
 .messages-area {
-  flex: 1;
+  height: 100%;
   overflow-y: auto;
   padding: 1.5rem;
   padding-bottom: 0;
 }
+
+.loading-container {
+  padding: 1rem;
+  display: flex;
+  justify-content: center;
+}
+
+.loading-bubble {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 1.5rem;
+  @apply bg-muted border-border;
+  border: 1px solid;
+  border-radius: 1rem;
+}
+
+.bottom-anchor {
+  height: 1px;
+  width: 100%;
+}
+
 .intro-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  padding: 2rem 0 0;
+  gap: 1.5rem;
+  padding: 3rem 1.5rem;
+  max-width: 600px;
+  margin: 0 auto;
 }
-.intro-logo img {
-  width: 72px;
-  height: 72px;
+
+.intro-logo-wrapper {
+  margin-bottom: 0.5rem;
 }
-.intro-logo-mark {
-  width: 72px;
-  height: 72px;
+
+.intro-logo {
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32px;
-  background: linear-gradient(135deg, hsl(var(--muted)) 0%, hsl(var(--accent)) 100%);
-  @apply border-border;
-  border-width: 1px;
+  font-size: 2.5rem;
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
+  box-shadow: 0 8px 24px hsla(var(--primary) / 0.2);
 }
+
 .intro-title {
-  font-size: 1.25rem;
-  font-weight: 700;
+  font-size: 2rem;
+  font-weight: 800;
   @apply text-foreground;
+  margin: 0;
+  letter-spacing: -0.02em;
 }
+
 .intro-subtitle {
+  font-size: 1.125rem;
   @apply text-muted-foreground;
+  margin: 0;
 }
-.intro-desc {
+
+.intro-description {
   @apply text-muted-foreground;
   text-align: center;
-}
-.intro-prompt {
-  margin-top: 8px;
-}
-
-.bubble-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-.bubble {
-  max-width: 80%;
-  padding: 0.75rem 0.9rem;
-  border-radius: 14px;
-  font-size: 0.95rem;
-  line-height: 1.6;
-}
-.bubble-user {
-  margin-left: auto;
-  @apply bg-primary text-primary-foreground;
-}
-.bubble-assistant {
-  margin-right: auto;
-  @apply bg-muted text-foreground border-border;
-  border-width: 1px;
-}
-.bubble-content {
-  word-break: break-word;
+  line-height: 1.7;
+  margin: 0;
 }
 
-.input-area {
+.intro-description p {
+  margin: 0.5rem 0;
+}
+
+.intro-prompts {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.input-container {
   position: sticky;
   bottom: 0;
   left: 0;
   right: 0;
+  @apply bg-background/95 backdrop-blur-md;
+  border-t: 1px solid hsl(var(--border) / 0.5);
+  z-index: 40;
   padding: 1rem 1.5rem;
-  @apply bg-background/80 backdrop-blur-sm;
-  z-index: 10;
 }
-.input-foot-wrapper {
+
+.input-wrapper {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.input-main {
+  margin-bottom: 0.75rem;
+}
+
+.input-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-top: 6px;
+  gap: 1rem;
 }
-.input-foot-left {
+
+.footer-left {
   display: flex;
   align-items: center;
-  gap: 8px;
-  @apply text-muted-foreground;
+  gap: 0.75rem;
+  flex: 1;
 }
-.input-foot-dividing-line {
-  width: 1px;
-  height: 14px;
-  @apply bg-border;
-}
-.input-foot-maxlength {
-  @apply text-muted-foreground;
-}
-.input-foot-right .clear-btn {
-  padding: 4px 10px;
-  @apply border-input bg-muted text-muted-foreground;
-  border-width: 1px;
-  border-radius: 16px;
-}
-.shortcut {
+
+.footer-info {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 8px;
+  gap: 0.5rem;
+  @apply text-muted-foreground;
 }
-.new-conv-btn {
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8125rem;
+}
+
+.info-divider {
+  @apply text-border;
+  opacity: 0.5;
+}
+
+.char-count {
   margin-left: auto;
-  padding: 6px 10px;
+  font-size: 0.8125rem;
+  @apply text-muted-foreground;
+}
+
+.footer-right .clear-btn {
+  padding: 0.375rem 0.875rem;
+  @apply border-input bg-muted text-muted-foreground;
+  border: 1px solid;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.clear-btn:hover:not(.disabled) {
+  @apply bg-accent text-accent-foreground;
+}
+
+.clear-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.shortcut-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.new-chat-btn {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
   @apply border-input bg-card text-foreground;
-  border-width: 1px;
+  border: 1px solid;
   border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.new-chat-btn:hover {
+  @apply bg-accent text-accent-foreground;
+  transform: translateY(-1px);
+}
+
+.new-chat-btn:active {
+  transform: translateY(0);
 }
 
 :deep(.markdown-content) h1 {
   font-size: 1.5rem;
-  font-weight: bold;
-  margin: 1rem 0;
-  padding-bottom: 0.3rem;
-  border-bottom: 1px solid #e2e8f0;
+  font-weight: 700;
+  margin: 1.5rem 0 0.75rem;
+  padding-bottom: 0.5rem;
+  @apply border-border;
+  border-bottom: 1px solid;
 }
 
 :deep(.markdown-content) h2 {
   font-size: 1.25rem;
-  font-weight: bold;
-  margin: 0.8rem 0;
-  padding-bottom: 0.2rem;
-  border-bottom: 1px solid #e2e8f0;
+  font-weight: 600;
+  margin: 1.25rem 0 0.625rem;
+  padding-bottom: 0.375rem;
+  @apply border-border;
+  border-bottom: 1px solid;
 }
 
 :deep(.markdown-content) h3 {
-  font-size: 1.1rem;
-  font-weight: bold;
-  margin: 0.6rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 1rem 0 0.5rem;
 }
 
 :deep(.markdown-content) p {
-  margin: 0.5rem 0;
-  line-height: 1.6;
+  margin: 0.75rem 0;
+  line-height: 1.75;
 }
 
 :deep(.markdown-content) code {
-  background-color: #f1f5f9;
-  padding: 0.2rem 0.4rem;
+  background-color: hsl(var(--muted) / 0.5);
+  padding: 0.25rem 0.5rem;
   border-radius: 0.25rem;
-  font-family: 'Courier New', monospace;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
   font-size: 0.875rem;
 }
 
 :deep(.markdown-content) pre {
-  background-color: #f1f5f9;
-  border-radius: 0.25rem;
+  background-color: hsl(var(--muted) / 0.3);
+  border-radius: 0.5rem;
   padding: 1rem;
   overflow-x: auto;
-  margin: 1rem 0;
+  margin: 1.25rem 0;
+  @apply border-border;
+  border: 1px solid;
 }
 
 :deep(.markdown-content) pre code {
   background-color: transparent;
   padding: 0;
+}
+
+:deep(.markdown-content) ul,
+:deep(.markdown-content) ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+
+:deep(.markdown-content) li {
+  margin: 0.375rem 0;
+  line-height: 1.6;
+}
+
+:deep(.markdown-content) blockquote {
+  border-left: 3px solid hsl(var(--primary) / 0.3);
+  padding-left: 1rem;
+  margin: 1rem 0;
+  @apply text-muted-foreground;
+  font-style: italic;
+}
+
+:deep(.markdown-content) a {
+  color: hsl(var(--primary));
+  text-decoration: none;
+  border-bottom: 1px solid hsl(var(--primary) / 0.3);
+  transition: all 0.2s;
+}
+
+:deep(.markdown-content) a:hover {
+  color: hsl(var(--primary) / 0.8);
+  border-bottom-color: hsl(var(--primary) / 0.8);
+}
+
+@media (max-width: 768px) {
+  .chat-header {
+    padding: 0.625rem 1rem;
+  }
+
+  .header-left {
+    gap: 0.75rem;
+  }
+
+  .logo-text {
+    font-size: 1rem;
+  }
+
+  .provider-selector-wrapper {
+    padding: 0.25rem 0.5rem;
+  }
+
+  .provider-label {
+    display: none;
+  }
+
+  .header-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .status-text {
+    display: none;
+  }
+
+  .messages-area {
+    padding: 1rem;
+  }
+
+  .intro-container {
+    padding: 2rem 1rem;
+  }
+
+  .intro-logo {
+    width: 64px;
+    height: 64px;
+    font-size: 2rem;
+  }
+
+  .intro-title {
+    font-size: 1.5rem;
+  }
+
+  .intro-subtitle {
+    font-size: 1rem;
+  }
+
+  .input-container {
+    padding: 0.75rem 1rem;
+  }
+
+  .footer-info {
+    gap: 0.5rem;
+  }
+
+  .info-item {
+    font-size: 0.75rem;
+  }
+
+  .shortcut-bar {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .new-chat-btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 </style>

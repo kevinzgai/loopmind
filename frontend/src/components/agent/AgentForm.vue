@@ -474,12 +474,7 @@ const qwenModels = [
 ]
 
 const doubaoModels = [
-  { label: 'Doubao-Pro-4k', value: 'doubao-pro-4k' },
-  { label: 'Doubao-Pro-32k', value: 'doubao-pro-32k' },
-  { label: 'Doubao-Pro-128k', value: 'doubao-pro-128k' },
-  { label: 'Doubao-Lite-4k', value: 'doubao-lite-4k' },
-  { label: 'Doubao-Lite-32k', value: 'doubao-lite-32k' },
-  { label: 'Doubao-Lite-128k', value: 'doubao-lite-128k' }
+  { label: 'Doubao-Seed-1-8-251228', value: 'doubao-seed-1-8-251228' }
 ]
 
 const glmModels = [

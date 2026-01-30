@@ -68,7 +68,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import apiService from '@/services/apiService.js'
 
 const emit = defineEmits(['save', 'error'])
@@ -120,6 +120,11 @@ async function saveConfig() {
     loading.value = false
   }
 }
+
+// 组件挂载时加载配置
+onMounted(() => {
+  loadConfig()
+})
 
 defineExpose({
   loadConfig,
