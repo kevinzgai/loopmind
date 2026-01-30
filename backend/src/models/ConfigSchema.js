@@ -5,6 +5,7 @@ const configSchema = new mongoose.Schema(
     provider: {
       type: String,
       enum: [
+        "siliconflow",
         "deepseek",
         "qwen",
         "doubao",
@@ -15,6 +16,11 @@ const configSchema = new mongoose.Schema(
         "ollama",
       ],
       default: "deepseek",
+    },
+    siliconflow: {
+      apiKey: { type: String, default: "" },
+      baseURL: { type: String, default: "" },
+      model: { type: String, default: "" },
     },
     deepseek: {
       apiKey: { type: String, default: "" },
@@ -57,9 +63,16 @@ const configSchema = new mongoose.Schema(
       model: { type: String, default: "" },
     },
     embedding: {
+      provider: {
+        type: String,
+        enum: ["openai", "siliconflow", "zhipu", "aliyun"],
+        default: "openai",
+      },
       apiKey: { type: String, default: "" },
       baseURL: { type: String, default: "" },
       model: { type: String, default: "text-embedding-3-small" },
+      batchSize: { type: Number, default: 100 },
+      timeout: { type: Number, default: 30 },
     },
     seedAsr: {
       appId: { type: String, default: "" },

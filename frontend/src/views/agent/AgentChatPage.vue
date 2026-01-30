@@ -743,7 +743,7 @@ onBeforeRouteLeave((to, from, next) => {
 
 <style scoped>
 .agent-chat-page {
-  height: calc(100vh - 60px);
+  height: 100%;
   @apply bg-background text-foreground;
 }
 

@@ -207,7 +207,7 @@ const loadAgents = async () => {
     isLoading.value = true
     error.value = null
 
-    const result = await getUserAgents(token.value, page.value, limit.value)
+    const result = await getUserAgents(page.value, limit.value)
     agents.value = result.agents
     total.value = result.total
     pages.value = result.pages

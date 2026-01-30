@@ -73,6 +73,7 @@ userSchema.set('toJSON', {
     delete ret.__v;
     delete ret.passwordHash;
     ret.id = doc._id.toString();
+    ret.role = doc.role;
     return ret;
   }
 });

@@ -24,7 +24,6 @@ export const verifyApiKey = async (req, res, next) => {
       });
     }
 
-    // 检查是否过期
     if (apiKeyDoc.expiresAt && apiKeyDoc.expiresAt < new Date()) {
       return res.status(403).json({
         error: 'Forbidden',
@@ -32,16 +31,27 @@ export const verifyApiKey = async (req, res, next) => {
       });
     }
 
-    // 将关联的用户信息挂载到请求对象
     req.user = {
       userId: apiKeyDoc.userId.toString(),
       apiKeyId: apiKeyDoc._id.toString(),
       isExternal: true
     };
 
-    // 异步更新最后使用时间
-    ApiKey.updateOne({ _id: apiKeyDoc._id }, { lastUsedAt: new Date() }).catch(err => 
-      console.error('❌ 更新 API Key 使用时间失败:', err)
+    const updateData = {
+      lastUsedAt: new Date(),
+      requestCount: apiKeyDoc.requestCount + 1
+    };
+
+    if (req.ip) {
+      updateData.lastUsedIp = req.ip;
+    }
+
+    if (req.headers['user-agent']) {
+      updateData.lastUsedUserAgent = req.headers['user-agent'];
+    }
+
+    ApiKey.updateOne({ _id: apiKeyDoc._id }, updateData).catch(err => 
+      console.error('❌ 更新 API Key 使用统计失败:', err)
     );
 
     next();
