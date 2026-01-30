@@ -1,7 +1,7 @@
 import express from "express";
 import { authenticateToken } from "../shared/middleware/authMiddleware.js";
 import { authorizeAdmin } from "../shared/middleware/authMiddleware.js";
-import { getConfigUnmasked, updateConfig } from "../services/configService.js";
+import { getConfigUnmasked, updateConfig, getAIConfig, updateAIConfig, getEmbeddingConfig, updateEmbeddingConfig } from "../services/configService.js";
 import { testConnectivity } from "../services/aiService.js";
 import path from "path";
 import fs from "fs";
@@ -162,6 +162,76 @@ router.put("/config", authenticateToken, authorizeAdmin, async (req, res) => {
     res.json({ message: "系统配置已更新" });
   } catch (err) {
     console.error("❌ 更新系统配置失败:", err.message);
+    res.status(400).json({ error: { message: err.message || "请求参数错误" } });
+  }
+});
+
+/**
+ * @api {get} /admin/config/ai 获取 AI 模型配置
+ * @apiName GetAIConfig
+ * @apiGroup Admin
+ * @apiDescription 获取 AI 模型配置（新格式）
+ * @apiHeader {String} Authorization Bearer Token
+ */
+router.get("/config/ai", authenticateToken, authorizeAdmin, async (req, res) => {
+  try {
+    const cfg = await getAIConfig();
+    res.json(cfg);
+  } catch (err) {
+    console.error("❌ 获取 AI 模型配置失败:", err.message);
+    res.status(500).json({ error: { message: "服务器错误" } });
+  }
+});
+
+/**
+ * @api {put} /admin/config/ai 更新 AI 模型配置
+ * @apiName UpdateAIConfig
+ * @apiGroup Admin
+ * @apiDescription 更新 AI 模型配置（新格式）
+ * @apiHeader {String} Authorization Bearer Token
+ */
+router.put("/config/ai", authenticateToken, authorizeAdmin, async (req, res) => {
+  try {
+    const payload = req.body || {};
+    await updateAIConfig(payload);
+    res.json({ message: "AI 模型配置已更新" });
+  } catch (err) {
+    console.error("❌ 更新 AI 模型配置失败:", err.message);
+    res.status(400).json({ error: { message: err.message || "请求参数错误" } });
+  }
+});
+
+/**
+ * @api {get} /admin/config/embedding 获取 Embedding 模型配置
+ * @apiName GetEmbeddingConfig
+ * @apiGroup Admin
+ * @apiDescription 获取 Embedding 模型配置（新格式）
+ * @apiHeader {String} Authorization Bearer Token
+ */
+router.get("/config/embedding", authenticateToken, authorizeAdmin, async (req, res) => {
+  try {
+    const cfg = await getEmbeddingConfig();
+    res.json(cfg);
+  } catch (err) {
+    console.error("❌ 获取 Embedding 模型配置失败:", err.message);
+    res.status(500).json({ error: { message: "服务器错误" } });
+  }
+});
+
+/**
+ * @api {put} /admin/config/embedding 更新 Embedding 模型配置
+ * @apiName UpdateEmbeddingConfig
+ * @apiGroup Admin
+ * @apiDescription 更新 Embedding 模型配置（新格式）
+ * @apiHeader {String} Authorization Bearer Token
+ */
+router.put("/config/embedding", authenticateToken, authorizeAdmin, async (req, res) => {
+  try {
+    const payload = req.body || {};
+    await updateEmbeddingConfig(payload);
+    res.json({ message: "Embedding 模型配置已更新" });
+  } catch (err) {
+    console.error("❌ 更新 Embedding 模型配置失败:", err.message);
     res.status(400).json({ error: { message: err.message || "请求参数错误" } });
   }
 });

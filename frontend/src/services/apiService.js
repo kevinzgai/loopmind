@@ -96,5 +96,49 @@ export default {
   // PATCH 请求
   patch(url, data = {}) {
     return apiClient.patch(url, data)
+  },
+  
+  // AI 模型配置相关接口
+  aiConfig: {
+    // 获取 AI 模型配置
+    get() {
+      return apiClient.get('/admin/config/ai')
+    },
+    // 保存 AI 模型配置
+    save(data) {
+      return apiClient.put('/admin/config/ai', data)
+    },
+    // 测试 AI 模型连接
+    testConnection(data) {
+      return apiClient.post('/admin/config/test-connection', data)
+    }
+  },
+  
+  // Embedding 模型配置相关接口
+  embeddingConfig: {
+    // 获取 Embedding 模型配置
+    get() {
+      return apiClient.get('/admin/config/embedding')
+    },
+    // 保存 Embedding 模型配置
+    save(data) {
+      return apiClient.put('/admin/config/embedding', data)
+    },
+    // 测试 Embedding 模型连接
+    testConnection(data) {
+      return apiClient.post('/admin/config/test-connection', data)
+    }
+  },
+  
+  // 统一配置接口（向后兼容）
+  config: {
+    // 获取所有配置
+    get() {
+      return apiClient.get('/admin/config')
+    },
+    // 保存所有配置
+    save(data) {
+      return apiClient.put('/admin/config', data)
+    }
   }
 }

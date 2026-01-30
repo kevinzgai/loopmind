@@ -65,8 +65,11 @@ const configSchema = new mongoose.Schema(
     embedding: {
       provider: {
         type: String,
-        enum: ["openai", "siliconflow", "zhipu", "aliyun"],
-        default: "openai",
+        default: "siliconflow",
+      },
+      providers: {
+        type: Array,
+        default: [],
       },
       apiKey: { type: String, default: "" },
       baseURL: { type: String, default: "" },

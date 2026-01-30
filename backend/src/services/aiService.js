@@ -1,6 +1,8 @@
 import OpenAI from "openai";
 import { DEFAULT_AI_PROVIDER } from "../config/config.js";
 import { getRawConfigCached } from "./configService.js";
+import { AlibabaTongyiEmbeddings } from '@langchain/community/embeddings/alibaba_tongyi';
+import { ByteDanceDoubaoEmbeddings } from '@langchain/community/embeddings/bytedance_doubao';
 
 async function getProviderConfig(provider) {
   const cfg = await getRawConfigCached();
@@ -29,7 +31,7 @@ async function getProviderConfig(provider) {
       baseURL: cfg.doubao.baseURL,
     });
     const m = (cfg.doubao.model || "").trim();
-    const model = m && m !== "doubao-pro-4k" ? m : "doubao-seed-1-8-251228";
+    const model = m && m !== "doubao-pro-32k" && m !== "doubao-pro-128k" ? m : "doubao-seed-1-8-251228";
     return { client, model, name: "火山引擎" };
   }
   if (p === "glm") {
@@ -154,29 +156,89 @@ export async function callAI(
 // 测试 AI 连通性
 export async function testConnectivity(config) {
   const { provider, apiKey, baseURL, model } = config;
-
   try {
-    const client = new OpenAI({
-      apiKey: apiKey || (provider === "ollama" ? "ollama" : ""),
-      baseURL: baseURL || undefined,
-    });
-
-    if (provider === "embedding") {
-      // 测试 Embedding 模型
-      await client.embeddings.create({
-        model: model,
-        input: "hi",
+    // 检查是否为阿里云 Embedding 模型
+    const isAlibabaEmbedding = (model && model.includes('text-embedding-v')) || (baseURL && baseURL.includes('dashscope.aliyuncs.com'));
+    
+    // 检查是否为火山引擎
+    const isDoubao = provider === "doubao" || (baseURL && baseURL.includes('volces.com'));
+    
+    if (provider === "embedding" && isAlibabaEmbedding) {
+      // 使用 LangChain 的 AlibabaTongyiEmbeddings 来测试连接
+      const embeddings = new AlibabaTongyiEmbeddings({
+        apiKey: apiKey,
+        modelName: model
       });
+      
+      // 测试生成 Embedding
+      const result = await embeddings.embedQuery("hi");
+      console.log('📊 Embedding 生成成功，向量维度:', result.length);
+      
+      return { success: true, message: "连接成功" };
+    } else if (provider === "embedding" && isDoubao) {
+      // 使用 LangChain 的 ByteDanceDoubaoEmbeddings 来测试连接
+      const embeddings = new ByteDanceDoubaoEmbeddings({
+        apiKey: apiKey,
+        model: model || 'doubao-seed-1-8-251228'
+      });
+      
+      // 测试生成 Embedding
+      const result = await embeddings.embedQuery("hi");
+      console.log('📊 火山引擎 Embedding 生成成功，向量维度:', result.length);
+      
+      return { success: true, message: "连接成功" };
+    } else if (isDoubao) {
+      // 火山引擎 Chat 模型使用 OpenAI SDK 的 responses 端点
+      console.log('🌐 测试火山引擎连接 (使用 OpenAI SDK responses)');
+      console.log('📝 请求参数:', { baseURL, model, apiKey: apiKey ? apiKey.substring(0, 8) + '...' : 'undefined' });
+      
+      const client = new OpenAI({
+        apiKey: apiKey,
+        baseURL: baseURL || 'https://ark.cn-beijing.volces.com/api/v3',
+      });
+      
+      // 测试生成 Chat
+      const result = await client.responses.create({
+        model: model || 'doubao-seed-1-8-251228',
+        input: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "input_text",
+                text: "hi"
+              }
+            ]
+          }
+        ]
+      });
+      
+      console.log('📊 火山引擎连接成功，响应:', result);
+      
+      return { success: true, message: "连接成功" };
     } else {
-      // 测试 Chat 模型
-      await client.chat.completions.create({
-        messages: [{ role: "user", content: "hi" }],
-        model: model,
-        max_tokens: 1,
+      // 对于其他提供商，使用标准 OpenAI 格式
+      const client = new OpenAI({
+        apiKey: apiKey || (provider === "ollama" ? "ollama" : ""),
+        baseURL: baseURL || undefined,
       });
-    }
 
-    return { success: true, message: "连接成功" };
+      if (provider === "embedding") {
+        // 测试 Embedding 模型
+        await client.embeddings.create({
+          model: model,
+          input: "hi",
+        });
+      } else {
+        // 测试 Chat 模型
+        await client.chat.completions.create({
+          messages: [{ role: "user", content: "hi" }],
+          model: model,
+          max_tokens: 1,
+        });
+      }
+      return { success: true, message: "连接成功" };
+    }
   } catch (error) {
     console.error(`❌ ${provider} 连通性测试失败:`, error.message);
     return { success: false, message: error.message };

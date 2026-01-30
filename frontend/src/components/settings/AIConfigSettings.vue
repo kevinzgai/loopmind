@@ -2,15 +2,14 @@
   <section
     class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-6">
     <div class="flex items-center justify-between">
-      <div>
-        <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">AI 模型配置</h2>
-        <p class="text-sm text-slate-500 dark:text-slate-400">配置系统默认使用的 AI 服务提供商</p>
-      </div>
-      <button @click="saveConfig" :disabled="loading"
-        class="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50">
-        {{ loading ? '保存中...' : '保存配置' }}
-      </button>
-    </div>
+            <div>
+              <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">AI 模型配置</h2>
+              <p class="text-sm text-slate-500 dark:text-slate-400">配置系统默认使用的 AI 服务提供商</p>
+            </div>
+            <div v-if="loading" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium">
+              保存中...
+            </div>
+          </div>
 
     <div
       class="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/50 rounded-lg text-sm text-blue-700 dark:text-blue-400">
@@ -148,6 +147,16 @@
               <option value="custom">自定义厂商</option>
             </select>
           </div>
+          <div v-if="providerForm.type && providerForm.type !== 'custom' && getPresetProvider(providerForm.type)?.apiKeyUrl" class="space-y-2">
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-medium text-slate-700 dark:text-slate-300">API Key 管理:</span>
+              <a :href="getPresetProvider(providerForm.type)?.apiKeyUrl" target="_blank" rel="noopener noreferrer"
+                class="text-blue-600 dark:text-blue-400 hover:underline text-sm flex items-center gap-1">
+                前往 {{ getPresetProvider(providerForm.type)?.name }} 获取 API Key
+                <ExternalLink class="w-3 h-3" />
+              </a>
+            </div>
+          </div>
           <div class="space-y-2">
             <label class="text-sm font-medium text-slate-700 dark:text-slate-300">厂商名称 <span
                 class="text-red-500">*</span></label>
@@ -216,7 +225,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { Cpu, Plus, Pencil, Trash2, Star, Eye, EyeOff, Play, CheckCircle, XCircle, Loader2 } from 'lucide-vue-next'
+import { Cpu, Plus, Pencil, Trash2, Star, Eye, EyeOff, Play, CheckCircle, XCircle, Loader2, ExternalLink } from 'lucide-vue-next'
 import apiService from '@/services/apiService.js'
 
 const emit = defineEmits(['save', 'error'])
@@ -260,13 +269,15 @@ const presetProviders = [
       { label: 'THUDM/glm-4-9b-chat', value: 'THUDM/glm-4-9b-chat' },
       { label: 'internlm/internlm2_5-7b-chat', value: 'internlm/internlm2_5-7b-chat' },
       { label: 'internlm/internlm2_5-20b-chat', value: 'internlm/internlm2_5-20b-chat' }
-    ]
+    ],
+    apiKeyUrl: 'https://cloud.siliconflow.cn/me/account/ak'
   },
   {
     id: 'deepseek', name: 'DeepSeek', baseURL: 'https://api.deepseek.com/v1', models: [
       { label: 'DeepSeek-V3 (deepseek-chat)', value: 'deepseek-chat' },
       { label: 'DeepSeek-R1 (deepseek-reasoner)', value: 'deepseek-reasoner' }
-    ]
+    ],
+    apiKeyUrl: 'https://platform.deepseek.com/apikeys'
   },
   {
     id: 'qwen', name: '通义千问', baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1', models: [
@@ -274,44 +285,50 @@ const presetProviders = [
       { label: 'Qwen-Plus', value: 'qwen-plus' },
       { label: 'Qwen-Max', value: 'qwen-max' },
       { label: 'Qwen-Long', value: 'qwen-long' }
-    ]
+    ],
+    apiKeyUrl: 'https://dashscope.console.aliyun.com/apiKey'
   },
   {
     id: 'doubao', name: '火山引擎', baseURL: 'https://ark.cn-beijing.volces.com/api/v3', models: [
-      { label: 'Doubao-Pro-32K', value: 'doubao-pro-32k' },
-      { label: 'Doubao-Pro-128K', value: 'doubao-pro-128k' }
-    ]
+      { label: 'Doubao-Seed-1-8-251228', value: 'doubao-seed-1-8-251228' }
+    ],
+    apiKeyUrl: 'https://console.volcengine.com/ark/region:ark+cn-beijing/service/ark/server_ai/edit'
   },
   {
     id: 'glm', name: '智谱GLM', baseURL: 'https://open.bigmodel.cn/api/paas/v4', models: [
       { label: 'GLM-4-Flash', value: 'glm-4-flash' },
       { label: 'GLM-4-Plus', value: 'glm-4-plus' }
-    ]
+    ],
+    apiKeyUrl: 'https://open.bigmodel.cn/usercenter/apikeys'
   },
   {
     id: 'moonshot', name: 'Kimi (Moonshot)', baseURL: 'https://api.moonshot.cn/v1', models: [
       { label: 'Moonshot V1 8K', value: 'moonshot-v1-8k' },
       { label: 'Moonshot V1 32K', value: 'moonshot-v1-32k' },
       { label: 'Moonshot V1 128K', value: 'moonshot-v1-128k' }
-    ]
+    ],
+    apiKeyUrl: 'https://platform.moonshot.cn/console/api-keys'
   },
   {
     id: 'modelscope', name: 'ModelScope (魔搭)', baseURL: 'https://api.modelscope.cn/v1', models: [
       { label: 'Qwen2.5-72B-Instruct', value: 'qwen2.5-72b-instruct' }
-    ]
+    ],
+    apiKeyUrl: 'https://modelscope.cn/my/apiKeys'
   },
   {
     id: 'minimax', name: 'MiniMax', baseURL: 'https://api.minimax.chat/v1', models: [
       { label: 'abab6.5s-chat', value: 'abab6.5s-chat' },
       { label: 'abab6.5-chat', value: 'abab6.5-chat' }
-    ]
+    ],
+    apiKeyUrl: 'https://platform.minimax.chat/mykey'
   },
   {
     id: 'ollama', name: 'Ollama 本地', baseURL: 'http://localhost:11434/v1', models: [
       { label: 'llama3', value: 'llama3' },
       { label: 'llama2', value: 'llama2' },
       { label: 'mistral', value: 'mistral' }
-    ]
+    ],
+    apiKeyUrl: null
   }
 ]
 
@@ -376,44 +393,78 @@ function closeProviderDialog() {
   }
 }
 
-function saveProvider() {
+async function saveProvider() {
   if (!providerForm.value.name || !providerForm.value.apiKey || !providerForm.value.model) {
     return
   }
 
-  if (editingProvider.value) {
-    const index = form.value.providers.findIndex(p => p.id === editingProvider.value.id)
-    if (index !== -1) {
-      form.value.providers[index] = {
-        ...form.value.providers[index],
+  try {
+    loading.value = true
+
+    if (editingProvider.value) {
+      const index = form.value.providers.findIndex(p => p.id === editingProvider.value.id)
+      if (index !== -1) {
+        form.value.providers[index] = {
+          ...form.value.providers[index],
+          name: providerForm.value.name,
+          apiKey: providerForm.value.apiKey,
+          baseURL: providerForm.value.baseURL,
+          model: providerForm.value.model,
+          type: providerForm.value.type,
+          apiKeyUrl: getPresetProvider(providerForm.value.type)?.apiKeyUrl || null
+        }
+      }
+    } else {
+      const newId = providerForm.value.type || `custom-${Date.now()}`
+      form.value.providers.push({
+        id: newId,
         name: providerForm.value.name,
         apiKey: providerForm.value.apiKey,
         baseURL: providerForm.value.baseURL,
         model: providerForm.value.model,
-        type: providerForm.value.type
+        type: providerForm.value.type,
+        apiKeyUrl: getPresetProvider(providerForm.value.type)?.apiKeyUrl || null
+      })
+
+      if (!form.value.provider) {
+        form.value.provider = newId
       }
     }
-  } else {
-    const newId = providerForm.value.type || `custom-${Date.now()}`
-    form.value.providers.push({
-      id: newId,
-      name: providerForm.value.name,
-      apiKey: providerForm.value.apiKey,
-      baseURL: providerForm.value.baseURL,
-      model: providerForm.value.model,
-      type: providerForm.value.type
-    })
 
-    if (!form.value.provider) {
-      form.value.provider = newId
+    // 自动保存配置到服务器
+    const saveData = {
+      provider: form.value.provider,
+      providers: form.value.providers
     }
-  }
 
-  closeProviderDialog()
+    await apiService.aiConfig.save(saveData)
+    emit('save', editingProvider.value ? '厂商配置已更新' : '厂商已添加并保存')
+    closeProviderDialog()
+  } catch (e) {
+    emit('error', e)
+  } finally {
+    loading.value = false
+  }
 }
 
-function setAsDefault(providerId) {
-  form.value.provider = providerId
+async function setAsDefault(providerId) {
+  try {
+    loading.value = true
+    form.value.provider = providerId
+    
+    // 自动保存配置到服务器
+    const saveData = {
+      provider: form.value.provider,
+      providers: form.value.providers
+    }
+
+    await apiService.aiConfig.save(saveData)
+    emit('save', '默认提供商已更新')
+  } catch (e) {
+    emit('error', e)
+  } finally {
+    loading.value = false
+  }
 }
 
 function deleteProvider(providerId) {
@@ -421,13 +472,30 @@ function deleteProvider(providerId) {
   showDeleteDialog.value = true
 }
 
-function confirmDelete() {
-  form.value.providers = form.value.providers.filter(p => p.id !== deletingProviderId.value)
-  if (form.value.provider === deletingProviderId.value) {
-    form.value.provider = form.value.providers.length > 0 ? form.value.providers[0].id : ''
+async function confirmDelete() {
+  try {
+    loading.value = true
+    
+    form.value.providers = form.value.providers.filter(p => p.id !== deletingProviderId.value)
+    if (form.value.provider === deletingProviderId.value) {
+      form.value.provider = form.value.providers.length > 0 ? form.value.providers[0].id : ''
+    }
+    
+    // 自动保存配置到服务器
+    const saveData = {
+      provider: form.value.provider,
+      providers: form.value.providers
+    }
+
+    await apiService.aiConfig.save(saveData)
+    emit('save', '厂商已删除')
+    showDeleteDialog.value = false
+    deletingProviderId.value = null
+  } catch (e) {
+    emit('error', e)
+  } finally {
+    loading.value = false
   }
-  showDeleteDialog.value = false
-  deletingProviderId.value = null
 }
 
 function toggleKeyVisibility(providerId) {
@@ -450,17 +518,55 @@ async function testProvider(providerId) {
       model: provider.model
     }
 
-    const response = await apiService.post('/admin/config/test-connection', testPayload)
-
-    testResults.value[providerId] = {
-      success: true,
-      message: '连接成功',
-      timestamp: new Date().toLocaleTimeString()
+    const response = await apiService.aiConfig.testConnection(testPayload)
+    
+    // 检查响应状态
+    if (response && response.success !== false) {
+      testResults.value[providerId] = {
+        success: true,
+        message: '连接成功',
+        timestamp: new Date().toLocaleTimeString()
+      }
+    } else {
+      testResults.value[providerId] = {
+        success: false,
+        message: response?.message || '连接失败',
+        timestamp: new Date().toLocaleTimeString()
+      }
     }
   } catch (error) {
+    // 详细处理不同类型的错误
+    let errorMessage = '连接失败'
+    
+    if (error.response) {
+      // 服务器返回错误状态码
+      switch (error.response.status) {
+        case 401:
+          errorMessage = '认证失败，请检查 API Key'
+          break
+        case 403:
+          errorMessage = '权限不足'
+          break
+        case 404:
+          errorMessage = 'API 端点不存在'
+          break
+        case 500:
+          errorMessage = '服务器内部错误'
+          break
+        default:
+          errorMessage = `HTTP 错误 ${error.response.status}`
+      }
+    } else if (error.request) {
+      // 请求已发送但没有收到响应
+      errorMessage = '无法连接到服务器，请检查网络'
+    } else {
+      // 请求配置出错
+      errorMessage = error.message || '请求失败'
+    }
+    
     testResults.value[providerId] = {
       success: false,
-      message: error.message || '连接失败',
+      message: errorMessage,
       timestamp: new Date().toLocaleTimeString()
     }
   } finally {
@@ -470,81 +576,72 @@ async function testProvider(providerId) {
 
 async function loadConfig() {
   try {
-    const res = await apiService.get('/admin/config')
-    if (res.config) {
-      form.value.provider = res.config.provider || ''
+    console.log('开始加载 AI 配置...')
+    const res = await apiService.aiConfig.get()
+    console.log('API 响应:', res)
+    
+    if (res) {
+      // 新接口直接返回配置对象
+      if (res.provider !== undefined) {
+        form.value.provider = res.provider || ''
+        form.value.providers = res.providers || []
+        console.log('配置加载完成，直接使用新接口返回的配置')
+      } else if (res.config) {
+        // 向后兼容旧接口格式
+        console.log('使用旧接口格式加载配置...')
+        form.value.provider = res.config.provider || ''
 
-      // 加载所有厂商配置
-      const providers = []
-      
-      // 遍历所有预设提供商
-      presetProviders.forEach(preset => {
-        if (res.config[preset.id] && res.config[preset.id].apiKey) {
-          providers.push({
-            id: preset.id,
-            name: preset.name,
-            apiKey: res.config[preset.id].apiKey,
-            baseURL: res.config[preset.id].baseURL || preset.baseURL,
-            model: res.config[preset.id].model || preset.models?.[0]?.value || '',
-            type: preset.id
-          })
-        }
-      })
+        // 加载所有厂商配置
+        const providers = []
+        
+        // 遍历所有预设提供商
+        console.log('遍历预设提供商...')
+        presetProviders.forEach(preset => {
+          console.log(`检查 ${preset.name} 配置...`)
+          if (res.config[preset.id] && res.config[preset.id].apiKey) {
+            console.log(`${preset.name} 已配置，添加到列表`)
+            providers.push({
+              id: preset.id,
+              name: preset.name,
+              apiKey: res.config[preset.id].apiKey,
+              baseURL: res.config[preset.id].baseURL || preset.baseURL,
+              model: res.config[preset.id].model || preset.models?.[0]?.value || '',
+              type: preset.id,
+              apiKeyUrl: preset.apiKeyUrl
+            })
+          } else {
+            console.log(`${preset.name} 未配置或无 API Key`)
+          }
+        })
 
-      // 检查是否有其他已配置的提供商
-      Object.keys(res.config).forEach(key => {
-        if (!presetProviders.some(p => p.id === key) && res.config[key] && res.config[key].apiKey) {
-          providers.push({
-            id: key,
-            name: key,
-            apiKey: res.config[key].apiKey,
-            baseURL: res.config[key].baseURL || '',
-            model: res.config[key].model || '',
-            type: 'custom'
-          })
-        }
-      })
+        // 检查是否有其他已配置的提供商
+        console.log('检查其他已配置的提供商...')
+        Object.keys(res.config).forEach(key => {
+          if (!presetProviders.some(p => p.id === key) && res.config[key] && res.config[key].apiKey) {
+            console.log(`发现自定义提供商: ${key}，添加到列表`)
+            providers.push({
+              id: key,
+              name: key,
+              apiKey: res.config[key].apiKey,
+              baseURL: res.config[key].baseURL || '',
+              model: res.config[key].model || '',
+              type: 'custom',
+              apiKeyUrl: null
+            })
+          }
+        })
 
-      form.value.providers = providers
+        console.log('最终提供商列表:', providers)
+        form.value.providers = providers
+      }
+      console.log('配置加载完成')
+    } else {
+      console.error('API 响应格式错误')
     }
   } catch (e) {
-    console.error('加载配置失败', e)
-  }
-}
-
-async function saveConfig() {
-  try {
-    loading.value = true
-
-    const selectedProvider = form.value.provider
-    const providerConfig = form.value.providers.find(p => p.id === selectedProvider)
-
-    if (selectedProvider && selectedProvider !== 'ollama') {
-      if (!providerConfig || !providerConfig.apiKey) {
-        throw new Error(`请先配置默认提供商的 API Key`)
-      }
-    }
-
-    const saveData = {
-      provider: form.value.provider
-    }
-
-    form.value.providers.forEach(p => {
-      saveData[p.id] = {
-        apiKey: p.apiKey,
-        baseURL: p.baseURL,
-        model: p.model
-      }
-    })
-
-    await apiService.put('/admin/config', saveData)
-    await loadConfig()
-    emit('save', 'AI 配置已成功保存')
-  } catch (e) {
-    emit('error', e)
-    throw e
-  } finally {
-    loading.value = false
+    console.error('加载配置失败:', e)
+    // 显示错误消息
+    emit('error', new Error('加载配置失败，请检查网络连接'))
   }
 }
 
@@ -554,7 +651,6 @@ onMounted(() => {
 })
 
 defineExpose({
-  loadConfig,
-  saveConfig
+  loadConfig
 })
 </script>

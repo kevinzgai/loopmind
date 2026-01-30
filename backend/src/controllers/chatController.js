@@ -2,13 +2,13 @@ import {
     getConversationHistory,
     addMessageToHistory,
     callAIStream,
-    callAI,
-    getAvailableProviders
+    callAI
 } from '../services/aiService.js';
-import { getConfigMasked } from '../services/configService.js';
+import { getConfigMasked, getRawConfigCached } from '../services/configService.js';
 import {
     appendConversationMessages,
     createConversation,
+    getConversationMessages,
     getConversations
 } from '../services/conversationService.js';
 
@@ -148,8 +148,31 @@ export async function getUserConversations(req, res) {
 
 export async function getProviders(req, res) {
     try {
-        const providers = getAvailableProviders();
-        const cfg = await getConfigMasked();
+        const cfg = await getRawConfigCached();
+        
+        const allProviders = [
+            { id: "siliconflow", name: "硅基流动", model: "deepseek-chat", config: cfg.siliconflow },
+            { id: "deepseek", name: "DeepSeek", model: "deepseek-chat", config: cfg.deepseek },
+            { id: "qwen", name: "通义千问", model: "qwen-turbo", config: cfg.qwen },
+            { id: "doubao", name: "火山引擎", model: "doubao-seed-1-8-251228", config: cfg.doubao },
+            { id: "glm", name: "智谱GLM", model: "glm-4-flash", config: cfg.glm },
+            { id: "moonshot", name: "Kimi (Moonshot)", model: "moonshot-v1-8k", config: cfg.moonshot },
+            { id: "modelscope", name: "ModelScope (魔搭)", model: "Qwen/Qwen2.5-72B-Instruct", config: cfg.modelscope },
+            { id: "minimax", name: "MiniMax", model: "abab6.5s-chat", config: cfg.minimax },
+            { id: "ollama", name: "Ollama 本地", model: "llama3.1:8b", config: cfg.ollama },
+        ];
+        
+        const providers = allProviders
+            .filter(p => p.config && p.config.apiKey && p.config.apiKey.trim() !== '')
+            .map(({ id, name, model, config }) => ({
+                id,
+                name,
+                apiKey: config.apiKey,
+                baseURL: config.baseURL,
+                model: config.model || model,
+                type: id
+            }));
+        
         res.json({ providers, defaultProvider: cfg.provider });
     } catch (error) {
         console.error('❌ Error getting providers:', error);

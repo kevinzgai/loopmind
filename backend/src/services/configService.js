@@ -498,9 +498,188 @@ export async function getRawConfigCached() {
   return cachedRaw;
 }
 
+// AI 模型配置相关方法
+export async function getAIConfig() {
+  const cfg = await ensureConfigInitialized();
+  
+  // 构建新格式的配置对象
+  const aiConfig = {
+    provider: cfg.provider,
+    providers: []
+  };
+  
+  // 遍历所有AI提供商配置
+  const providers = [
+    { id: 'siliconflow', name: '硅基流动', config: cfg.siliconflow },
+    { id: 'deepseek', name: 'DeepSeek', config: cfg.deepseek },
+    { id: 'qwen', name: '通义千问', config: cfg.qwen },
+    { id: 'doubao', name: '火山引擎', config: cfg.doubao },
+    { id: 'glm', name: '智谱GLM', config: cfg.glm },
+    { id: 'moonshot', name: 'Moonshot', config: cfg.moonshot },
+    { id: 'modelscope', name: 'ModelScope', config: cfg.modelscope },
+    { id: 'minimax', name: 'MiniMax', config: cfg.minimax },
+    { id: 'ollama', name: 'Ollama', config: cfg.ollama }
+  ];
+  
+  // 添加已配置的提供商
+  providers.forEach(({ id, name, config }) => {
+    if (config && config.apiKey) {
+      aiConfig.providers.push({
+        id,
+        name,
+        apiKey: config.apiKey,
+        baseURL: config.baseURL,
+        model: config.model,
+        type: id
+      });
+    }
+  });
+  
+  return aiConfig;
+}
+
+export async function updateAIConfig(payload) {
+  const cfg = await ensureConfigInitialized();
+  
+  // 处理新格式的配置
+  if (payload.provider !== undefined) {
+    cfg.provider = payload.provider;
+  }
+  
+  // 处理提供商配置
+  if (Array.isArray(payload.providers)) {
+    payload.providers.forEach(provider => {
+      if (provider.id && provider.apiKey) {
+        if (!cfg[provider.id]) {
+          cfg[provider.id] = {};
+        }
+        cfg[provider.id].apiKey = provider.apiKey;
+        cfg[provider.id].baseURL = provider.baseURL;
+        cfg[provider.id].model = provider.model;
+      }
+    });
+  } else {
+    // 向后兼容旧格式
+    Object.keys(payload).forEach(key => {
+      if (key !== 'provider' && payload[key]) {
+        if (!cfg[key]) {
+          cfg[key] = {};
+        }
+        Object.assign(cfg[key], payload[key]);
+      }
+    });
+  }
+  
+  cfg.updatedAt = new Date();
+  await cfg.save();
+  return cfg;
+}
+
+// Embedding 模型配置相关方法
+export async function getEmbeddingConfig() {
+  const cfg = await ensureConfigInitialized();
+  
+  // 构建新格式的配置对象
+  const embeddingConfig = {
+    provider: cfg.embedding?.provider || 'openai',
+    providers: []
+  };
+  
+  // 优先使用新格式的 providers 数组（来自前端保存的配置）
+  if (cfg.embedding && cfg.embedding.providers && Array.isArray(cfg.embedding.providers)) {
+    console.log('🔧 使用新格式的 Embedding 提供商配置，数量:', cfg.embedding.providers.length);
+    embeddingConfig.providers = cfg.embedding.providers;
+  } else {
+    // 向后兼容：遍历所有Embedding提供商配置
+    const providers = [
+      { id: 'openai', name: 'OpenAI', config: cfg.openai },
+      { id: 'siliconflow', name: '硅基流动', config: cfg.siliconflow },
+      { id: 'zhipu', name: '智谱 AI', config: cfg.zhipu },
+      { id: 'aliyun', name: '阿里云', config: cfg.aliyun }
+    ];
+    
+    // 添加已配置的提供商
+    providers.forEach(({ id, name, config }) => {
+      if (config && config.apiKey) {
+        embeddingConfig.providers.push({
+          id,
+          name,
+          apiKey: config.apiKey,
+          baseURL: config.baseURL,
+          model: config.model,
+          type: id
+        });
+      }
+    });
+    
+    // 添加默认的embedding配置（如果有）
+    if (cfg.embedding && cfg.embedding.apiKey) {
+      embeddingConfig.providers.push({
+        id: 'embedding',
+        name: '默认 Embedding',
+        apiKey: cfg.embedding.apiKey,
+        baseURL: cfg.embedding.baseURL,
+        model: cfg.embedding.model,
+        type: 'embedding'
+      });
+    }
+  }
+  
+  return embeddingConfig;
+}
+
+export async function updateEmbeddingConfig(payload) {
+  const cfg = await ensureConfigInitialized();
+  
+  // 处理新格式的配置
+  if (payload.provider !== undefined) {
+    if (!cfg.embedding) {
+      cfg.embedding = {};
+    }
+    cfg.embedding.provider = payload.provider;
+  }
+  
+  // 处理提供商配置
+  if (Array.isArray(payload.providers)) {
+    // 保存 providers 数组到 cfg.embedding.providers
+    if (!cfg.embedding) {
+      cfg.embedding = {};
+    }
+    cfg.embedding.providers = payload.providers;
+    
+    // 同时保存到各个提供商的配置中，以保持向后兼容
+    payload.providers.forEach(provider => {
+      if (provider.id && provider.apiKey) {
+        if (!cfg[provider.id]) {
+          cfg[provider.id] = {};
+        }
+        cfg[provider.id].apiKey = provider.apiKey;
+        cfg[provider.id].baseURL = provider.baseURL;
+        cfg[provider.id].model = provider.model;
+      }
+    });
+  } else {
+    // 向后兼容旧格式
+    if (payload.embedding) {
+      if (!cfg.embedding) {
+        cfg.embedding = {};
+      }
+      Object.assign(cfg.embedding, payload.embedding);
+    }
+  }
+  
+  cfg.updatedAt = new Date();
+  await cfg.save();
+  return cfg;
+}
+
 export default {
   ensureConfigInitialized,
   getConfigMasked,
   updateConfig,
   getRawConfigCached,
+  getAIConfig,
+  updateAIConfig,
+  getEmbeddingConfig,
+  updateEmbeddingConfig
 };
