@@ -229,6 +229,10 @@ async function loadProviders() {
     const data = await response.json()
     if (data.providers && data.providers.length > 0) {
       providers.value = data.providers
+      // 检查默认提供商是否可用，如果不可用则选择第一个
+      if (providers.value.length > 0 && !providers.value.some(p => p.id === selectedProvider.value)) {
+        selectedProvider.value = providers.value[0].id
+      }
     }
   } catch (error) {
     console.warn('Failed to load providers, using defaults:', error)
@@ -320,7 +324,8 @@ async function textToSpeech(text) {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          text: text
+          text: text,
+          provider: selectedProvider.value
         })
       })
       

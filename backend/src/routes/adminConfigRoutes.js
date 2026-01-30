@@ -1,7 +1,7 @@
 import express from "express";
 import { authenticateToken } from "../shared/middleware/authMiddleware.js";
 import { authorizeAdmin } from "../shared/middleware/authMiddleware.js";
-import { getConfigUnmasked, updateConfig, getAIConfig, updateAIConfig, getEmbeddingConfig, updateEmbeddingConfig } from "../services/configService.js";
+import { getConfigUnmasked, updateConfig, getAIConfig, updateAIConfig, getEmbeddingConfig, updateEmbeddingConfig, getSpeechConfig, updateSpeechConfig } from "../services/configService.js";
 import { testConnectivity } from "../services/aiService.js";
 import path from "path";
 import fs from "fs";
@@ -232,6 +232,41 @@ router.put("/config/embedding", authenticateToken, authorizeAdmin, async (req, r
     res.json({ message: "Embedding 模型配置已更新" });
   } catch (err) {
     console.error("❌ 更新 Embedding 模型配置失败:", err.message);
+    res.status(400).json({ error: { message: err.message || "请求参数错误" } });
+  }
+});
+
+/**
+ * @api {get} /admin/config/speech 获取语音服务配置
+ * @apiName GetSpeechConfig
+ * @apiGroup Admin
+ * @apiDescription 获取语音服务配置（新格式）
+ * @apiHeader {String} Authorization Bearer Token
+ */
+router.get("/config/speech", authenticateToken, authorizeAdmin, async (req, res) => {
+  try {
+    const cfg = await getSpeechConfig();
+    res.json(cfg);
+  } catch (err) {
+    console.error("❌ 获取语音服务配置失败:", err.message);
+    res.status(500).json({ error: { message: "服务器错误" } });
+  }
+});
+
+/**
+ * @api {put} /admin/config/speech 更新语音服务配置
+ * @apiName UpdateSpeechConfig
+ * @apiGroup Admin
+ * @apiDescription 更新语音服务配置（新格式）
+ * @apiHeader {String} Authorization Bearer Token
+ */
+router.put("/config/speech", authenticateToken, authorizeAdmin, async (req, res) => {
+  try {
+    const payload = req.body || {};
+    await updateSpeechConfig(payload);
+    res.json({ message: "语音服务配置已更新" });
+  } catch (err) {
+    console.error("❌ 更新语音服务配置失败:", err.message);
     res.status(400).json({ error: { message: err.message || "请求参数错误" } });
   }
 });

@@ -140,5 +140,17 @@ export default {
     save(data) {
       return apiClient.put('/admin/config', data)
     }
+  },
+  
+  // 语音服务配置相关接口
+  speechConfig: {
+    // 获取语音服务配置
+    get() {
+      return apiClient.get('/admin/config/speech')
+    },
+    // 保存语音服务配置
+    save(data) {
+      return apiClient.put('/admin/config/speech', data)
+    }
   }
 }

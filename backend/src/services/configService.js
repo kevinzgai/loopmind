@@ -673,6 +673,105 @@ export async function updateEmbeddingConfig(payload) {
   return cfg;
 }
 
+// 语音服务配置相关方法
+export async function getSpeechConfig() {
+  const cfg = await ensureConfigInitialized();
+  
+  const speechConfig = {
+    ttsProvider: cfg.speech?.ttsProvider || 'siliconflow',
+    asrProvider: cfg.speech?.asrProvider || 'siliconflow',
+    providers: []
+  };
+  
+  const speechProviders = [
+    {
+      id: "siliconflow",
+      name: "硅基流动",
+      config: cfg.speech?.siliconflow,
+      type: "tts",
+      models: ["FunAudioLLM/CosyVoice2-0.5B"]
+    },
+    {
+      id: "aliyun",
+      name: "阿里云",
+      config: cfg.speech?.aliyun,
+      type: "tts",
+      models: ["xiaoxian", "xiaoyu", "yaya"]
+    },
+    {
+      id: "openai",
+      name: "OpenAI",
+      config: cfg.speech?.openai,
+      type: "tts",
+      models: ["tts-1", "tts-1-hd"]
+    },
+    {
+      id: "edge",
+      name: "Edge TTS",
+      config: cfg.speech?.edge,
+      type: "tts",
+      models: ["edge"]
+    },
+    {
+      id: "seed",
+      name: "Seed",
+      config: cfg.speech?.seed,
+      type: "tts",
+      models: ["seed"]
+    }
+  ];
+  
+  speechConfig.providers = speechProviders
+    .filter(p => p.config && p.config.apiKey && p.config.apiKey.trim() !== '')
+    .map(p => ({
+      id: p.id,
+      name: p.name,
+      apiKey: p.config.apiKey,
+      baseURL: p.config.baseURL,
+      type: p.type,
+      models: p.models || p.model ? [p.model] : []
+    }));
+  
+  return speechConfig;
+}
+
+export async function updateSpeechConfig(payload) {
+  const cfg = await ensureConfigInitialized();
+  
+  // 处理新格式的配置
+  if (payload.ttsProvider !== undefined) {
+    if (!cfg.speech) cfg.speech = {};
+    cfg.speech.ttsProvider = payload.ttsProvider;
+  }
+  
+  if (payload.asrProvider !== undefined) {
+    if (!cfg.speech) cfg.speech = {};
+    cfg.speech.asrProvider = payload.asrProvider;
+  }
+  
+  // 处理提供商配置
+  if (Array.isArray(payload.providers)) {
+    payload.providers.forEach(provider => {
+      if (provider.id && provider.apiKey) {
+        if (!cfg.speech) cfg.speech = {};
+        if (!cfg.speech[provider.id]) {
+          cfg.speech[provider.id] = {};
+        }
+        cfg.speech[provider.id].apiKey = provider.apiKey;
+        cfg.speech[provider.id].baseURL = provider.baseURL;
+        cfg.speech[provider.id].model = provider.model;
+        cfg.speech[provider.id].ttsVoice = provider.ttsVoice;
+        cfg.speech[provider.id].speechRate = provider.speechRate;
+        cfg.speech[provider.id].asrModel = provider.asrModel;
+      }
+    });
+  }
+  
+  cfg.updatedAt = new Date();
+  await cfg.save();
+  return cfg;
+}
+
 export default {
   ensureConfigInitialized,
   getConfigMasked,
@@ -681,5 +780,7 @@ export default {
   getAIConfig,
   updateAIConfig,
   getEmbeddingConfig,
-  updateEmbeddingConfig
+  updateEmbeddingConfig,
+  getSpeechConfig,
+  updateSpeechConfig
 };
