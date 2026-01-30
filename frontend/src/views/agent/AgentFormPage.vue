@@ -213,7 +213,7 @@ onMounted(() => {
 <style scoped>
 .agent-form-page {
   min-height: calc(100vh - 60px);
-  background: #f8f9fa;
+  @apply bg-background text-foreground;
   position: relative;
   overflow-x: hidden;
 }
@@ -238,7 +238,7 @@ onMounted(() => {
 .circle-1 {
   width: 500px;
   height: 500px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
   top: -150px;
   right: -150px;
   animation: float 20s ease-in-out infinite;
@@ -247,7 +247,7 @@ onMounted(() => {
 .circle-2 {
   width: 400px;
   height: 400px;
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: linear-gradient(135deg, hsl(var(--secondary)) 0%, hsl(var(--primary)) 100%);
   bottom: -100px;
   left: -100px;
   animation: float 25s ease-in-out infinite reverse;
@@ -256,7 +256,7 @@ onMounted(() => {
 .circle-3 {
   width: 300px;
   height: 300px;
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.5) 0%, hsl(var(--secondary) / 0.5) 100%);
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -290,7 +290,7 @@ onMounted(() => {
 }
 
 .agent-card {
-  background: white;
+  @apply bg-card text-card-foreground;
   border-radius: 32px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.05);
   max-width: 1440px;
@@ -307,7 +307,7 @@ onMounted(() => {
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, #667eea, #764ba2);
+  background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--secondary)));
 }
 
 .card-header {
@@ -336,16 +336,16 @@ onMounted(() => {
 .card-header h1 {
   font-size: 2.5rem;
   font-weight: 800;
-  color: #1a1a2e;
+  @apply text-foreground;
   margin: 0 0 0.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .card-header p {
-  color: #666;
+  @apply text-muted-foreground;
   font-size: 1rem;
   margin: 0;
 }
@@ -356,15 +356,14 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 4rem 0;
-  color: #667eea;
+  @apply text-primary;
 }
 
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 4px solid rgba(102, 126, 234, 0.3);
+  @apply border-4 border-muted border-t-primary;
   border-radius: 50%;
-  border-top-color: #667eea;
   animation: spin 1s linear infinite;
   margin-bottom: 1rem;
 }
@@ -380,10 +379,9 @@ onMounted(() => {
   align-items: center;
   gap: 0.75rem;
   padding: 1rem 1.25rem;
-  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-  border: 2px solid #fca5a5;
+  @apply bg-destructive/10 border-destructive text-destructive;
+  border-width: 2px;
   border-radius: 12px;
-  color: #991b1b;
   font-size: 0.9375rem;
   font-weight: 500;
   margin-bottom: 2rem;

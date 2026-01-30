@@ -1280,27 +1280,26 @@ onMounted(() => {
   /* 减去导航栏高度 */
   margin: 0;
   padding: 0;
-  color: #1a202c;
-  background: #f7fafc;
+  @apply bg-background text-foreground;
   overflow: hidden;
 }
 
 .header {
   padding: 1.5rem 2rem;
-  background: white;
-  border-bottom: 1px solid #e2e8f0;
+  @apply bg-card border-border;
+  border-bottom-width: 1px;
   margin-bottom: 0;
 }
 
 .title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #2d3748;
+  @apply text-foreground;
   margin-bottom: 0.25rem;
 }
 
 .subtitle-text {
-  color: #718096;
+  @apply text-muted-foreground;
   font-size: 0.875rem;
 }
 
@@ -1308,7 +1307,7 @@ onMounted(() => {
   display: flex;
   height: calc(100% - 85px);
   /* 减去 header 高度 */
-  background: white;
+  @apply bg-background;
   border-radius: 0;
   box-shadow: none;
   min-height: auto;
@@ -1318,8 +1317,8 @@ onMounted(() => {
 /* Sidebar Styles */
 .sidebar {
   width: 240px;
-  background: #fff;
-  border-right: 1px solid #e2e8f0;
+  @apply bg-card border-border;
+  border-right-width: 1px;
   padding: 1rem 0;
   flex-shrink: 0;
 }
@@ -1331,14 +1330,14 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  background: #f7fafc;
+  @apply bg-background;
 }
 
 .nav-divider {
   padding: 1.5rem 1.5rem 0.5rem;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #a0aec0;
+  @apply text-muted-foreground/60;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -1348,21 +1347,18 @@ onMounted(() => {
   align-items: center;
   padding: 0.75rem 1.5rem;
   cursor: pointer;
-  color: #4a5568;
+  @apply text-muted-foreground;
   transition: all 0.2s;
   font-weight: 500;
   border-left: 3px solid transparent;
 }
 
 .nav-item:hover {
-  background: #f7fafc;
-  color: #2d3748;
+  @apply bg-accent text-accent-foreground;
 }
 
 .nav-item.active {
-  background: #ebf8ff;
-  color: #3182ce;
-  border-left-color: #3182ce;
+  @apply bg-primary/10 text-primary border-primary;
 }
 
 .nav-item .icon {
@@ -1373,27 +1369,28 @@ onMounted(() => {
 .section-header {
   margin-bottom: 2rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid #e2e8f0;
+  @apply border-border;
+  border-bottom-width: 1px;
 }
 
 .section-header h2 {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #2d3748;
+  @apply text-foreground;
   margin-bottom: 0.5rem;
 }
 
 .section-header p {
-  color: #718096;
+  @apply text-muted-foreground;
 }
 
 .card {
   max-width: 800px;
-  background: white;
+  @apply bg-card border-border;
   padding: 2rem;
   border-radius: 12px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  border: 1px solid #e2e8f0;
+  border-width: 1px;
 }
 
 .field {
@@ -1403,13 +1400,13 @@ onMounted(() => {
 .field label {
   display: block;
   font-weight: 500;
-  color: #4a5568;
+  @apply text-foreground;
   margin-bottom: 0.5rem;
 }
 
 .help-text {
   font-size: 0.875rem;
-  color: #718096;
+  @apply text-muted-foreground;
   margin-top: 0.25rem;
 }
 
@@ -1418,7 +1415,8 @@ input[type="password"],
 .select-input {
   width: 100%;
   padding: 0.75rem 1rem;
-  border: 1px solid #cbd5e0;
+  @apply border-input bg-background text-foreground;
+  border-width: 1px;
   border-radius: 6px;
   font-size: 1rem;
   transition: border-color 0.2s;
@@ -1427,8 +1425,8 @@ input[type="password"],
 
 input:focus,
 .select-input:focus {
-  border-color: #3182ce;
-  box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+  @apply border-primary;
+  box-shadow: 0 0 0 3px hsla(var(--primary) / 0.1);
 }
 
 .input-group {
@@ -1438,10 +1436,9 @@ input:focus,
 
 .toggle-btn {
   padding: 0 1rem;
-  background: #edf2f7;
-  border: 1px solid #cbd5e0;
+  @apply bg-muted border-input text-muted-foreground;
+  border-width: 1px;
   border-radius: 6px;
-  color: #4a5568;
   cursor: pointer;
   white-space: nowrap;
   font-size: 0.875rem;
@@ -1449,14 +1446,15 @@ input:focus,
 }
 
 .toggle-btn:hover {
-  background: #e2e8f0;
+  @apply bg-accent text-accent-foreground;
 }
 
 /* Actions Bar */
 .actions-bar {
   margin-top: auto;
   padding-top: 2rem;
-  border-top: 1px solid #e2e8f0;
+  @apply border-border;
+  border-top-width: 1px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -1471,17 +1469,16 @@ input:focus,
 }
 
 .status-message.success {
-  color: #38a169;
+  @apply text-green-600;
 }
 
 .status-message.error {
-  color: #e53e3e;
+  @apply text-destructive;
 }
 
 .btn-save {
   padding: 0.75rem 2rem;
-  background: #3182ce;
-  color: #fff;
+  @apply bg-primary text-primary-foreground;
   border: none;
   border-radius: 6px;
   font-weight: 600;
@@ -1490,11 +1487,11 @@ input:focus,
 }
 
 .btn-save:hover {
-  background: #2b6cb0;
+  @apply bg-primary/90;
 }
 
 .btn-save:disabled {
-  background: #cbd5e0;
+  @apply bg-muted text-muted-foreground;
   cursor: not-allowed;
 }
 
@@ -1510,7 +1507,8 @@ input:focus,
   .sidebar {
     width: 100%;
     border-right: none;
-    border-bottom: 1px solid #e2e8f0;
+    @apply border-border;
+    border-bottom-width: 1px;
     overflow-x: auto;
     display: flex;
     padding: 0;
@@ -1529,7 +1527,7 @@ input:focus,
 
   .nav-item.active {
     border-left: none;
-    border-bottom-color: #3182ce;
+    @apply border-primary;
   }
 }
 
@@ -1553,21 +1551,19 @@ input:focus,
 
 .btn-refresh {
   padding: 0.5rem 1rem;
-  background: #f7fafc;
-  border: 1px solid #cbd5e0;
+  @apply bg-muted border-input text-muted-foreground;
+  border-width: 1px;
   border-radius: 6px;
   cursor: pointer;
-  color: #4a5568;
 }
 
 .btn-refresh:hover {
-  background: #edf2f7;
+  @apply bg-accent text-accent-foreground;
 }
 
 .logs-container {
   flex: 1;
-  background: #1a202c;
-  color: #e2e8f0;
+  @apply bg-black/90 text-white;
   padding: 1.5rem;
   border-radius: 8px;
   overflow-y: auto;
@@ -1579,7 +1575,7 @@ input:focus,
 
 .no-logs {
   text-align: center;
-  color: #718096;
+  @apply text-muted-foreground;
   margin-top: 2rem;
 }
 
@@ -1590,7 +1586,7 @@ input:focus,
 }
 
 .log-time {
-  color: #718096;
+  @apply text-muted-foreground;
   margin-right: 0.5rem;
 }
 
@@ -1602,14 +1598,14 @@ input:focus,
 }
 
 .log-item.info .log-level {
-  color: #48bb78;
+  @apply text-green-500;
 }
 
 .log-item.warn .log-level {
-  color: #ecc94b;
+  @apply text-yellow-500;
 }
 
 .log-item.error .log-level {
-  color: #f56565;
+  @apply text-destructive;
 }
 </style>

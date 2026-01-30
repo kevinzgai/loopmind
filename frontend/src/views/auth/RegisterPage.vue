@@ -110,12 +110,12 @@ const handleRegister = async () => {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
   padding: 20px;
 }
 
 .register-card {
-  background: white;
+  @apply bg-card text-card-foreground;
   border-radius: 12px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
   width: 100%;
@@ -130,12 +130,12 @@ const handleRegister = async () => {
 
 .register-header h1 {
   font-size: 28px;
-  color: #333;
+  @apply text-foreground;
   margin-bottom: 8px;
 }
 
 .register-header p {
-  color: #999;
+  @apply text-muted-foreground;
   font-size: 14px;
 }
 
@@ -154,12 +154,13 @@ const handleRegister = async () => {
 .form-group label {
   font-size: 14px;
   font-weight: 500;
-  color: #333;
+  @apply text-foreground;
 }
 
 .form-group input {
   padding: 12px;
-  border: 1px solid #ddd;
+  @apply border-input bg-background text-foreground;
+  border-width: 1px;
   border-radius: 6px;
   font-size: 14px;
   transition: border-color 0.3s;
@@ -167,28 +168,27 @@ const handleRegister = async () => {
 
 .form-group input:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  @apply border-primary ring-offset-background;
+  box-shadow: 0 0 0 3px hsla(var(--primary) / 0.1);
 }
 
 .form-group input:disabled {
-  background-color: #f5f5f5;
+  @apply bg-muted text-muted-foreground;
   cursor: not-allowed;
 }
 
 .error-message {
   padding: 12px;
-  background-color: #fee;
-  border: 1px solid #fcc;
+  @apply bg-destructive/10 border-destructive text-destructive;
+  border-width: 1px;
   border-radius: 6px;
-  color: #c33;
   font-size: 14px;
 }
 
 .submit-btn {
   padding: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
+  @apply text-primary-foreground;
   border: none;
   border-radius: 6px;
   font-size: 16px;
@@ -199,7 +199,7 @@ const handleRegister = async () => {
 
 .submit-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 5px 20px hsla(var(--primary) / 0.4);
 }
 
 .submit-btn:disabled {
@@ -211,17 +211,17 @@ const handleRegister = async () => {
   text-align: center;
   margin-top: 20px;
   font-size: 14px;
-  color: #666;
+  @apply text-muted-foreground;
 }
 
 .register-footer a {
-  color: #667eea;
+  @apply text-primary;
   text-decoration: none;
   font-weight: 500;
   transition: color 0.3s;
 }
 
 .register-footer a:hover {
-  color: #764ba2;
+  @apply text-secondary;
 }
 </style>

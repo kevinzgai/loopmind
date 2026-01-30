@@ -59,6 +59,7 @@ export async function login(username, password) {
     // 保存 token 和用户信息
     token.value = response.token
     user.value = response.user
+    console.log('Setting token and user in authStore:', { token: !!token.value, user: !!user.value })
     localStorage.setItem('token', response.token)
     localStorage.setItem('user', JSON.stringify(response.user))
 

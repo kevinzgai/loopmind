@@ -284,7 +284,7 @@ onMounted(() => {
 <style scoped>
 .home-container {
   min-height: 100vh;
-  background: #f8f9fa;
+  @apply bg-background text-foreground;
   position: relative;
   overflow-x: hidden;
 }
@@ -309,7 +309,7 @@ onMounted(() => {
 .circle-1 {
   width: 600px;
   height: 600px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
   top: -200px;
   right: -200px;
   animation: float 20s ease-in-out infinite;
@@ -318,7 +318,7 @@ onMounted(() => {
 .circle-2 {
   width: 500px;
   height: 500px;
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: linear-gradient(135deg, hsl(var(--secondary)) 0%, hsl(var(--primary)) 100%);
   bottom: -150px;
   left: -150px;
   animation: float 25s ease-in-out infinite reverse;
@@ -327,7 +327,7 @@ onMounted(() => {
 .circle-3 {
   width: 400px;
   height: 400px;
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.5) 0%, hsl(var(--secondary) / 0.5) 100%);
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -355,7 +355,7 @@ onMounted(() => {
 }
 
 .banner-section {
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.95) 0%, rgba(118, 75, 162, 0.95) 100%);
+  background: linear-gradient(135deg, hsla(var(--primary) / 0.95) 0%, hsla(var(--secondary) / 0.95) 100%);
   backdrop-filter: blur(20px);
   padding: 4rem 2rem;
   position: relative;
@@ -395,13 +395,13 @@ onMounted(() => {
 .badge {
   display: inline-block;
   padding: 0.5rem 1.5rem;
-  background: rgba(255, 255, 255, 0.2);
+  background: hsla(var(--primary-foreground) / 0.2);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid hsla(var(--primary-foreground) / 0.3);
   border-radius: 50px;
   font-size: 0.875rem;
   font-weight: 600;
-  color: white;
+  @apply text-primary-foreground;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
@@ -428,14 +428,14 @@ onMounted(() => {
   font-size: 1.5rem;
   font-weight: 600;
   margin: 0 0 1rem;
-  color: rgba(255, 255, 255, 0.95);
+  @apply text-primary-foreground/95;
   letter-spacing: 0.05em;
 }
 
 .banner-description {
   font-size: 1.125rem;
   margin: 0 0 2rem;
-  color: rgba(255, 255, 255, 0.9);
+  @apply text-primary-foreground/90;
   line-height: 1.8;
   max-width: 600px;
 }
@@ -477,8 +477,7 @@ onMounted(() => {
 }
 
 .btn-primary {
-  background: white;
-  color: #667eea;
+  @apply bg-card text-primary;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
@@ -488,14 +487,14 @@ onMounted(() => {
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.15);
+  background: hsla(var(--primary-foreground) / 0.15);
   backdrop-filter: blur(10px);
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  color: white;
+  border: 2px solid hsla(var(--primary-foreground) / 0.3);
+  @apply text-primary-foreground;
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: hsla(var(--primary-foreground) / 0.25);
   transform: translateY(-3px);
 }
 
@@ -507,10 +506,10 @@ onMounted(() => {
   display: flex;
   gap: 2rem;
   padding: 1.5rem 2rem;
-  background: rgba(255, 255, 255, 0.1);
+  background: hsla(var(--primary-foreground) / 0.1);
   backdrop-filter: blur(10px);
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid hsla(var(--primary-foreground) / 0.2);
 }
 
 .stat-item {
@@ -520,18 +519,18 @@ onMounted(() => {
 .stat-number {
   font-size: 2rem;
   font-weight: 800;
-  color: white;
+  @apply text-primary-foreground;
   margin-bottom: 0.25rem;
 }
 
 .stat-label {
   font-size: 0.875rem;
-  color: rgba(255, 255, 255, 0.8);
+  @apply text-primary-foreground/80;
 }
 
 .stat-divider {
   width: 1px;
-  background: rgba(255, 255, 255, 0.3);
+  background: hsla(var(--primary-foreground) / 0.3);
 }
 
 .banner-right {
@@ -609,11 +608,10 @@ onMounted(() => {
 
 .quick-card {
   position: relative;
-  background: white;
+  @apply bg-card text-card-foreground;
   border-radius: 20px;
   overflow: hidden;
   text-decoration: none;
-  color: inherit;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
@@ -630,7 +628,7 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
   opacity: 0;
   transition: opacity 0.4s ease;
 }
@@ -651,12 +649,12 @@ onMounted(() => {
   width: 64px;
   height: 64px;
   border-radius: 16px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 12px hsla(var(--primary) / 0.3);
   transition: all 0.3s ease;
 }
 
@@ -674,25 +672,25 @@ onMounted(() => {
 
 .quick-title {
   font-weight: 700;
-  color: #1a1a2e;
+  @apply text-foreground;
   margin-bottom: 0.25rem;
   font-size: 1.125rem;
 }
 
 .quick-desc {
   font-size: 0.875rem;
-  color: #666;
+  @apply text-muted-foreground;
 }
 
 .quick-arrow {
   font-size: 1.5rem;
-  color: #667eea;
+  @apply text-primary;
   transition: all 0.3s ease;
 }
 
 .quick-card:hover .quick-arrow {
   transform: translateX(5px);
-  color: #764ba2;
+  @apply text-secondary;
 }
 
 .category-section {
@@ -713,9 +711,9 @@ onMounted(() => {
 .category-title h2 {
   font-size: 2.5rem;
   font-weight: 800;
-  color: #1a1a2e;
+  @apply text-foreground;
   margin: 0 0 0.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -723,7 +721,7 @@ onMounted(() => {
 
 .category-subtitle {
   font-size: 1rem;
-  color: #666;
+  @apply text-muted-foreground;
   margin: 0;
 }
 
@@ -738,14 +736,13 @@ onMounted(() => {
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
-  border: 2px solid #e0e0e0;
-  background: white;
+  @apply border-2 border-border bg-card;
   border-radius: 50px;
   cursor: pointer;
   transition: all 0.3s ease;
   font-size: 0.9375rem;
   font-weight: 500;
-  color: #666;
+  @apply text-muted-foreground;
   position: relative;
   overflow: hidden;
 }
@@ -768,20 +765,18 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
   opacity: 0;
   transition: opacity 0.3s ease;
   z-index: 0;
 }
 
 .category-tab:hover {
-  border-color: #667eea;
-  color: #667eea;
+  @apply border-primary text-primary;
 }
 
 .category-tab.active {
-  border-color: #667eea;
-  color: white;
+  @apply border-primary text-primary-foreground;
 }
 
 .category-tab.active::before {
@@ -811,7 +806,7 @@ onMounted(() => {
 
 .agent-card {
   position: relative;
-  background: white;
+  @apply bg-card;
   border-radius: 24px;
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
@@ -831,7 +826,7 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
   opacity: 0;
   transition: opacity 0.4s ease;
 }
@@ -869,7 +864,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   font-size: 2.5rem;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  @apply bg-muted;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
 }
@@ -877,7 +872,7 @@ onMounted(() => {
 .agent-card:hover .agent-avatar,
 .agent-card:hover .agent-avatar-placeholder {
   transform: scale(1.1) rotate(3deg);
-  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 8px 24px hsla(var(--primary) / 0.3);
 }
 
 .agent-status {
@@ -887,12 +882,12 @@ onMounted(() => {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  border: 3px solid white;
+  @apply border-2 border-card;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .agent-status.online {
-  background: #4ade80;
+  @apply bg-green-400;
 }
 
 .agent-meta {
@@ -905,19 +900,19 @@ onMounted(() => {
 .agent-name {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #1a1a2e;
+  @apply text-foreground;
   margin: 0 0 0.25rem;
 }
 
 .agent-creator {
   font-size: 0.875rem;
-  color: #999;
+  @apply text-muted-foreground;
   margin: 0;
 }
 
 .agent-description {
   font-size: 0.9375rem;
-  color: #666;
+  @apply text-muted-foreground;
   margin: 0 0 1.5rem;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -932,7 +927,7 @@ onMounted(() => {
   gap: 1.5rem;
   margin-bottom: 1.5rem;
   padding: 1rem;
-  background: #f8f9fa;
+  @apply bg-muted;
   border-radius: 12px;
 }
 
@@ -948,12 +943,12 @@ onMounted(() => {
 
 .stat-value {
   font-weight: 700;
-  color: #1a1a2e;
+  @apply text-foreground;
 }
 
 .stat-label {
   font-size: 0.8125rem;
-  color: #999;
+  @apply text-muted-foreground;
 }
 
 .agent-btn {
@@ -962,20 +957,20 @@ onMounted(() => {
   justify-content: center;
   gap: 0.5rem;
   padding: 1rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
+  @apply text-primary-foreground;
   border-radius: 12px;
   text-decoration: none;
   text-align: center;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 12px hsla(var(--primary) / 0.3);
 }
 
 .agent-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 8px 24px hsla(var(--primary) / 0.4);
 }
 
 .btn-arrow {
@@ -992,14 +987,13 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 4rem;
-  color: #667eea;
+  @apply text-primary;
 }
 
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #667eea;
+  @apply border-4 border-muted border-t-primary;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 1rem;
@@ -1013,7 +1007,7 @@ onMounted(() => {
 .empty-state {
   text-align: center;
   padding: 4rem 2rem;
-  color: #999;
+  @apply text-muted-foreground;
 }
 
 .empty-icon {
@@ -1026,7 +1020,7 @@ onMounted(() => {
   font-size: 1.25rem;
   font-weight: 600;
   margin: 0 0 0.5rem;
-  color: #666;
+  @apply text-foreground;
 }
 
 .empty-subtext {
@@ -1035,7 +1029,7 @@ onMounted(() => {
 }
 
 .features-section {
-  background: white;
+  @apply bg-card;
   padding: 5rem 2rem;
   margin-top: 4rem;
 }
@@ -1048,9 +1042,9 @@ onMounted(() => {
 .features-header h2 {
   font-size: 2.5rem;
   font-weight: 800;
-  color: #1a1a2e;
+  @apply text-foreground;
   margin: 0 0 0.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1058,7 +1052,7 @@ onMounted(() => {
 
 .features-subtitle {
   font-size: 1.125rem;
-  color: #666;
+  @apply text-muted-foreground;
   margin: 0;
 }
 
@@ -1073,7 +1067,7 @@ onMounted(() => {
 .feature-card {
   text-align: center;
   padding: 2.5rem;
-  background: #f8f9fa;
+  @apply bg-muted;
   border-radius: 24px;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
@@ -1087,7 +1081,7 @@ onMounted(() => {
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, #667eea, #764ba2);
+  background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--secondary)));
   transform: scaleX(0);
   transition: transform 0.4s ease;
 }
@@ -1106,11 +1100,11 @@ onMounted(() => {
   height: 80px;
   margin: 0 auto 1.5rem;
   border-radius: 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 8px 24px hsla(var(--primary) / 0.3);
   transition: all 0.3s ease;
 }
 
@@ -1125,19 +1119,19 @@ onMounted(() => {
 .feature-title {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #1a1a2e;
+  @apply text-foreground;
   margin: 0 0 0.75rem;
 }
 
 .feature-description {
   font-size: 0.9375rem;
-  color: #666;
+  @apply text-muted-foreground;
   line-height: 1.7;
   margin: 0;
 }
 
 .cta-section {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
   padding: 5rem 2rem;
   text-align: center;
   position: relative;
@@ -1165,14 +1159,14 @@ onMounted(() => {
 .cta-title {
   font-size: 3rem;
   font-weight: 800;
-  color: white;
+  @apply text-primary-foreground;
   margin: 0 0 1rem;
   text-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .cta-description {
   font-size: 1.25rem;
-  color: rgba(255, 255, 255, 0.9);
+  @apply text-primary-foreground/90;
   margin: 0 0 2rem;
   line-height: 1.7;
 }
@@ -1180,8 +1174,7 @@ onMounted(() => {
 .cta-btn {
   display: inline-block;
   padding: 1.25rem 3rem;
-  background: white;
-  color: #667eea;
+  @apply bg-card text-primary;
   border-radius: 50px;
   text-decoration: none;
   font-weight: 700;
@@ -1199,7 +1192,7 @@ onMounted(() => {
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.2), transparent);
+  background: linear-gradient(90deg, transparent, hsla(var(--primary) / 0.2), transparent);
   transition: left 0.5s ease;
 }
 
