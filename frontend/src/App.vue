@@ -25,6 +25,7 @@
             <router-link to="/register" class="nav-link">注册</router-link>
             <router-link to="/login" class="nav-btn">登录</router-link>
           </template>
+          <ThemeToggle />
         </div>
       </div>
     </nav>
@@ -33,18 +34,25 @@
 </template>
 
 <script setup>
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { initializeAuth, logout, isAuthenticated, currentUser, isAdmin } from '@/stores/authStore.js'
+import ThemeToggle from '@/components/ThemeToggle.vue'
+import { useTheme } from '@/composables/useTheme'
 
 const router = useRouter()
 const route = useRoute()
+const { theme } = useTheme()
 
 const isWidgetPage = computed(() => route.path.includes('/widget'))
 
 onMounted(() => {
-  // 初始化认证状态
+  console.log('App mounted, initializing auth...')
   initializeAuth()
+})
+
+watch(isAuthenticated, (newVal) => {
+  console.log('isAuthenticated changed:', newVal)
 })
 
 const handleLogout = async () => {
@@ -74,8 +82,8 @@ body {
 }
 
 .navbar {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
+  @apply text-primary-foreground;
   padding: 0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
@@ -93,6 +101,7 @@ body {
 .nav-brand {
   font-size: 20px;
   font-weight: 600;
+  @apply text-primary-foreground;
 }
 
 .nav-menu {
@@ -102,7 +111,7 @@ body {
 }
 
 .nav-link {
-  color: white;
+  @apply text-primary-foreground;
   text-decoration: none;
   font-size: 14px;
   transition: opacity 0.3s;
@@ -131,7 +140,7 @@ body {
 
 .user-avatar {
   font-size: 18px;
-  background: rgba(255, 255, 255, 0.2);
+  background: hsla(var(--primary-foreground) / 0.2);
   width: 28px;
   height: 28px;
   display: flex;
@@ -142,9 +151,9 @@ body {
 
 .nav-btn {
   padding: 6px 16px;
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: hsla(var(--primary-foreground) / 0.2);
+  @apply text-primary-foreground border-primary-foreground/30;
+  border-width: 1px;
   border-radius: 4px;
   font-size: 14px;
   cursor: pointer;
@@ -156,6 +165,6 @@ body {
 }
 
 .nav-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: hsla(var(--primary-foreground) / 0.3);
 }
 </style>

@@ -378,7 +378,7 @@ defineExpose({
 <style scoped>
 .voice-input-container {
   width: 100%;
-  background: white;
+  @apply bg-card text-card-foreground;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   padding: 12px;
@@ -396,23 +396,23 @@ defineExpose({
   min-height: 52px;
   max-height: 200px;
   padding: 12px;
-  border: 1px solid #e2e8f0;
+  @apply border-input bg-background text-foreground;
+  border-width: 1px;
   border-radius: 8px;
   font-size: 16px;
   line-height: 1.7;
-  color: #1f2937;
   resize: none;
   outline: none;
   transition: border-color 0.2s;
 }
 
 .text-input::placeholder {
-  color: #4b5563;
+  @apply text-muted-foreground;
   opacity: 1;
 }
 
 .text-input:focus {
-  border-color: #4299e1;
+  @apply border-primary;
 }
 
 /* 语音输入按钮（替换文本框） */
@@ -420,9 +420,9 @@ defineExpose({
   flex: 1;
   min-height: 44px;
   padding: 12px;
-  border: 2px dashed #cbd5e0;
+  @apply border-dashed border-input bg-muted;
+  border-width: 2px;
   border-radius: 8px;
-  background: #f7fafc;
   cursor: pointer;
   transition: all 0.3s;
   display: flex;
@@ -430,20 +430,16 @@ defineExpose({
 }
 
 .voice-input-button:hover:not(:disabled) {
-  border-color: #4299e1;
-  background: #edf2f7;
+  @apply border-primary bg-accent;
 }
 
 .voice-input-button.connecting {
-  border-color: #ed8936;
-  background: #feebc8;
+  @apply border-yellow-500 bg-yellow-500/10;
   cursor: wait;
 }
 
 .voice-input-button.recording {
-  border-color: #f56565;
-  border-style: solid;
-  background: #fff5f5;
+  @apply border-destructive border-solid bg-destructive/10;
   animation: pulse-border 1.5s ease-in-out infinite;
 }
 
@@ -454,12 +450,12 @@ defineExpose({
 
 @keyframes pulse-border {
   0%, 100% { 
-    border-color: #f56565;
-    box-shadow: 0 0 0 0 rgba(245, 101, 101, 0.4);
+    @apply border-destructive;
+    box-shadow: 0 0 0 0 hsla(var(--destructive) / 0.4);
   }
   50% { 
-    border-color: #fc8181;
-    box-shadow: 0 0 0 4px rgba(245, 101, 101, 0);
+    @apply border-destructive/80;
+    box-shadow: 0 0 0 4px hsla(var(--destructive) / 0);
   }
 }
 
@@ -468,15 +464,15 @@ defineExpose({
   align-items: center;
   gap: 12px;
   width: 100%;
-  color: #4a5568;
+  @apply text-muted-foreground;
 }
 
 .recording .voice-button-content {
-  color: #c53030;
+  @apply text-destructive;
 }
 
 .connecting .voice-button-content {
-  color: #c05621;
+  @apply text-yellow-600;
 }
 
 .animate-pulse {
@@ -498,7 +494,7 @@ defineExpose({
 
 .wave-bar {
   width: 3px;
-  background: linear-gradient(to top, #f56565, #fc8181);
+  @apply bg-gradient-to-t from-destructive to-destructive/60;
   border-radius: 2px;
   animation: wave 1s ease-in-out infinite;
 }
@@ -511,12 +507,12 @@ defineExpose({
 .status-text {
   flex: 1;
   font-size: 14px;
-  color: #718096;
+  @apply text-muted-foreground;
   text-align: left;
 }
 
 .status-text.recognized {
-  color: #2d3748;
+  @apply text-foreground;
   font-weight: 500;
 }
 
@@ -539,22 +535,19 @@ defineExpose({
 }
 
 .mode-toggle-btn {
-  background: #f7fafc;
-  color: #4a5568;
+  @apply bg-muted text-muted-foreground;
 }
 
 .mode-toggle-btn:hover {
-  background: #edf2f7;
-  color: #2d3748;
+  @apply bg-accent text-accent-foreground;
 }
 
 .send-btn {
-  background: #4299e1;
-  color: white;
+  @apply bg-primary text-primary-foreground;
 }
 
 .send-btn:hover:not(.disabled) {
-  background: #3182ce;
+  @apply bg-primary/90;
 }
 
 .send-btn.disabled {

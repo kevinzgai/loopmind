@@ -4,48 +4,74 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Future Purple Theme - Light Mode */
+    --background: 0 0% 100%; /* #ffffff */
+    --foreground: 243 75% 20.6%; /* #1e1b4b (TextPrimary) */
+    
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 243 75% 20.6%;
+    
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --popover-foreground: 243 75% 20.6%;
+    
+    --primary: 262.1 83.3% 57.8%; /* #7c3aed */
+    --primary-foreground: 0 0% 100%; /* #ffffff */
+    
+    --secondary: 258.3 89.5% 66.3%; /* #8b5cf6 */
+    --secondary-foreground: 0 0% 100%; /* #ffffff */
+    
+    --muted: 270 50% 98%; /* #faf5ff (Surface) */
+    --muted-foreground: 220 8.9% 46.1%; /* #6b7280 (TextSecondary) */
+    
+    --accent: 270 50% 98%; /* #faf5ff */
+    --accent-foreground: 243 75% 20.6%;
+    
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    
+    --border: 220 8.9% 90%; /* Light gray border */
+    --input: 220 8.9% 90%;
+    --ring: 262.1 83.3% 57.8%;
+    
     --radius: 0.5rem;
+
+    /* Custom Purple Scale */
+    --purple-1: 262.1 83.3% 57.8%; /* #7c3aed */
+    --purple-2: 258.3 89.5% 66.3%; /* #8b5cf6 */
+    --purple-3: 264 90% 76%;       /* #a78bfa */
+    --purple-4: 263 94% 85%;       /* #c4b5fd */
+    --purple-5: 262 96% 91%;       /* #ddd6fe */
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+    /* Future Purple Theme - Dark Mode */
+    --background: 260 50% 5%; /* Deep dark purple/black */
+    --foreground: 210 40% 98%; /* Light text */
+    
+    --card: 260 50% 8%;
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
+    
+    --popover: 260 50% 8%;
     --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
+    
+    --primary: 262.1 83.3% 57.8%; /* Keep primary color */
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 258.3 89.5% 66.3%;
+    --secondary-foreground: 0 0% 100%;
+    
+    --muted: 260 30% 15%;
     --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
+    
+    --accent: 260 30% 15%;
     --accent-foreground: 210 40% 98%;
+    
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    
+    --border: 260 30% 15%;
+    --input: 260 30% 15%;
+    --ring: 262.1 83.3% 57.8%;
   }
 }
 
@@ -58,117 +84,82 @@
   }
 }
 
-/* 自定义滚动条样式 */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  @apply bg-muted;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
+  @apply bg-muted-foreground/30 rounded;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a1a1a1;
+  @apply bg-muted-foreground/50;
 }
 
-/* Markdown内容样式 */
+/* Markdown Content Styles */
 .markdown-content h1 {
-  font-size: 1.5rem;
-  font-weight: bold;
-  margin: 1rem 0;
-  padding-bottom: 0.3rem;
-  border-bottom: 1px solid #e2e8f0;
+  @apply text-2xl font-bold my-4 pb-1 border-b border-border;
 }
 
 .markdown-content h2 {
-  font-size: 1.25rem;
-  font-weight: bold;
-  margin: 0.8rem 0;
-  padding-bottom: 0.2rem;
-  border-bottom: 1px solid #e2e8f0;
+  @apply text-xl font-bold my-3 pb-1 border-b border-border;
 }
 
 .markdown-content h3 {
-  font-size: 1.1rem;
-  font-weight: bold;
-  margin: 0.6rem 0;
+  @apply text-lg font-bold my-2;
 }
 
 .markdown-content p {
-  margin: 0.5rem 0;
-  line-height: 1.6;
+  @apply my-2 leading-relaxed;
 }
 
 .markdown-content ul,
 .markdown-content ol {
-  margin: 0.5rem 0;
-  padding-left: 1.5rem;
+  @apply my-2 pl-6 list-disc;
 }
 
 .markdown-content li {
-  margin: 0.25rem 0;
+  @apply my-1;
 }
 
 .markdown-content code {
-  background-color: #f1f5f9;
-  padding: 0.2rem 0.4rem;
-  border-radius: 0.25rem;
-  font-family: 'Courier New', monospace;
-  font-size: 0.875rem;
+  @apply bg-muted px-1.5 py-0.5 rounded font-mono text-sm;
 }
 
 .markdown-content pre {
-  background-color: #f1f5f9;
-  border-radius: 0.25rem;
-  padding: 1rem;
-  overflow-x: auto;
-  margin: 1rem 0;
+  @apply bg-muted p-4 rounded-md overflow-x-auto my-4;
 }
 
 .markdown-content pre code {
-  background-color: transparent;
-  padding: 0;
+  @apply bg-transparent p-0;
 }
 
 .markdown-content blockquote {
-  border-left: 4px solid #cbd5e1;
-  padding-left: 1rem;
-  margin: 1rem 0;
-  color: #64748b;
+  @apply border-l-4 border-muted-foreground/30 pl-4 my-4 text-muted-foreground;
 }
 
 .markdown-content a {
-  color: #6366f1;
-  text-decoration: underline;
-}
-
-.markdown-content a:hover {
-  color: #4f46e5;
+  @apply text-primary underline hover:text-primary/80;
 }
 
 .markdown-content table {
-  border-collapse: collapse;
-  width: 100%;
-  margin: 1rem 0;
+  @apply w-full border-collapse my-4;
 }
 
 .markdown-content th,
 .markdown-content td {
-  border: 1px solid #cbd5e1;
-  padding: 0.5rem;
-  text-align: left;
+  @apply border border-border p-2 text-left;
 }
 
 .markdown-content th {
-  background-color: #f1f5f9;
-  font-weight: bold;
+  @apply bg-muted font-bold;
 }
 
 .markdown-content tr:nth-child(even) {
-  background-color: #f8fafc;
+  @apply bg-muted/50;
 }

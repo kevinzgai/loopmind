@@ -315,7 +315,7 @@ onMounted(() => {
 <style scoped>
 .my-agents-container {
   min-height: calc(100vh - 60px);
-  background: #f5f7fa;
+  @apply bg-background text-foreground;
   padding: 2rem;
 }
 
@@ -331,13 +331,13 @@ onMounted(() => {
 
 .agents-header h1 {
   font-size: 28px;
-  color: #333;
+  @apply text-foreground;
 }
 
 .create-btn {
   padding: 10px 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
+  @apply text-primary-foreground;
   border-radius: 6px;
   text-decoration: none;
   font-weight: 500;
@@ -346,7 +346,7 @@ onMounted(() => {
 
 .create-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 5px 20px hsla(var(--primary) / 0.4);
 }
 
 .loading,
@@ -358,10 +358,9 @@ onMounted(() => {
 }
 
 .error-message {
-  background: #fee;
-  border: 1px solid #fcc;
+  @apply bg-destructive/10 border-destructive text-destructive;
+  border-width: 1px;
   border-radius: 6px;
-  color: #c33;
 }
 
 .empty-state {
@@ -378,20 +377,20 @@ onMounted(() => {
 
 .empty-state h2 {
   font-size: 24px;
-  color: #333;
+  @apply text-foreground;
   margin-bottom: 0.5rem;
 }
 
 .empty-state p {
-  color: #999;
+  @apply text-muted-foreground;
   margin-bottom: 2rem;
 }
 
 .create-btn-large {
   display: inline-block;
   padding: 12px 30px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
+  @apply text-primary-foreground;
   border-radius: 6px;
   text-decoration: none;
   font-weight: 500;
@@ -400,7 +399,7 @@ onMounted(() => {
 
 .create-btn-large:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 5px 20px hsla(var(--primary) / 0.4);
 }
 
 .agents-grid {
@@ -412,7 +411,7 @@ onMounted(() => {
 }
 
 .agent-card {
-  background: white;
+  @apply bg-card text-card-foreground;
   border-radius: 12px;
   padding: 1.5rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -442,7 +441,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   font-size: 32px;
-  background: #f0f0f0;
+  @apply bg-muted;
   flex-shrink: 0;
 }
 
@@ -456,19 +455,19 @@ onMounted(() => {
 .agent-name {
   font-size: 16px;
   font-weight: 600;
-  color: #333;
+  @apply text-foreground;
   margin: 0;
 }
 
 .agent-model {
   font-size: 12px;
-  color: #999;
+  @apply text-muted-foreground;
   margin: 4px 0 0;
 }
 
 .agent-description {
   font-size: 14px;
-  color: #666;
+  @apply text-muted-foreground;
   margin: 0 0 1rem;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -481,7 +480,7 @@ onMounted(() => {
   gap: 1rem;
   margin-bottom: 1rem;
   padding: 1rem;
-  background: #f9f9f9;
+  @apply bg-muted;
   border-radius: 6px;
 }
 
@@ -493,7 +492,7 @@ onMounted(() => {
 .stat-label {
   display: block;
   font-size: 12px;
-  color: #999;
+  @apply text-muted-foreground;
   margin-bottom: 4px;
 }
 
@@ -501,11 +500,11 @@ onMounted(() => {
   display: block;
   font-size: 16px;
   font-weight: 600;
-  color: #333;
+  @apply text-foreground;
 }
 
 .stat-value.published {
-  color: #48bb78;
+  @apply text-green-600;
 }
 
 .agent-actions {
@@ -531,57 +530,51 @@ onMounted(() => {
 }
 
 .chat-btn {
-  background: #e8f5e8;
-  color: #2f855a;
+  @apply bg-green-500/10 text-green-600;
 }
 
 .chat-btn:hover {
-  background: #c6f6d5;
+  @apply bg-green-500/20;
 }
 
 .edit-btn {
-  background: #e3f2fd;
-  color: #1976d2;
+  @apply bg-primary/10 text-primary;
 }
 
 .edit-btn:hover {
-  background: #bbdefb;
+  @apply bg-primary/20;
 }
 
 .embed-btn {
-  background: #fff3e0;
-  color: #e65100;
+  @apply bg-yellow-500/10 text-yellow-600;
 }
 
 .embed-btn:hover {
-  background: #ffe0b2;
+  @apply bg-yellow-500/20;
 }
 
 .publish-btn {
-  background: #f3e5f5;
-  color: #7b1fa2;
+  @apply bg-purple-500/10 text-purple-600;
 }
 
 .publish-btn:hover:not(:disabled) {
-  background: #e1bee7;
+  @apply bg-purple-500/20;
 }
 
 .unpublish-btn {
-  background: #ffebee;
-  color: #c62828;
+  @apply bg-destructive/10 text-destructive;
 }
 
 .unpublish-btn:hover:not(:disabled) {
-  background: #ffcdd2;
+  @apply bg-destructive/20;
 }
 
 .delete-btn {
-  background: #ffebee;
-  color: #c62828;
+  @apply bg-destructive/10 text-destructive;
 }
 
 .delete-btn:hover:not(:disabled) {
-  background: #ffcdd2;
+  @apply bg-destructive/20;
 }
 
 .action-btn:disabled {
@@ -600,15 +593,15 @@ onMounted(() => {
 
 .page-btn {
   padding: 8px 16px;
-  background: white;
-  border: 1px solid #ddd;
+  @apply bg-card border-border text-foreground;
+  border-width: 1px;
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.3s;
 }
 
 .page-btn:hover:not(:disabled) {
-  background: #f0f0f0;
+  @apply bg-muted;
 }
 
 .page-btn:disabled {
@@ -618,7 +611,7 @@ onMounted(() => {
 
 .page-info {
   font-size: 14px;
-  color: #666;
+  @apply text-muted-foreground;
 }
 
 @media (max-width: 768px) {
@@ -653,7 +646,7 @@ onMounted(() => {
 }
 
 .modal-content {
-  background: white;
+  @apply bg-card text-card-foreground;
   border-radius: 12px;
   width: 90%;
   max-width: 500px;
@@ -663,7 +656,7 @@ onMounted(() => {
 
 .modal-header {
   padding: 1.25rem;
-  border-bottom: 1px solid #eee;
+  @apply border-b border-border;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -672,14 +665,13 @@ onMounted(() => {
 .modal-header h3 {
   margin: 0;
   font-size: 18px;
-  color: #333;
 }
 
 .close-btn {
   background: none;
   border: none;
   font-size: 24px;
-  color: #999;
+  @apply text-muted-foreground;
   cursor: pointer;
 }
 
@@ -689,13 +681,13 @@ onMounted(() => {
 
 .modal-desc {
   font-size: 14px;
-  color: #666;
+  @apply text-muted-foreground;
   margin-bottom: 1rem;
 }
 
 .code-block {
   position: relative;
-  background: #1e293b;
+  @apply bg-slate-900;
   border-radius: 8px;
   padding: 1rem;
   margin-bottom: 1rem;
@@ -703,7 +695,7 @@ onMounted(() => {
 
 .code-block pre {
   margin: 0;
-  color: #e2e8f0;
+  @apply text-slate-200;
   font-family: 'Courier New', monospace;
   font-size: 13px;
   white-space: pre-wrap;
@@ -730,10 +722,9 @@ onMounted(() => {
 
 .preview-note {
   font-size: 12px;
-  color: #999;
-  background: #f8fafc;
+  @apply bg-muted text-muted-foreground;
   padding: 8px 12px;
   border-radius: 6px;
-  border-left: 4px solid #6366f1;
+  @apply border-l-4 border-primary;
 }
 </style>

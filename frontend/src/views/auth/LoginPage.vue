@@ -10,27 +10,15 @@
         <!-- 用户名输入 -->
         <div class="form-group">
           <label for="username">用户名</label>
-          <input
-            id="username"
-            v-model="form.username"
-            type="text"
-            placeholder="请输入用户名"
-            required
-            :disabled="isLoading"
-          />
+          <input id="username" v-model="form.username" type="text" placeholder="请输入用户名" required
+            :disabled="isLoading" />
         </div>
 
         <!-- 密码输入 -->
         <div class="form-group">
           <label for="password">密码</label>
-          <input
-            id="password"
-            v-model="form.password"
-            type="password"
-            placeholder="请输入密码"
-            required
-            :disabled="isLoading"
-          />
+          <input id="password" v-model="form.password" type="password" placeholder="请输入密码" required
+            :disabled="isLoading" />
         </div>
 
         <!-- 错误提示 -->
@@ -53,9 +41,9 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { login, isLoading, error } from '@/stores/authStore.js'
+import { login, isLoading, error, isAuthenticated } from '@/stores/authStore.js'
 
 const router = useRouter()
 
@@ -64,11 +52,31 @@ const form = ref({
   password: ''
 })
 
-const handleLogin = async () => {
-  try {
-    await login(form.value.username, form.value.password)
-    // 登录成功，跳转到首页
+// 如果已经登录，直接跳转到首页
+onMounted(() => {
+  if (isAuthenticated.value) {
+    console.log('User already authenticated, redirecting to home...')
     router.push('/')
+  }
+})
+
+// 监听登录状态，一旦成功立即跳转
+watch(isAuthenticated, (newVal) => {
+  if (newVal) {
+    console.log('Login state changed to authenticated, redirecting...')
+    router.push('/')
+  }
+})
+
+const handleLogin = async () => {
+  console.log('Attempting login for:', form.value.username)
+  try {
+    const response = await login(form.value.username, form.value.password)
+    console.log('Login response received:', response)
+    // 登录成功，尝试跳转
+    console.log('Calling router.replace("/")')
+    await router.replace('/')
+    console.log('router.replace("/") called')
   } catch (err) {
     // 错误已在 authStore 中处理
     console.error('登录失败:', err)
@@ -82,12 +90,12 @@ const handleLogin = async () => {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
   padding: 20px;
 }
 
 .login-card {
-  background: white;
+  @apply bg-card text-card-foreground;
   border-radius: 12px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
   width: 100%;
@@ -102,12 +110,12 @@ const handleLogin = async () => {
 
 .login-header h1 {
   font-size: 28px;
-  color: #333;
+  @apply text-foreground;
   margin-bottom: 8px;
 }
 
 .login-header p {
-  color: #999;
+  @apply text-muted-foreground;
   font-size: 14px;
 }
 
@@ -126,12 +134,13 @@ const handleLogin = async () => {
 .form-group label {
   font-size: 14px;
   font-weight: 500;
-  color: #333;
+  @apply text-foreground;
 }
 
 .form-group input {
   padding: 12px;
-  border: 1px solid #ddd;
+  @apply border-input bg-background text-foreground;
+  border-width: 1px;
   border-radius: 6px;
   font-size: 14px;
   transition: border-color 0.3s;
@@ -139,28 +148,27 @@ const handleLogin = async () => {
 
 .form-group input:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  @apply border-primary ring-offset-background;
+  box-shadow: 0 0 0 3px hsla(var(--primary) / 0.1);
 }
 
 .form-group input:disabled {
-  background-color: #f5f5f5;
+  @apply bg-muted text-muted-foreground;
   cursor: not-allowed;
 }
 
 .error-message {
   padding: 12px;
-  background-color: #fee;
-  border: 1px solid #fcc;
+  @apply bg-destructive/10 border-destructive text-destructive;
+  border-width: 1px;
   border-radius: 6px;
-  color: #c33;
   font-size: 14px;
 }
 
 .submit-btn {
   padding: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
+  @apply text-primary-foreground;
   border: none;
   border-radius: 6px;
   font-size: 16px;
@@ -171,7 +179,7 @@ const handleLogin = async () => {
 
 .submit-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 5px 20px hsla(var(--primary) / 0.4);
 }
 
 .submit-btn:disabled {
@@ -183,17 +191,17 @@ const handleLogin = async () => {
   text-align: center;
   margin-top: 20px;
   font-size: 14px;
-  color: #666;
+  @apply text-muted-foreground;
 }
 
 .login-footer a {
-  color: #667eea;
+  @apply text-primary;
   text-decoration: none;
   font-weight: 500;
   transition: color 0.3s;
 }
 
 .login-footer a:hover {
-  color: #764ba2;
+  @apply text-secondary;
 }
 </style>

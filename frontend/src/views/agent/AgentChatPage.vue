@@ -744,7 +744,7 @@ onBeforeRouteLeave((to, from, next) => {
 <style scoped>
 .agent-chat-page {
   height: calc(100vh - 60px);
-  background: #f7fafc;
+  @apply bg-background text-foreground;
 }
 
 .loading-container,
@@ -764,8 +764,7 @@ onBeforeRouteLeave((to, from, next) => {
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 4px solid #e2e8f0;
-  border-top: 4px solid #4299e1;
+  @apply border-4 border-muted border-t-primary;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 1rem;
@@ -777,19 +776,18 @@ onBeforeRouteLeave((to, from, next) => {
 }
 
 .error-content h2 {
-  color: #e53e3e;
+  @apply text-destructive;
   margin-bottom: 1rem;
 }
 
 .error-content p {
-  color: #718096;
+  @apply text-muted-foreground;
   margin-bottom: 2rem;
 }
 
 .back-btn {
   padding: 0.75rem 1.5rem;
-  background: #4299e1;
-  color: white;
+  @apply bg-primary text-primary-foreground;
   text-decoration: none;
   border-radius: 0.5rem;
   font-weight: 500;
@@ -797,7 +795,7 @@ onBeforeRouteLeave((to, from, next) => {
 }
 
 .back-btn:hover {
-  background: #3182ce;
+  @apply bg-primary/90;
 }
 
 .chat-page {
@@ -811,15 +809,14 @@ onBeforeRouteLeave((to, from, next) => {
   align-items: center;
   justify-content: space-between;
   padding: 1rem 2rem;
-  background: white;
-  border-bottom: 1px solid #e2e8f0;
+  @apply bg-card border-border;
+  border-bottom-width: 1px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .back-button {
   padding: 0.5rem 1rem;
-  background: #f7fafc;
-  color: #4a5568;
+  @apply bg-muted text-muted-foreground;
   text-decoration: none;
   border-radius: 0.5rem;
   font-weight: 500;
@@ -827,8 +824,7 @@ onBeforeRouteLeave((to, from, next) => {
 }
 
 .back-button:hover {
-  background: #edf2f7;
-  color: #2d3748;
+  @apply bg-accent text-accent-foreground;
 }
 
 .agent-info {
@@ -849,7 +845,7 @@ onBeforeRouteLeave((to, from, next) => {
   align-items: center;
   justify-content: center;
   font-size: 24px;
-  background: #f0f0f0;
+  @apply bg-muted;
   flex-shrink: 0;
 }
 
@@ -865,25 +861,24 @@ onBeforeRouteLeave((to, from, next) => {
 }
 
 .kb-badge {
-  background-color: #ebf8ff;
-  color: #2b6cb0;
+  @apply bg-primary/10 text-primary border-primary/20;
   padding: 2px 8px;
   border-radius: 12px;
   font-size: 0.8rem;
-  border: 1px solid #bee3f8;
+  border-width: 1px;
   white-space: nowrap;
 }
 
 .agent-name {
   font-size: 1.6rem;
   font-weight: bold;
-  color: #2d3748;
+  @apply text-foreground;
   margin: 0;
 }
 
 .agent-model {
   font-size: 0.875rem;
-  color: #718096;
+  @apply text-muted-foreground;
   margin: 0;
 }
 
@@ -898,13 +893,11 @@ onBeforeRouteLeave((to, from, next) => {
   border-radius: 1rem;
   font-size: 0.95rem;
   font-weight: 600;
-  background: #fed7d7;
-  color: #c53030;
+  @apply bg-destructive/10 text-destructive;
 }
 
 .status-badge.online {
-  background: #c6f6d5;
-  color: #22543d;
+  @apply bg-green-500/10 text-green-600;
 }
 
 .tts-toggle-btn {
@@ -915,24 +908,21 @@ onBeforeRouteLeave((to, from, next) => {
   height: 40px;
   border: none;
   border-radius: 50%;
-  background: #f7fafc;
-  color: #718096;
+  @apply bg-muted text-muted-foreground;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .tts-toggle-btn:hover {
-  background: #edf2f7;
-  color: #4a5568;
+  @apply bg-accent text-accent-foreground;
 }
 
 .tts-toggle-btn.active {
-  background: #48bb78;
-  color: white;
+  @apply bg-primary text-primary-foreground;
 }
 
 .tts-toggle-btn.active:hover {
-  background: #38a169;
+  @apply bg-primary/90;
 }
 
 .tts-toggle-btn.speaking {
@@ -942,11 +932,11 @@ onBeforeRouteLeave((to, from, next) => {
 @keyframes pulse-speaking {
   0%, 100% { 
     transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(72, 187, 120, 0.4);
+    box-shadow: 0 0 0 0 hsla(var(--primary) / 0.4);
   }
   50% { 
     transform: scale(1.05);
-    box-shadow: 0 0 0 8px rgba(72, 187, 120, 0);
+    box-shadow: 0 0 0 8px hsla(var(--primary) / 0);
   }
 }
 
@@ -963,8 +953,7 @@ onBeforeRouteLeave((to, from, next) => {
 
 .sidebar {
   width: 280px;
-  border-right: 1px solid #e2e8f0;
-  background: #ffffff;
+  @apply border-r border-border bg-card;
   display: flex;
   flex-direction: column;
 }
@@ -974,15 +963,14 @@ onBeforeRouteLeave((to, from, next) => {
   justify-content: space-between;
   align-items: center;
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid #e2e8f0;
+  @apply border-b border-border;
 }
 
 .new-conv-btn {
   padding: 0.25rem 0.5rem;
   font-size: 12px;
   border-radius: 4px;
-  border: 1px solid #cbd5e0;
-  background: #f7fafc;
+  @apply border border-border bg-muted text-foreground;
   cursor: pointer;
 }
 
@@ -998,7 +986,6 @@ onBeforeRouteLeave((to, from, next) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  group: hover;
 }
 
 .conv-content {
@@ -1010,7 +997,7 @@ onBeforeRouteLeave((to, from, next) => {
   display: none;
   background: none;
   border: none;
-  color: #a0aec0;
+  @apply text-muted-foreground;
   cursor: pointer;
   padding: 4px;
   border-radius: 4px;
@@ -1021,26 +1008,25 @@ onBeforeRouteLeave((to, from, next) => {
 }
 
 .delete-btn:hover {
-  background-color: #fed7d7;
-  color: #c53030;
+  @apply bg-destructive/10 text-destructive;
 }
 
 .conversation-item:hover {
-  background: #f7fafc;
+  @apply bg-muted;
 }
 
 .conversation-item.active {
-  background: #edf2f7;
+  @apply bg-accent text-accent-foreground;
 }
 
 .conv-title {
   font-size: 14px;
-  color: #2d3748;
+  @apply text-foreground;
 }
 
 .conv-meta {
   font-size: 12px;
-  color: #718096;
+  @apply text-muted-foreground;
 }
 
 .chat-main {
@@ -1089,15 +1075,13 @@ onBeforeRouteLeave((to, from, next) => {
 
 .bubble-user {
   margin-left: auto;
-  background: #1a73e8;
-  color: #fff;
+  @apply bg-primary text-primary-foreground;
 }
 
 .bubble-assistant {
   margin-right: auto;
-  background: #f1f5f9;
-  color: #1a202c;
-  border: 1px solid #e2e8f0;
+  @apply bg-muted text-foreground border-border;
+  border-width: 1px;
 }
 
 .bubble-content {
@@ -1110,7 +1094,7 @@ onBeforeRouteLeave((to, from, next) => {
   left: 0;
   right: 0;
   padding: 1rem 1.5rem;
-  background: linear-gradient(to top, #f7fafc 80%, transparent);
+  @apply bg-background/80 backdrop-blur-sm;
   z-index: 10;
   max-width: 900px;
   margin: 0 auto;
@@ -1129,26 +1113,24 @@ onBeforeRouteLeave((to, from, next) => {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #718096;
+  @apply text-muted-foreground;
   font-size: 0.85rem;
 }
 
 .input-foot-dividing-line {
   width: 1px;
   height: 14px;
-  background: #e2e8f0;
+  @apply bg-border;
 }
 
 .input-foot-maxlength {
-  color: #4a5568;
+  @apply text-muted-foreground;
 }
 
 .input-foot-right .clear-btn {
   padding: 4px 10px;
-  border: 1px solid #cbd5e0;
+  @apply border border-border bg-muted text-muted-foreground;
   border-radius: 16px;
-  background: #f7fafc;
-  color: #4a5568;
   font-size: 0.8rem;
   cursor: pointer;
 }
@@ -1163,7 +1145,7 @@ onBeforeRouteLeave((to, from, next) => {
   font-weight: bold;
   margin: 1rem 0;
   padding-bottom: 0.3rem;
-  border-bottom: 1px solid #e2e8f0;
+  @apply border-b border-border;
 }
 
 :deep(.markdown-content) h2 {
@@ -1171,7 +1153,7 @@ onBeforeRouteLeave((to, from, next) => {
   font-weight: bold;
   margin: 0.8rem 0;
   padding-bottom: 0.2rem;
-  border-bottom: 1px solid #e2e8f0;
+  @apply border-b border-border;
 }
 
 :deep(.markdown-content) h3 {
@@ -1186,7 +1168,7 @@ onBeforeRouteLeave((to, from, next) => {
 }
 
 :deep(.markdown-content) code {
-  background-color: #f1f5f9;
+  @apply bg-muted text-foreground;
   padding: 0.2rem 0.4rem;
   border-radius: 0.25rem;
   font-family: 'Courier New', monospace;
@@ -1194,7 +1176,7 @@ onBeforeRouteLeave((to, from, next) => {
 }
 
 :deep(.markdown-content) pre {
-  background-color: #f1f5f9;
+  @apply bg-muted text-foreground;
   border-radius: 0.25rem;
   padding: 1rem;
   overflow-x: auto;
@@ -1228,7 +1210,7 @@ onBeforeRouteLeave((to, from, next) => {
   .sidebar {
     width: 100%;
     border-right: none;
-    border-bottom: 1px solid #e2e8f0;
+    @apply border-b border-border;
   }
 }
 </style>
