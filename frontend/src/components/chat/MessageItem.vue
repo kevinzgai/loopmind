@@ -1,5 +1,11 @@
 <template>
   <div class="message-wrapper" :class="message.role === 'user' ? 'wrapper-user' : 'wrapper-assistant'">
+    <div class="message-avatar">
+      <div class="avatar" :class="message.role === 'user' ? 'avatar-user' : 'avatar-assistant'">
+        <span v-if="message.role === 'user'">👤</span>
+        <span v-else>🤖</span>
+      </div>
+    </div>
     <div class="message-item" :class="message.role === 'user' ? 'message-user' : 'message-assistant'">
       <div class="bubble-content markdown-content" v-html="renderMessageContent(message.content)"></div>
     </div>
@@ -42,16 +48,42 @@ const renderMessageContent = (content) => {
 <style scoped>
 .message-wrapper {
   display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
   width: 100%;
   margin-bottom: 1.5rem;
 }
 
 .wrapper-user {
-  justify-content: flex-end;
+  flex-direction: row-reverse;
 }
 
 .wrapper-assistant {
-  justify-content: flex-start;
+  flex-direction: row;
+}
+
+.message-avatar {
+  flex-shrink: 0;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.avatar-user {
+  @apply bg-primary text-primary-foreground;
+}
+
+.avatar-assistant {
+  @apply bg-muted text-foreground border-border;
+  border: 1px solid;
 }
 
 .message-item {
@@ -220,13 +252,20 @@ const renderMessageContent = (content) => {
 }
 
 @media (max-width: 768px) {
+  .message-wrapper {
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 1.125rem;
+  }
+
   .message-item {
     max-width: 85%;
     padding: 0.875rem 1rem;
-  }
-
-  .message-wrapper {
-    margin-bottom: 1.25rem;
   }
 }
 </style>
