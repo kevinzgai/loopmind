@@ -127,10 +127,10 @@
             </div>
           </div>
           <div class="input-area">
-            <XSender 
+            <VoiceTextInput 
               v-model="inputText"
               :disabled="isLoading"
-              placeholder="输入消息..."
+              :placeholder="'输入消息...'"
               @submit="sendMessage"
               @autoSubmit="handleAutoSubmit"
             />
@@ -161,7 +161,7 @@ import DOMPurify from 'dompurify'
 import { Conversation, ConversationContent } from '@/components/ai-elements/conversation'
 import { Message, MessageContent } from '@/components/ai-elements/message'
 import { Loader } from '@/components/ai-elements/loader'
-import XSender from '@/components/chat/XSender.vue'
+import VoiceTextInput from '@/components/chat/VoiceTextInput.vue'
 import McIntroduction from '@/components/chat/McIntroduction.vue'
 import PromptShortcut from '@/components/chat/PromptShortcut.vue'
 import { token } from '@/stores/authStore.js'

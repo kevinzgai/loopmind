@@ -19,18 +19,33 @@ const wss = new WebSocketServer({ server: httpServer });
 
 console.log('✅ WebSocket 服务器已创建');
 
-wss.on('connection', (ws, req) => {
+wss.on('connection', async (ws, req) => {
     const path = req.url;
     console.log('📞 收到 WebSocket 连接请求，路径:', path);
     
     if (path === '/ws-asr-stream') {
-        console.log('✅ 流式 ASR 客户端已连接 (优先使用硅基流动)');
-        // 检查硅基流动配置
-        if (process.env.SILICONFLOW_API_KEY && process.env.SILICONFLOW_API_KEY !== 'sk-jpoxqccvcdgotfwsnysjeuwtovqxffzfxpomwtcjrlloymfb_placeholder') {
+        console.log('✅ 流式 ASR 客户端已连接');
+        // 根据系统配置的 ASR 服务商来决定使用哪个服务
+        try {
+            const { getConfigUnmasked } = await import('./services/configService.js');
+            const unmaskedConfig = await getConfigUnmasked();
+            const asrProvider = unmaskedConfig.speech?.asrProvider || 'siliconflow';
+            
+            console.log(`📋 系统配置的 ASR 服务商: ${asrProvider}`);
+            
+            if (asrProvider === 'siliconflow') {
+                console.log('🚀 使用硅基流动 ASR 服务');
+                handleSiliconAsrStream(ws);
+            } else if (asrProvider === 'aliyun') {
+                console.log('🚀 使用阿里云 ASR 服务');
+                handleAliAsrStream(ws);
+            } else {
+                console.log(`⚠️ 未知的 ASR 服务商: ${asrProvider}，使用默认硅基流动`);
+                handleSiliconAsrStream(ws);
+            }
+        } catch (error) {
+            console.error('❌ 获取系统配置失败，使用默认硅基流动:', error);
             handleSiliconAsrStream(ws);
-        } else {
-            console.log('⚠️ 硅基流动未配置，尝试使用阿里云');
-            handleAliAsrStream(ws);
         }
     } else if (path.startsWith('/ws-tts-stream')) {
         console.log('✅ 阿里云流式 TTS 客户端已连接');

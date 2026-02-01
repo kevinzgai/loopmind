@@ -20,6 +20,7 @@ const ApiKeysStatsPage = () => import("@/views/apiKeys/ApiKeysStatsPage.vue");
 const KnowledgePage = () => import("@/views/knowledge/KnowledgePage.vue");
 const AgentCapabilitiesPage = () =>
   import("@/views/agent/AgentCapabilitiesPage.vue");
+const VoiceTestPage = () => import("@/views/VoiceTest.vue");
 
 const routes = [
   {
@@ -163,6 +164,14 @@ const routes = [
     meta: {
       title: "智能体能力矩阵",
       requiresAuth: true,
+    },
+  },
+  {
+    path: "/voice-test",
+    name: "VoiceTest",
+    component: VoiceTestPage,
+    meta: {
+      title: "语音识别测试",
     },
   },
   // 404 路由

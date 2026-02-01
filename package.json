@@ -28,11 +28,15 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "concurrently": "^8.2.0"
+    "concurrently": "^8.2.2"
   },
   "engines": {
     "node": ">=16.0.0",
     "pnpm": ">=8.0.0"
   },
-  "packageManager": "pnpm@9.15.4"
+  "packageManager": "pnpm@9.15.4",
+  "dependencies": {
+    "uuid": "^13.0.0",
+    "ws": "^8.19.0"
+  }
 }
