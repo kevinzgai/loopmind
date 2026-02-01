@@ -340,7 +340,6 @@
 
 <script setup>
 import { ref, watch, reactive, onMounted } from 'vue'
-import { voiceCategories } from '@/data/voices.js'
 import { generateAgentConfig } from '@/services/agentService.js'
 import { getKnowledgeBases } from '@/services/knowledgeService.js'
 import { AGENT_CATEGORIES } from '@/constants/agent.js'
@@ -391,6 +390,8 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'submit', 'cancel', 'unpublish'])
 
 const knowledgeBases = ref([])
+const voiceCategories = ref([])
+const isLoadingVoices = ref(false)
 
 const form = reactive({
   category: '生活',
@@ -398,10 +399,79 @@ const form = reactive({
   ...props.modelValue
 })
 
+const loadVoiceList = async () => {
+  try {
+    isLoadingVoices.value = true
+    const response = await fetch('/api/tts/voices')
+    if (response.ok) {
+      const data = await response.json()
+      const voices = data.voices || []
+      
+      // 按类型分组
+      const categories = {
+        '通用音色': []
+      }
+      
+      voices.forEach(voice => {
+        const category = voice.scene || '通用音色'
+        if (!categories[category]) {
+          categories[category] = []
+        }
+        categories[category].push(voice)
+      })
+      
+      // 转换为数组格式
+      voiceCategories.value = Object.entries(categories).map(([category, voices]) => ({
+        category,
+        voices
+      }))
+    }
+  } catch (error) {
+    console.error('获取音色列表失败:', error)
+    // 使用默认音色
+    voiceCategories.value = [
+      {
+        category: '普通话音色',
+        voices: [
+          { id: 'Cherry', name: 'Cherry', type: '标准女声' },
+          { id: 'Serena', name: 'Serena', type: '温柔女声' },
+          { id: 'Chelsie', name: 'Chelsie', type: '活力女声' },
+          { id: 'Momo', name: 'Momo', type: '可爱女声' },
+          { id: 'Vivian', name: 'Vivian', type: '知性女声' },
+          { id: 'Moon', name: 'Moon', type: '成熟女声' },
+          { id: 'Maia', name: 'Maia', type: '甜美女声' },
+          { id: 'Kai', name: 'Kai', type: '标准男声' },
+          { id: 'Nofish', name: 'Nofish', type: '磁性男声' },
+          { id: 'Bella', name: 'Bella', type: '活泼女声' }
+        ]
+      },
+      {
+        category: '方言音色',
+        voices: [
+          { id: 'Jada', name: 'Jada', type: '粤语女声' },
+          { id: 'Dylan', name: 'Dylan', type: '粤语男声' },
+          { id: 'Li', name: 'Li', type: '台湾话女声' },
+          { id: 'Marcus', name: 'Marcus', type: '台湾话男声' },
+          { id: 'Roy', name: 'Roy', type: '东北话男声' },
+          { id: 'Peter', name: 'Peter', type: '东北话男声' },
+          { id: 'Sunny', name: 'Sunny', type: '东北话女声' },
+          { id: 'Eric', name: 'Eric', type: '四川话男声' },
+          { id: 'Rocky', name: 'Rocky', type: '四川话男声' },
+          { id: 'Kiki', name: 'Kiki', type: '四川话女声' }
+        ]
+      }
+    ]
+  } finally {
+    isLoadingVoices.value = false
+  }
+}
+
 onMounted(async () => {
   try {
     const res = await getKnowledgeBases()
     knowledgeBases.value = res.kbs
+    // 加载音色列表
+    await loadVoiceList()
   } catch (error) {
     console.error('获取知识库列表失败:', error)
   }

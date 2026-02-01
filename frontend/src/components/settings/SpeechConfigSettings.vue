@@ -25,11 +25,17 @@
         <div v-for="result in testResults" :key="result.provider"
           class="p-3 rounded-lg border" :class="result.success ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800' : 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800'">
           <div class="flex items-start justify-between">
-            <div>
+            <div class="flex-1">
               <h4 class="font-medium text-slate-900 dark:text-slate-100">{{ result.provider }}</h4>
               <p class="text-sm text-slate-600 dark:text-slate-400">{{ result.message }}</p>
+              <!-- 音频播放器 -->
+              <div v-if="result.audioUrl" class="mt-2">
+                <audio controls :src="result.audioUrl" class="w-full h-8">
+                  您的浏览器不支持音频播放
+                </audio>
+              </div>
             </div>
-            <div class="text-lg">
+            <div class="text-lg ml-3">
               {{ result.success ? '✅' : '❌' }}
             </div>
           </div>
@@ -69,7 +75,19 @@
         
         <!-- 硅基流动配置 -->
         <div class="space-y-4 border border-slate-200 dark:border-slate-800 rounded-lg p-4">
-          <h4 class="font-medium text-slate-900 dark:text-slate-100">硅基流动 (SiliconFlow)</h4>
+          <div class="flex items-center justify-between">
+            <h4 class="font-medium text-slate-900 dark:text-slate-100">硅基流动 (SiliconFlow)</h4>
+            <div class="flex gap-2">
+              <button @click="testTTS('siliconflow')" :disabled="testingTTS.siliconflow"
+                class="px-3 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 dark:text-emerald-400 rounded-lg text-sm font-medium transition-colors disabled:opacity-50">
+                {{ testingTTS.siliconflow ? '测试中...' : '测试语音' }}
+              </button>
+              <a href="https://cloud.siliconflow.cn/console/keys" target="_blank" rel="noopener noreferrer"
+                class="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 dark:text-blue-400 rounded-lg text-sm font-medium transition-colors">
+                查看凭证
+              </a>
+            </div>
+          </div>
           <div class="space-y-3">
             <div class="space-y-2">
               <label class="text-sm font-medium text-slate-700 dark:text-slate-300">API Key</label>
@@ -93,86 +111,31 @@
 
         <!-- 阿里云配置 -->
         <div class="space-y-4 border border-slate-200 dark:border-slate-800 rounded-lg p-4">
-          <h4 class="font-medium text-slate-900 dark:text-slate-100">阿里云 (Aliyun)</h4>
+          <div class="flex items-center justify-between">
+            <h4 class="font-medium text-slate-900 dark:text-slate-100">阿里云 (Aliyun)</h4>
+            <div class="flex gap-2">
+              <button @click="testTTS('aliyun')" :disabled="testingTTS.aliyun"
+                class="px-3 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 dark:text-emerald-400 rounded-lg text-sm font-medium transition-colors disabled:opacity-50">
+                {{ testingTTS.aliyun ? '测试中...' : '测试语音' }}
+              </button>
+              <a href="https://help.aliyun.com/zh/model-studio/get-api-key" target="_blank" rel="noopener noreferrer"
+                class="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 dark:text-blue-400 rounded-lg text-sm font-medium transition-colors">
+                查看凭证
+              </a>
+            </div>
+          </div>
           <div class="space-y-3">
             <div class="space-y-2">
-              <label class="text-sm font-medium text-slate-700 dark:text-slate-300">Access Key ID</label>
+              <label class="text-sm font-medium text-slate-700 dark:text-slate-300">DashScope API Key</label>
               <div class="flex gap-2">
-                <input :type="showKeys.aliyun ? 'text' : 'password'" v-model="providers.aliyun.accessKeyId"
-                  placeholder="请输入 Access Key ID"
+                <input :type="showKeys.aliyun ? 'text' : 'password'" v-model="providers.aliyun.apiKey"
+                  placeholder="请输入阿里百炼 DashScope API Key"
                   class="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-300" />
                 <button @click="showKeys.aliyun = !showKeys.aliyun"
                   class="px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700">
                   {{ showKeys.aliyun ? '隐藏' : '显示' }}
                 </button>
               </div>
-            </div>
-            <div class="space-y-2">
-              <label class="text-sm font-medium text-slate-700 dark:text-slate-300">Access Key Secret</label>
-              <input :type="showKeys.aliyun ? 'text' : 'password'" v-model="providers.aliyun.accessKeySecret"
-                placeholder="请输入 Access Key Secret"
-                class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-300" />
-            </div>
-            <div class="space-y-2">
-              <label class="text-sm font-medium text-slate-700 dark:text-slate-300">App Key</label>
-              <input :type="showKeys.aliyun ? 'text' : 'password'" v-model="providers.aliyun.appKey"
-                placeholder="请输入 App Key"
-                class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-300" />
-            </div>
-          </div>
-        </div>
-
-        <!-- OpenAI 配置 -->
-        <div class="space-y-4 border border-slate-200 dark:border-slate-800 rounded-lg p-4">
-          <h4 class="font-medium text-slate-900 dark:text-slate-100">OpenAI</h4>
-          <div class="space-y-3">
-            <div class="space-y-2">
-              <label class="text-sm font-medium text-slate-700 dark:text-slate-300">API Key</label>
-              <div class="flex gap-2">
-                <input :type="showKeys.openai ? 'text' : 'password'" v-model="providers.openai.apiKey"
-                  placeholder="请输入 OpenAI API Key"
-                  class="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-300" />
-                <button @click="showKeys.openai = !showKeys.openai"
-                  class="px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700">
-                  {{ showKeys.openai ? '隐藏' : '显示' }}
-                </button>
-              </div>
-            </div>
-            <div class="space-y-2">
-              <label class="text-sm font-medium text-slate-700 dark:text-slate-300">Base URL</label>
-              <input type="text" v-model="providers.openai.baseURL" placeholder="https://api.openai.com/v1"
-                class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-300" />
-            </div>
-          </div>
-        </div>
-
-        <!-- Seed 配置 -->
-        <div class="space-y-4 border border-slate-200 dark:border-slate-800 rounded-lg p-4">
-          <h4 class="font-medium text-slate-900 dark:text-slate-100">Seed ASR</h4>
-          <div class="space-y-3">
-            <div class="space-y-2">
-              <label class="text-sm font-medium text-slate-700 dark:text-slate-300">App ID</label>
-              <input type="text" v-model="providers.seed.appId"
-                placeholder="请输入 App ID"
-                class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-300" />
-            </div>
-            <div class="space-y-2">
-              <label class="text-sm font-medium text-slate-700 dark:text-slate-300">API Key</label>
-              <div class="flex gap-2">
-                <input :type="showKeys.seed ? 'text' : 'password'" v-model="providers.seed.apiKey"
-                  placeholder="请输入 API Key"
-                  class="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-300" />
-                <button @click="showKeys.seed = !showKeys.seed"
-                  class="px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700">
-                  {{ showKeys.seed ? '隐藏' : '显示' }}
-                </button>
-              </div>
-            </div>
-            <div class="space-y-2">
-              <label class="text-sm font-medium text-slate-700 dark:text-slate-300">API Secret</label>
-              <input :type="showKeys.seed ? 'text' : 'password'" v-model="providers.seed.apiSecret"
-                placeholder="请输入 API Secret"
-                class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-300" />
             </div>
           </div>
         </div>
@@ -189,12 +152,14 @@ const emit = defineEmits(['save', 'error'])
 
 const loading = ref(false)
 const testing = ref(false)
+const testingTTS = ref({
+  siliconflow: false,
+  aliyun: false
+})
 const testResults = ref([])
 const showKeys = ref({
   siliconflow: false,
-  aliyun: false,
-  openai: false,
-  seed: false
+  aliyun: false
 })
 
 const form = ref({
@@ -212,38 +177,14 @@ const providers = ref({
     asrModel: 'FunAudioLLM/SenseVoiceSmall'
   },
   aliyun: {
-    accessKeyId: '',
-    accessKeySecret: '',
-    appKey: '',
-    ttsVoice: 'xiaoxian',
-    speechRate: 150
-  },
-  openai: {
     apiKey: '',
-    baseURL: 'https://api.openai.com/v1',
-    ttsModel: 'tts-1',
-    ttsVoice: 'alloy',
-    speechRate: 150
-  },
-  seed: {
-    appId: '',
-    apiKey: '',
-    apiSecret: '',
-    apiUrl: '',
-    resourceId: ''
-  },
-  edge: {
-    ttsVoice: 'zh-CN-XiaoxiaoNeural',
-    speechRate: 150
+    ttsVoice: 'Cherry'
   }
 })
 
 const availableProviders = computed(() => [
-  { id: 'siliconflow', name: '硅基流动 (SiliconFlow)' },
-  { id: 'aliyun', name: '阿里云 (Aliyun)' },
-  { id: 'openai', name: 'OpenAI' },
-  { id: 'edge', name: 'Edge TTS' },
-  { id: 'seed', name: 'Seed ASR' }
+  { id: 'siliconflow', name: '硅基流动' },
+  { id: 'aliyun', name: '阿里云' }
 ])
 
 async function loadConfig() {
@@ -253,12 +194,18 @@ async function loadConfig() {
       form.value.ttsProvider = res.ttsProvider || 'siliconflow'
       form.value.asrProvider = res.asrProvider || 'siliconflow'
       
-      // 加载提供商配置
       if (res.providers) {
         res.providers.forEach(provider => {
           if (providers.value[provider.id]) {
             providers.value[provider.id].apiKey = provider.apiKey || providers.value[provider.id].apiKey
             providers.value[provider.id].baseURL = provider.baseURL || providers.value[provider.id].baseURL
+            providers.value[provider.id].model = provider.model || providers.value[provider.id].model
+            providers.value[provider.id].ttsVoice = provider.ttsVoice || providers.value[provider.id].ttsVoice
+            providers.value[provider.id].speechRate = provider.speechRate || providers.value[provider.id].speechRate
+            providers.value[provider.id].asrModel = provider.asrModel || providers.value[provider.id].asrModel
+            if (provider.id === 'aliyun') {
+              providers.value[provider.id].apiKey = provider.apiKey || providers.value[provider.id].apiKey
+            }
           }
         })
       }
@@ -272,7 +219,6 @@ async function saveConfig() {
   try {
     loading.value = true
     
-    // 构建提供商配置数组
     const providersArray = Object.keys(providers.value).map(id => {
       const p = providers.value[id]
       return {
@@ -293,7 +239,7 @@ async function saveConfig() {
         resourceId: p.resourceId,
         type: 'tts'
       }
-    }).filter(p => p.apiKey && p.apiKey.trim() !== '')
+    }).filter(p => (p.apiKey || p.accessKeyId) && (p.apiKey || p.accessKeyId).trim() !== '')
     
     const payload = {
       ttsProvider: form.value.ttsProvider,
@@ -345,12 +291,46 @@ async function testConnection(providerId) {
   }
 }
 
+async function testTTS(providerId) {
+  try {
+    testingTTS.value[providerId] = true
+    
+    const testData = {
+      provider: providerId,
+      text: '你好，这是语音测试，请确认语音服务是否正常工作。',
+      voice: providers.value[providerId].ttsVoice,
+      speechRate: providers.value[providerId].speechRate
+    }
+    
+    const result = await apiService.post('/admin/config/test-tts', testData)
+    
+    const testResult = {
+      provider: availableProviders.value.find(p => p.id === providerId)?.name || providerId,
+      success: result.success,
+      message: result.message,
+      audioUrl: result.audioUrl
+    }
+    
+    testResults.value = [testResult]
+  } catch (e) {
+    const testResult = {
+      provider: availableProviders.value.find(p => p.id === providerId)?.name || providerId,
+      success: false,
+      message: e.message || '测试失败',
+      audioUrl: null
+    }
+    testResults.value = [testResult]
+  } finally {
+    testingTTS.value[providerId] = false
+  }
+}
+
 async function testAllConnections() {
   try {
     testing.value = true
     testResults.value = []
     
-    const providerIds = Object.keys(providers.value).filter(id => id !== 'edge') // Edge TTS 不需要 API Key
+    const providerIds = Object.keys(providers.value).filter(id => id !== 'edge')
     const testPromises = providerIds.map(id => testConnection(id))
     
     const results = await Promise.all(testPromises)
@@ -362,7 +342,6 @@ async function testAllConnections() {
   }
 }
 
-// 组件挂载时加载配置
 onMounted(() => {
   loadConfig()
 })

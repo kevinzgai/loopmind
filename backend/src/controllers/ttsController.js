@@ -6,7 +6,6 @@ import {
   textToSpeech as siliconTextToSpeech,
   getSupportedVoices as getSiliconVoices,
 } from "../services/siliconFlowTtsService.js";
-import { textToSpeech as openAiTextToSpeech } from "../services/ttsService.js";
 import { getConfigUnmasked } from "../services/configService.js";
 
 /**
@@ -47,10 +46,8 @@ export async function handleTextToSpeech(req, res) {
       (ttsProvider === "siliconflow"
         ? "anna"
         : ttsProvider === "aliyun"
-          ? "xiaoxian"
-          : ttsProvider === "openai"
-            ? "alloy"
-            : "zh-CN-XiaoxiaoNeural");
+          ? "Cherry"
+          : "anna");
 
     const effectiveSpeechRate =
       speechRate || speechConfig[ttsProvider]?.speechRate || 150;
@@ -83,31 +80,10 @@ export async function handleTextToSpeech(req, res) {
           voice: effectiveVoice,
           format: format || "mp3",
           volume: volume ?? speechConfig.aliyun?.volume,
-          speechRate: effectiveSpeechRate,
+          // qwen3-tts-flash 模型不支持速度调整，因此不传递 speechRate 参数
           pitchRate: pitchRate ?? speechConfig.aliyun?.pitchRate,
         },
         speechConfig.aliyun,
-      );
-    } else if (ttsProvider === "openai") {
-      console.log("🤖 使用 OpenAI TTS 服务");
-      audioBuffer = await openAiTextToSpeech(
-        text,
-        {
-          voice: effectiveVoice,
-          model: speechConfig.openai?.ttsModel || "tts-1",
-          speed: effectiveSpeechRate,
-        },
-        speechConfig.openai,
-      );
-    } else if (ttsProvider === "edge") {
-      console.log("🌐 使用 Edge TTS 服务 (尚未实现，回退到硅基流动)");
-      audioBuffer = await siliconTextToSpeech(
-        text,
-        {
-          voice: effectiveVoice,
-          speed: effectiveSpeechRate,
-        },
-        speechConfig.siliconflow,
       );
     } else {
       return res.status(400).json({
@@ -163,10 +139,8 @@ export async function handleTextToSpeechStream(req, res) {
       (ttsProvider === "siliconflow"
         ? "anna"
         : ttsProvider === "aliyun"
-          ? "xiaoxian"
-          : ttsProvider === "openai"
-            ? "alloy"
-            : "zh-CN-XiaoxiaoNeural");
+          ? "Cherry"
+          : "anna");
 
     const effectiveSpeechRate =
       speechRate || speechConfig[ttsProvider]?.speechRate || 150;
@@ -199,33 +173,10 @@ export async function handleTextToSpeechStream(req, res) {
           voice: effectiveVoice,
           format: format || "mp3",
           volume: volume ?? speechConfig.aliyun?.volume,
-          speechRate: effectiveSpeechRate,
+          // qwen3-tts-flash 模型不支持速度调整，因此不传递 speechRate 参数
           pitchRate: pitchRate ?? speechConfig.aliyun?.pitchRate,
         },
         speechConfig.aliyun,
-      );
-    } else if (ttsProvider === "openai") {
-      console.log("🤖 使用 OpenAI TTS 服务 (Stream 模拟)");
-      audioBuffer = await openAiTextToSpeech(
-        text,
-        {
-          voice: effectiveVoice,
-          model: speechConfig.openai?.ttsModel || "tts-1",
-          speed: effectiveSpeechRate,
-        },
-        speechConfig.openai,
-      );
-    } else if (ttsProvider === "edge") {
-      console.log(
-        "🌐 使用 Edge TTS 服务 (Stream 模拟 - 尚未实现，回退到硅基流动)",
-      );
-      audioBuffer = await siliconTextToSpeech(
-        text,
-        {
-          voice: effectiveVoice,
-          speed: effectiveSpeechRate,
-        },
-        speechConfig.siliconflow,
       );
     } else {
       return res.status(400).json({
