@@ -220,6 +220,27 @@ async function startRecording() {
   }
 }
 
+// 可视化音频
+function visualizeAudio() {
+  if (!analyser) return
+
+  const bufferLength = analyser.frequencyBinCount
+  const dataArray = new Uint8Array(bufferLength)
+
+  const draw = () => {
+    if (!analyser || !isRecording.value) return
+    
+    animationId = requestAnimationFrame(draw)
+    analyser.getByteFrequencyData(dataArray)
+    
+    // 计算平均音量
+    const average = dataArray.reduce((a, b) => a + b) / bufferLength
+    audioLevel.value = Math.min(100, (average / 255) * 100)
+  }
+
+  draw()
+}
+
 function stopRecording() {
   if (animationId) {
     cancelAnimationFrame(animationId)
