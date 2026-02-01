@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>语音识别 Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        
+        .status {
+            background-color: #f0f0f0;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            min-height: 60px;
+        }
+        
+        .result {
+            background-color: #e8f4f8;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            min-height: 100px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .button-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        #recordButton {
+            font-size: 24px;
+            padding: 20px 40px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        #recordButton.recording {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        #recordButton:not(.recording) {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        #recordButton:hover {
+            transform: scale(1.05);
+        }
+        
+        .logs {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 语音识别 Demo</h1>
+        
+        <div class="status" id="status">
+            <p>状态: 就绪</p>
+        </div>
+        
+        <div class="result" id="result">
+            <p>识别结果: 点击下方按钮开始录音</p>
+        </div>
+        
+        <div class="button-container">
+            <button id="recordButton">🎤 开始录音</button>
+        </div>
+        
+        <div class="logs" id="logs">
+            <p>日志:</p>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let mediaStream = null;
+        let audioContext = null;
+        let processor = null;
+        let isRecording = false;
+        let recognizedText = '';
+        
+        const recordButton = document.getElementById('recordButton');
+        const statusDiv = document.getElementById('status');
+        const resultDiv = document.getElementById('result');
+        const logsDiv = document.getElementById('logs');
+        
+        function addLog(message) {
+            const logElement = document.createElement('p');
+            logElement.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logsDiv.appendChild(logElement);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+        
+        function updateStatus(message) {
+            statusDiv.innerHTML = `<p>状态: ${message}</p>`;
+            addLog(`状态更新: ${message}`);
+        }
+        
+        function updateResult(text) {
+            resultDiv.innerHTML = `<p>识别结果: ${text || '无'}</p>`;
+            recognizedText = text;
+        }
+        
+        // 开始录音
+        function startRecording() {
+            addLog('开始录音');
+            updateStatus('正在录音...');
+            recordButton.textContent = '⏹️ 停止录音';
+            recordButton.classList.add('recording');
+            isRecording = true;
+            
+            // 建立 WebSocket 连接
+            const wsUrl = `ws://${window.location.hostname}:3002`;
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = async () => {
+                addLog('WebSocket 连接已建立');
+                
+                // 发送开始录音信号
+                ws.send(JSON.stringify({ type: 'start' }));
+                
+                try {
+                    // 请求麦克风权限
+                    addLog('请求麦克风权限');
+                    mediaStream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: { 
+                            channelCount: 1, 
+                            sampleRate: 16000 
+                        } 
+                    });
+                    
+                    // 创建音频上下文
+                    audioContext = new AudioContext({ sampleRate: 16000 });
+                    const source = audioContext.createMediaStreamSource(mediaStream);
+                    
+                    // 创建 ScriptProcessorNode
+                    processor = audioContext.createScriptProcessor(4096, 1, 1);
+                    
+                    // 处理音频数据
+                    processor.onaudioprocess = (event) => {
+                        const inputData = event.inputBuffer.getChannelData(0);
+                        const pcmData = new Int16Array(inputData.length);
+                        
+                        // 转换为 PCM 格式
+                        for (let i = 0; i < inputData.length; i++) {
+                            pcmData[i] = Math.max(-32768, Math.min(32767, inputData[i] * 32768));
+                        }
+                        
+                        // 发送音频数据
+                        if (ws && ws.readyState === WebSocket.OPEN) {
+                            ws.send(pcmData.buffer);
+                        }
+                    };
+                    
+                    // 连接音频节点
+                    source.connect(processor);
+                    processor.connect(audioContext.destination);
+                    
+                    addLog('录音已开始，正在发送音频数据');
+                } catch (error) {
+                    addLog('错误: 无法访问麦克风');
+                    updateStatus('错误: 无法访问麦克风');
+                    stopRecording();
+                }
+            };
+            
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    addLog(`收到消息: ${data.type}`);
+                    
+                    if (data.type === 'started') {
+                        updateStatus('录音中...');
+                    } else if (data.type === 'result') {
+                        addLog(`识别结果: ${data.text}`);
+                        updateResult(data.text);
+                    } else if (data.type === 'completed') {
+                        addLog('识别完成');
+                        stopRecording();
+                    }
+                } catch (error) {
+                    addLog('错误: 解析消息失败');
+                }
+            };
+            
+            ws.onerror = (error) => {
+                addLog(`WebSocket 错误: ${error.message}`);
+            };
+            
+            ws.onclose = () => {
+                addLog('WebSocket 连接已关闭');
+            };
+        }
+        
+        // 停止录音
+        function stopRecording() {
+            if (!isRecording) return;
+            
+            addLog('停止录音');
+            updateStatus('处理中...');
+            recordButton.textContent = '🎤 开始录音';
+            recordButton.classList.remove('recording');
+            isRecording = false;
+            
+            // 发送停止录音信号
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'stop' }));
+            }
+            
+            // 停止音频处理
+            if (processor) {
+                processor.disconnect();
+                processor = null;
+            }
+            
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+            
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
+            
+            // 不立即关闭 WebSocket，等待完成消息
+        }
+        
+        // 按钮点击事件
+        recordButton.addEventListener('click', () => {
+            if (isRecording) {
+                stopRecording();
+            } else {
+                startRecording();
+            }
+        });
+        
+        addLog('页面已加载，准备就绪');
+    </script>
+</body>
+</html>

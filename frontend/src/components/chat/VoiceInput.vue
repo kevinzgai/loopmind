@@ -26,7 +26,7 @@ const textareaRef = ref<HTMLTextAreaElement | null>(null)
 let ws: WebSocket | null = null
 let audioContext: AudioContext | null = null
 let analyser: AnalyserNode | null = null
-let processor: ScriptProcessorNode | null = null
+let processor: AudioWorkletNode | null = null
 let mediaStream: MediaStream | null = null
 let animationId: number | null = null
 
@@ -61,11 +61,39 @@ function toggleInputMode() {
 function handleVoiceButtonDown(event: MouseEvent | TouchEvent) {
   event.preventDefault()
   startRecording()
+  
+  // 添加全局事件监听器以确保在任何地方松开鼠标都能停止录音
+  document.addEventListener('mouseup', handleGlobalMouseUp);
+  document.addEventListener('touchend', handleGlobalTouchEnd);
 }
 
 function handleVoiceButtonUp(event: MouseEvent | TouchEvent) {
   event.preventDefault()
   stopRecording()
+  
+  // 移除全局事件监听器
+  document.removeEventListener('mouseup', handleGlobalMouseUp);
+  document.removeEventListener('touchend', handleGlobalTouchEnd);
+}
+
+// 全局鼠标松开事件处理
+function handleGlobalMouseUp() {
+  if (isRecording.value) {
+    stopRecording();
+    // 移除全局事件监听器
+    document.removeEventListener('mouseup', handleGlobalMouseUp);
+    document.removeEventListener('touchend', handleGlobalTouchEnd);
+  }
+}
+
+// 全局触摸结束事件处理
+function handleGlobalTouchEnd() {
+  if (isRecording.value) {
+    stopRecording();
+    // 移除全局事件监听器
+    document.removeEventListener('mouseup', handleGlobalMouseUp);
+    document.removeEventListener('touchend', handleGlobalTouchEnd);
+  }
 }
 
 // 开始录音
@@ -125,25 +153,18 @@ async function startRecording() {
       isConnecting.value = false
     }
     
-    // 创建音频处理器
-    processor = audioContext.createScriptProcessor(4096, 1, 1)
+    // 创建 AudioWorklet 处理器
+    await audioContext.audioWorklet.addModule('/src/worklets/AudioProcessor.js')
+    processor = new AudioWorkletNode(audioContext, 'audio-streaming-processor')
     
-    processor.onaudioprocess = (e) => {
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        const inputData = e.inputBuffer.getChannelData(0)
-        
-        // 转换为 16-bit PCM
-        const pcmData = new Int16Array(inputData.length)
-        for (let i = 0; i < inputData.length; i++) {
-          const s = Math.max(-1, Math.min(1, inputData[i]))
-          pcmData[i] = s < 0 ? s * 0x8000 : s * 0x7FFF
-        }
-        
-        // 发送 PCM 数据
-        ws.send(pcmData.buffer)
+    // 处理从 AudioWorklet 发送过来的数据
+    processor.port.onmessage = (event: MessageEvent) => {
+      if (event.data.type === 'audioData' && ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(event.data.data)
       }
     }
     
+    // 连接音频节点
     source.connect(processor)
     processor.connect(audioContext.destination)
     

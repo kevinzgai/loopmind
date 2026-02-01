@@ -18,7 +18,7 @@ const isConnecting = ref(false)
 const recognitionStatus = ref('')
 const ws = ref<WebSocket | null>(null)
 let audioContext: AudioContext | null = null
-let processor: ScriptProcessorNode | null = null
+let processor: AudioWorkletNode | null = null
 let mediaStream: MediaStream | null = null
 
 // 计算按钮状态文本
@@ -123,25 +123,18 @@ async function startRecording() {
       }
     }
     
-    // 创建音频处理器
-    processor = audioContext.createScriptProcessor(4096, 1, 1)
+    // 创建 AudioWorklet 处理器
+    await audioContext.audioWorklet.addModule('/src/worklets/AudioProcessor.js')
+    processor = new AudioWorkletNode(audioContext, 'audio-streaming-processor')
     
-    processor.onaudioprocess = (e) => {
-      if (ws.value && ws.value.readyState === WebSocket.OPEN) {
-        const inputData = e.inputBuffer.getChannelData(0)
-        
-        // 转换为 16-bit PCM
-        const pcmData = new Int16Array(inputData.length)
-        for (let i = 0; i < inputData.length; i++) {
-          const s = Math.max(-1, Math.min(1, inputData[i]))
-          pcmData[i] = s < 0 ? s * 0x8000 : s * 0x7FFF
-        }
-        
-        // 发送 PCM 数据
-        ws.value.send(pcmData.buffer)
+    // 处理从 AudioWorklet 发送过来的数据
+    processor.port.onmessage = (event: MessageEvent) => {
+      if (event.data.type === 'audioData' && ws.value && ws.value.readyState === WebSocket.OPEN) {
+        ws.value.send(event.data.data)
       }
     }
     
+    // 连接音频节点
     source.connect(processor)
     processor.connect(audioContext.destination)
     

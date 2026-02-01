@@ -72,7 +72,7 @@ let ws = null
 let reconnectTimer = null
 let audioContext = null
 let analyser = null
-let processor = null
+let processor = null  // Will be AudioWorkletNode
 let mediaStream = null
 let animationId = null
 
@@ -161,14 +161,42 @@ function handleWebSocketMessage(event) {
   } catch {}
 }
 
-function handleVoiceButtonDown() {
+function handleVoiceButtonDown(event) {
   if (props.disabled) return
   startRecording()
+  
+  // 添加全局事件监听器以确保在任何地方松开鼠标都能停止录音
+  document.addEventListener('mouseup', handleGlobalMouseUp);
+  document.addEventListener('touchend', handleGlobalTouchEnd);
 }
 
 function handleVoiceButtonUp() {
   if (props.disabled) return
   stopRecording()
+  
+  // 移除全局事件监听器
+  document.removeEventListener('mouseup', handleGlobalMouseUp);
+  document.removeEventListener('touchend', handleGlobalTouchEnd);
+}
+
+// 全局鼠标松开事件处理
+function handleGlobalMouseUp() {
+  if (isRecording.value) {
+    stopRecording();
+    // 移除全局事件监听器
+    document.removeEventListener('mouseup', handleGlobalMouseUp);
+    document.removeEventListener('touchend', handleGlobalTouchEnd);
+  }
+}
+
+// 全局触摸结束事件处理
+function handleGlobalTouchEnd() {
+  if (isRecording.value) {
+    stopRecording();
+    // 移除全局事件监听器
+    document.removeEventListener('mouseup', handleGlobalMouseUp);
+    document.removeEventListener('touchend', handleGlobalTouchEnd);
+  }
 }
 
 async function startRecording() {
@@ -200,18 +228,18 @@ async function startRecording() {
       ws.send(JSON.stringify({ type: 'start' }))
     }
 
-    processor = audioContext.createScriptProcessor(4096, 1, 1)
-    processor.onaudioprocess = e => {
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        const inputData = e.inputBuffer.getChannelData(0)
-        const pcmData = new Int16Array(inputData.length)
-        for (let i = 0; i < inputData.length; i++) {
-          const s = Math.max(-1, Math.min(1, inputData[i]))
-          pcmData[i] = s < 0 ? s * 0x8000 : s * 0x7FFF
-        }
-        ws.send(pcmData.buffer)
+    // 创建 AudioWorklet 处理器
+    await audioContext.audioWorklet.addModule('/src/worklets/AudioProcessor.js')
+    processor = new AudioWorkletNode(audioContext, 'audio-streaming-processor')
+    
+    // 处理从 AudioWorklet 发送过来的数据
+    processor.port.onmessage = (event) => {
+      if (event.data.type === 'audioData' && ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(event.data.data)
       }
     }
+    
+    // 连接音频节点
     source.connect(processor)
     processor.connect(audioContext.destination)
   } catch (error) {
