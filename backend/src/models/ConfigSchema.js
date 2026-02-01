@@ -94,12 +94,12 @@ const configSchema = new mongoose.Schema(
     speech: {
       ttsProvider: {
         type: String,
-        enum: ["siliconflow", "aliyun", "openai", "edge"],
+        enum: ["siliconflow", "aliyun"],
         default: "siliconflow",
       },
       asrProvider: {
         type: String,
-        enum: ["siliconflow", "aliyun", "seed"],
+        enum: ["siliconflow", "aliyun"],
         default: "siliconflow",
       },
       siliconflow: {
@@ -111,29 +111,12 @@ const configSchema = new mongoose.Schema(
         asrModel: { type: String, default: "FunAudioLLM/SenseVoiceSmall" },
       },
       aliyun: {
+        apiKey: { type: String, default: "" },
         accessKeyId: { type: String, default: "" },
         accessKeySecret: { type: String, default: "" },
         appKey: { type: String, default: "" },
-        ttsVoice: { type: String, default: "xiaoxian" },
-        speechRate: { type: Number, default: 150 },
-      },
-      openai: {
-        apiKey: { type: String, default: "" },
-        baseURL: { type: String, default: "" },
-        ttsModel: { type: String, default: "tts-1" },
-        ttsVoice: { type: String, default: "alloy" },
-        speechRate: { type: Number, default: 150 },
-      },
-      edge: {
-        ttsVoice: { type: String, default: "zh-CN-XiaoxiaoNeural" },
-        speechRate: { type: Number, default: 150 },
-      },
-      seed: {
-        appId: { type: String, default: "" },
-        apiKey: { type: String, default: "" },
-        apiSecret: { type: String, default: "" },
-        apiUrl: { type: String, default: "" },
-        resourceId: { type: String, default: "" },
+        ttsVoice: { type: String, default: "Cherry" },
+        // qwen3-tts-flash 模型不支持速度调整，因此不存储 speechRate 字段
       },
     },
     updatedAt: { type: Date, default: Date.now },

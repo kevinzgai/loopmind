@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import http from "http";
+import https from "https";
 // 确保环境变量已加载
 import "../config/config.js";
 
@@ -131,11 +131,11 @@ export async function getToken(credentials = {}) {
   const signature = sign(stringToSign, accessKeySecret);
 
   // 4. 构造完整的请求 URL
-  const url = `http://nls-meta.cn-shanghai.aliyuncs.com/?Signature=${percentEncode(signature)}&${queryString}`;
+  const url = `https://nls-meta.cn-shanghai.aliyuncs.com/?Signature=${percentEncode(signature)}&${queryString}`;
 
-  // 5. 发送 HTTP GET 请求
+  // 5. 发送 HTTPS GET 请求
   return new Promise((resolve, reject) => {
-    http
+    https
       .get(url, (res) => {
         let data = "";
 

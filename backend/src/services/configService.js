@@ -113,10 +113,8 @@ export async function ensureConfigInitialized() {
         asrModel: SILICONFLOW_ASR_MODEL || "FunAudioLLM/SenseVoiceSmall",
       },
       aliyun: {
-        accessKeyId: process.env.ALI_TTS_ACCESS_KEY_ID || "",
-        accessKeySecret: process.env.ALI_TTS_ACCESS_KEY_SECRET || "",
-        appKey: process.env.ALI_TTS_APP_KEY || "",
-        ttsVoice: "xiaoxian",
+        apiKey: process.env.DASHSCOPE_API_KEY || "",
+        ttsVoice: "Cherry",
         speechRate: 150,
       },
       openai: {
@@ -212,10 +210,8 @@ export async function getConfigMasked() {
         asrModel: cfg.speech?.siliconflow?.asrModel || "",
       },
       aliyun: {
-        accessKeyId: mask(cfg.speech?.aliyun?.accessKeyId),
-        accessKeySecret: mask(cfg.speech?.aliyun?.accessKeySecret),
-        appKey: mask(cfg.speech?.aliyun?.appKey),
-        ttsVoice: cfg.speech?.aliyun?.ttsVoice || "xiaoxian",
+        apiKey: mask(cfg.speech?.aliyun?.apiKey),
+        ttsVoice: cfg.speech?.aliyun?.ttsVoice || "Cherry",
         speechRate: cfg.speech?.aliyun?.speechRate || 150,
       },
       openai: {
@@ -310,10 +306,8 @@ export async function getConfigUnmasked() {
         asrModel: cfg.speech?.siliconflow?.asrModel || "",
       },
       aliyun: {
-        accessKeyId: cfg.speech?.aliyun?.accessKeyId || "",
-        accessKeySecret: cfg.speech?.aliyun?.accessKeySecret || "",
-        appKey: cfg.speech?.aliyun?.appKey || "",
-        ttsVoice: cfg.speech?.aliyun?.ttsVoice || "xiaoxian",
+        apiKey: cfg.speech?.aliyun?.apiKey || "",
+        ttsVoice: cfg.speech?.aliyun?.ttsVoice || "Cherry",
         speechRate: cfg.speech?.aliyun?.speechRate || 150,
       },
       openai: {
@@ -431,13 +425,8 @@ export async function updateConfig(payload) {
 
     if (payload.speech.aliyun) {
       if (!cfg.speech.aliyun) cfg.speech.aliyun = {};
-      cfg.speech.aliyun.accessKeyId =
-        payload.speech.aliyun.accessKeyId ?? cfg.speech.aliyun.accessKeyId;
-      cfg.speech.aliyun.accessKeySecret =
-        payload.speech.aliyun.accessKeySecret ??
-        cfg.speech.aliyun.accessKeySecret;
-      cfg.speech.aliyun.appKey =
-        payload.speech.aliyun.appKey ?? cfg.speech.aliyun.appKey;
+      cfg.speech.aliyun.apiKey =
+        payload.speech.aliyun.apiKey ?? cfg.speech.aliyun.apiKey;
       cfg.speech.aliyun.ttsVoice =
         payload.speech.aliyun.ttsVoice ?? cfg.speech.aliyun.ttsVoice;
       cfg.speech.aliyun.speechRate =
@@ -722,15 +711,52 @@ export async function getSpeechConfig() {
   ];
   
   speechConfig.providers = speechProviders
-    .filter(p => p.config && p.config.apiKey && p.config.apiKey.trim() !== '')
-    .map(p => ({
-      id: p.id,
-      name: p.name,
-      apiKey: p.config.apiKey,
-      baseURL: p.config.baseURL,
-      type: p.type,
-      models: p.models || p.model ? [p.model] : []
-    }));
+    .filter(p => p.config)
+    .map(p => {
+      const providerConfig = {
+        id: p.id,
+        name: p.name,
+        type: p.type,
+        models: p.models || p.model ? [p.model] : [],
+        ttsVoice: p.config.ttsVoice || '',
+        speechRate: p.config.speechRate || 150,
+        asrModel: p.config.asrModel || ''
+      };
+      
+      // 对于阿里云，总是添加 apiKey 字段
+      if (p.id === 'aliyun') {
+        providerConfig.apiKey = p.config.apiKey || '';
+        if (p.config.baseURL) {
+          providerConfig.baseURL = p.config.baseURL;
+        }
+      } else {
+        // 对于其他提供商，只有当字段存在时才添加到返回对象中
+        if (p.config.apiKey !== undefined) {
+          providerConfig.apiKey = p.config.apiKey;
+        }
+        if (p.config.baseURL !== undefined) {
+          providerConfig.baseURL = p.config.baseURL;
+        }
+      }
+      
+      // 添加 Seed 特有字段
+      if (p.id === 'seed') {
+        if (p.config.appId !== undefined) {
+          providerConfig.appId = p.config.appId;
+        }
+        if (p.config.apiSecret !== undefined) {
+          providerConfig.apiSecret = p.config.apiSecret;
+        }
+        if (p.config.apiUrl !== undefined) {
+          providerConfig.apiUrl = p.config.apiUrl;
+        }
+        if (p.config.resourceId !== undefined) {
+          providerConfig.resourceId = p.config.resourceId;
+        }
+      }
+      
+      return providerConfig;
+    });
   
   return speechConfig;
 }
@@ -738,35 +764,76 @@ export async function getSpeechConfig() {
 export async function updateSpeechConfig(payload) {
   const cfg = await ensureConfigInitialized();
   
+  // 创建一个深度克隆的 speech 配置对象
+  const updatedSpeechConfig = JSON.parse(JSON.stringify(cfg.speech || {}));
+  
   // 处理新格式的配置
   if (payload.ttsProvider !== undefined) {
-    if (!cfg.speech) cfg.speech = {};
-    cfg.speech.ttsProvider = payload.ttsProvider;
+    updatedSpeechConfig.ttsProvider = payload.ttsProvider;
   }
   
   if (payload.asrProvider !== undefined) {
-    if (!cfg.speech) cfg.speech = {};
-    cfg.speech.asrProvider = payload.asrProvider;
+    updatedSpeechConfig.asrProvider = payload.asrProvider;
   }
   
   // 处理提供商配置
   if (Array.isArray(payload.providers)) {
     payload.providers.forEach(provider => {
-      if (provider.id && provider.apiKey) {
-        if (!cfg.speech) cfg.speech = {};
-        if (!cfg.speech[provider.id]) {
-          cfg.speech[provider.id] = {};
+      if (provider.id) {
+        if (!updatedSpeechConfig[provider.id]) {
+          updatedSpeechConfig[provider.id] = {};
         }
-        cfg.speech[provider.id].apiKey = provider.apiKey;
-        cfg.speech[provider.id].baseURL = provider.baseURL;
-        cfg.speech[provider.id].model = provider.model;
-        cfg.speech[provider.id].ttsVoice = provider.ttsVoice;
-        cfg.speech[provider.id].speechRate = provider.speechRate;
-        cfg.speech[provider.id].asrModel = provider.asrModel;
+        
+        // 对于阿里云，强制更新 apiKey 字段
+        if (provider.id === 'aliyun') {
+          updatedSpeechConfig[provider.id] = {
+            ...updatedSpeechConfig[provider.id],
+            apiKey: provider.apiKey || '',
+            ttsVoice: provider.ttsVoice || 'Cherry',
+            speechRate: provider.speechRate || 150
+          };
+        } else {
+          // 对于其他提供商，只更新存在的字段
+          if (provider.apiKey !== undefined) {
+            updatedSpeechConfig[provider.id].apiKey = provider.apiKey;
+          }
+          if (provider.baseURL !== undefined) {
+            updatedSpeechConfig[provider.id].baseURL = provider.baseURL;
+          }
+          if (provider.model !== undefined) {
+            updatedSpeechConfig[provider.id].model = provider.model;
+          }
+          if (provider.ttsVoice !== undefined) {
+            updatedSpeechConfig[provider.id].ttsVoice = provider.ttsVoice;
+          }
+          if (provider.speechRate !== undefined) {
+            updatedSpeechConfig[provider.id].speechRate = provider.speechRate;
+          }
+          if (provider.asrModel !== undefined) {
+            updatedSpeechConfig[provider.id].asrModel = provider.asrModel;
+          }
+          // 保存 Seed 特有字段
+          if (provider.id === 'seed') {
+            if (provider.appId !== undefined) {
+              updatedSpeechConfig[provider.id].appId = provider.appId;
+            }
+            if (provider.apiSecret !== undefined) {
+              updatedSpeechConfig[provider.id].apiSecret = provider.apiSecret;
+            }
+            if (provider.apiUrl !== undefined) {
+              updatedSpeechConfig[provider.id].apiUrl = provider.apiUrl;
+            }
+            if (provider.resourceId !== undefined) {
+              updatedSpeechConfig[provider.id].resourceId = provider.resourceId;
+            }
+          }
+        }
       }
     });
   }
   
+  // 使用 Mongoose 的 set 方法一次性更新整个 speech 配置
+  cfg.set('speech', updatedSpeechConfig);
   cfg.updatedAt = new Date();
   await cfg.save();
   return cfg;

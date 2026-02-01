@@ -3,6 +3,8 @@ import { authenticateToken } from "../shared/middleware/authMiddleware.js";
 import { authorizeAdmin } from "../shared/middleware/authMiddleware.js";
 import { getConfigUnmasked, updateConfig, getAIConfig, updateAIConfig, getEmbeddingConfig, updateEmbeddingConfig, getSpeechConfig, updateSpeechConfig } from "../services/configService.js";
 import { testConnectivity } from "../services/aiService.js";
+import { textToSpeech as aliTextToSpeech } from "../services/aliTtsService.js";
+import { textToSpeech as siliconTextToSpeech } from "../services/siliconFlowTtsService.js";
 import path from "path";
 import fs from "fs";
 import readline from "readline";
@@ -268,6 +270,106 @@ router.put("/config/speech", authenticateToken, authorizeAdmin, async (req, res)
   } catch (err) {
     console.error("❌ 更新语音服务配置失败:", err.message);
     res.status(400).json({ error: { message: err.message || "请求参数错误" } });
+  }
+});
+
+/**
+ * @api {post} /admin/config/test-tts 测试 TTS 语音服务
+ * @apiName TestTTS
+ * @apiGroup Admin
+ * @apiDescription 测试指定的 TTS 服务是否可用
+ * @apiHeader {String} Authorization Bearer Token
+ * 
+ * @apiBody {String} provider 服务提供商 (siliconflow/aliyun)
+ * @apiBody {String} [text] 测试文本 (默认: "你好，这是语音测试")
+ * @apiBody {String} [voice] 音色ID
+ * @apiBody {Number} [speechRate] 语速
+ * 
+ * @apiSuccess {Boolean} success 是否成功
+ * @apiSuccess {String} message 结果消息
+ * @apiSuccess {String} [audioUrl] 音频URL (可选)
+ */
+router.post("/config/test-tts", authenticateToken, authorizeAdmin, async (req, res) => {
+  try {
+    const { provider, text = "你好，这是语音测试", voice, speechRate } = req.body;
+
+    if (!provider) {
+      return res.status(400).json({ error: { message: "缺少 provider 参数" } });
+    }
+
+    // 获取系统配置
+    const config = await getConfigUnmasked();
+    const speechConfig = config.speech || {};
+    const providerConfig = speechConfig[provider] || {};
+
+    // 检查 API Key
+    if (!providerConfig.apiKey && provider !== 'edge') {
+      return res.status(400).json({ 
+        success: false, 
+        message: `${provider} 未配置 API Key` 
+      });
+    }
+
+    let audioBuffer;
+    let effectiveVoice = voice || providerConfig.ttsVoice;
+    let effectiveSpeechRate = speechRate || providerConfig.speechRate || 150;
+
+    // 设置默认音色
+    if (!effectiveVoice) {
+      effectiveVoice = provider === 'siliconflow' ? 'anna' : 'Cherry';
+    }
+
+    try {
+      if (provider === 'siliconflow') {
+        console.log("🧪 测试硅基流动 TTS 服务");
+        audioBuffer = await siliconTextToSpeech(
+          text,
+          {
+            voice: effectiveVoice,
+            speed: effectiveSpeechRate,
+          },
+          providerConfig,
+        );
+      } else if (provider === 'aliyun') {
+        console.log("🧪 测试阿里云 TTS 服务");
+        audioBuffer = await aliTextToSpeech(
+          text,
+          {
+            voice: effectiveVoice,
+            format: "mp3",
+            // qwen3-tts-flash 模型不支持速度调整，因此不传递 speechRate 参数
+          },
+          providerConfig,
+        );
+      } else {
+        return res.status(400).json({ 
+          success: false, 
+          message: `不支持的 TTS 提供商: ${provider}` 
+        });
+      }
+
+      // 将音频转换为 base64 返回
+      const audioBase64 = audioBuffer.toString('base64');
+      const audioUrl = `data:audio/mpeg;base64,${audioBase64}`;
+
+      res.json({
+        success: true,
+        message: `${provider} TTS 服务测试成功`,
+        audioUrl: audioUrl,
+        audioSize: audioBuffer.length,
+        voice: effectiveVoice,
+        speechRate: effectiveSpeechRate
+      });
+    } catch (ttsError) {
+      console.error("❌ TTS 服务测试失败:", ttsError);
+      res.json({
+        success: false,
+        message: `${provider} TTS 服务测试失败: ${ttsError.message}`
+      });
+    }
+  } catch (err) {
+    console.error("❌ 测试 TTS 服务失败:", err.message);
+    res.status(500).json({ error: { message: err.message || "服务器错误" } });
   }
 });
 

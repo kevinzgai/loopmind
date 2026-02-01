@@ -131,7 +131,6 @@ function toggleInputMode() {
     inputMode.value = 'text'
     stopRecording()
     // Optional: Close connection to save resources
-    // if (ws) { ws.close(); ws = null }
   }
 }
 
