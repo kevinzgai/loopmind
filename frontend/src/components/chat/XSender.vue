@@ -161,6 +161,16 @@ function handleWebSocketMessage(event) {
   } catch {}
 }
 
+function handleVoiceButtonDown() {
+  if (props.disabled) return
+  startRecording()
+}
+
+function handleVoiceButtonUp() {
+  if (props.disabled) return
+  stopRecording()
+}
+
 async function startRecording() {
   if (isRecording.value || isConnecting.value) return
   
