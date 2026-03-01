@@ -98,6 +98,35 @@ export default {
     return apiClient.patch(url, data)
   },
   
+  // 通用请求方法
+  request(url, options = {}) {
+    const { method = 'GET', params, body, data } = options
+    const config = { ...options }
+    
+    if (params) {
+      config.params = params
+    }
+    
+    if (body || data) {
+      config.data = body || data
+    }
+    
+    switch (method.toUpperCase()) {
+      case 'GET':
+        return apiClient.get(url, config)
+      case 'POST':
+        return apiClient.post(url, config.data, config)
+      case 'PUT':
+        return apiClient.put(url, config.data, config)
+      case 'DELETE':
+        return apiClient.delete(url, config)
+      case 'PATCH':
+        return apiClient.patch(url, config.data, config)
+      default:
+        return apiClient.get(url, config)
+    }
+  },
+  
   // AI 模型配置相关接口
   aiConfig: {
     // 获取 AI 模型配置

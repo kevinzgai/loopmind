@@ -21,6 +21,7 @@ const KnowledgePage = () => import("@/views/knowledge/KnowledgePage.vue");
 const AgentCapabilitiesPage = () =>
   import("@/views/agent/AgentCapabilitiesPage.vue");
 const VoiceTestPage = () => import("@/views/VoiceTest.vue");
+const UserManagementPage = () => import("@/views/settings/UserManagementPage.vue");
 
 const routes = [
   {
@@ -70,6 +71,94 @@ const routes = [
       title: "系统设置",
       requiresAuth: true,
     },
+    children: [
+      {
+        path: "",
+        name: "SettingsGeneral",
+        component: () => import("@/components/settings/GeneralSettings.vue"),
+        meta: {
+          title: "通用设置",
+          requiresAuth: true,
+        },
+      },
+      {
+        path: "notifications",
+        name: "SettingsNotifications",
+        component: () => import("@/components/settings/NotificationSettings.vue"),
+        meta: {
+          title: "通知设置",
+          requiresAuth: true,
+        },
+      },
+      {
+        path: "privacy",
+        name: "SettingsPrivacy",
+        component: () => import("@/components/settings/PrivacySettings.vue"),
+        meta: {
+          title: "隐私与安全",
+          requiresAuth: true,
+        },
+      },
+      {
+        path: "about",
+        name: "SettingsAbout",
+        component: () => import("@/components/settings/AboutSettings.vue"),
+        meta: {
+          title: "关于",
+          requiresAuth: true,
+        },
+      },
+      {
+        path: "ai-config",
+        name: "SettingsAIConfig",
+        component: () => import("@/components/settings/AIConfigSettings.vue"),
+        meta: {
+          title: "AI 模型配置",
+          requiresAuth: true,
+          requiresAdmin: true,
+        },
+      },
+      {
+        path: "embedding-config",
+        name: "SettingsEmbedding",
+        component: () => import("@/components/settings/EmbeddingSettings.vue"),
+        meta: {
+          title: "Embedding 配置",
+          requiresAuth: true,
+          requiresAdmin: true,
+        },
+      },
+      {
+        path: "speech-config",
+        name: "SettingsSpeech",
+        component: () => import("@/components/settings/SpeechConfigSettings.vue"),
+        meta: {
+          title: "语音服务配置",
+          requiresAuth: true,
+          requiresAdmin: true,
+        },
+      },
+      {
+        path: "logs",
+        name: "SettingsLogs",
+        component: () => import("@/components/settings/SystemLogs.vue"),
+        meta: {
+          title: "系统日志",
+          requiresAuth: true,
+          requiresAdmin: true,
+        },
+      },
+      {
+        path: "users",
+        name: "SettingsUsers",
+        component: UserManagementPage,
+        meta: {
+          title: "账号管理",
+          requiresAuth: true,
+          requiresAdmin: true,
+        },
+      },
+    ],
   },
   {
     path: "/api-keys",

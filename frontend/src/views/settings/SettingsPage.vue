@@ -11,28 +11,28 @@
       <aside class="md:col-span-1 space-y-2">
         <div class="px-3 py-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">个人设置</div>
         <nav class="space-y-1">
-          <button v-for="section in personalSections" :key="section.id" @click="activeSection = section.id" :class="[
+          <router-link v-for="section in personalSections" :key="section.id" :to="section.path" :class="[
             'w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors flex items-center gap-3',
-            activeSection === section.id
+            isActive(section.path)
               ? 'bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300'
               : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
           ]">
             <component :is="section.icon" class="w-4 h-4" />
             {{ section.label }}
-          </button>
+          </router-link>
         </nav>
 
         <div class="px-3 py-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mt-6">系统配置</div>
         <nav class="space-y-1">
-          <button v-for="section in systemSections" :key="section.id" @click="activeSection = section.id" :class="[
+          <router-link v-for="section in systemSections" :key="section.id" :to="section.path" :class="[
             'w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors flex items-center gap-3',
-            activeSection === section.id
+            isActive(section.path)
               ? 'bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300'
               : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
           ]">
             <component :is="section.icon" class="w-4 h-4" />
             {{ section.label }}
-          </button>
+          </router-link>
         </nav>
       </aside>
 
@@ -46,51 +46,60 @@
           {{ error }}
         </div>
 
-        <GeneralSettings v-if="activeSection === 'general'" />
-        <NotificationSettings v-if="activeSection === 'notifications'" />
-        <PrivacySettings v-if="activeSection === 'privacy'" />
-        <AboutSettings v-if="activeSection === 'about'" />
-        <AIConfigSettings ref="aiConfigRef" v-if="activeSection === 'ai-config'" @save="handleSave" @error="handleError" />
-        <EmbeddingSettings ref="embeddingRef" v-if="activeSection === 'embedding-config'" @save="handleSave" @error="handleError" />
-        <SpeechConfigSettings ref="speechConfigRef" v-if="activeSection === 'speech-config'" @save="handleSave" @error="handleError" />
-        <SystemLogs v-if="activeSection === 'logs'" />
+        <router-view @save="handleSave" @error="handleError" />
       </main>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { Settings, Bell, Shield, Info, Cpu, Mic, FileText, CheckCircle, XCircle, Brain } from 'lucide-vue-next'
-import GeneralSettings from '@/components/settings/GeneralSettings.vue'
-import NotificationSettings from '@/components/settings/NotificationSettings.vue'
-import PrivacySettings from '@/components/settings/PrivacySettings.vue'
-import AboutSettings from '@/components/settings/AboutSettings.vue'
-import AIConfigSettings from '@/components/settings/AIConfigSettings.vue'
-import EmbeddingSettings from '@/components/settings/EmbeddingSettings.vue'
-import SpeechConfigSettings from '@/components/settings/SpeechConfigSettings.vue'
-import SystemLogs from '@/components/settings/SystemLogs.vue'
+import { ref, computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { Settings, Bell, Shield, Info, Cpu, Mic, FileText, CheckCircle, XCircle, Brain, Users } from 'lucide-vue-next'
 
-const activeSection = ref('general')
+const route = useRoute()
 const message = ref('')
 const error = ref('')
-const aiConfigRef = ref(null)
-const embeddingRef = ref(null)
-const speechConfigRef = ref(null)
+
+const isAdmin = computed(() => {
+  const userStr = localStorage.getItem('user')
+  if (userStr) {
+    try {
+      const user = JSON.parse(userStr)
+      return user.role === 'admin'
+    } catch {
+      return false
+    }
+  }
+  return false
+})
 
 const personalSections = [
-  { id: 'general', label: '通用设置', icon: Settings },
-  { id: 'notifications', label: '通知设置', icon: Bell },
-  { id: 'privacy', label: '隐私与安全', icon: Shield },
-  { id: 'about', label: '关于', icon: Info }
+  { id: 'general', label: '通用设置', icon: Settings, path: '/settings' },
+  { id: 'notifications', label: '通知设置', icon: Bell, path: '/settings/notifications' },
+  { id: 'privacy', label: '隐私与安全', icon: Shield, path: '/settings/privacy' },
+  { id: 'about', label: '关于', icon: Info, path: '/settings/about' }
 ]
 
-const systemSections = [
-  { id: 'ai-config', label: 'AI 模型配置', icon: Cpu },
-  { id: 'embedding-config', label: 'Embedding 配置', icon: Brain },
-  { id: 'speech-config', label: '语音服务配置', icon: Mic },
-  { id: 'logs', label: '系统日志', icon: FileText }
-]
+const systemSections = computed(() => {
+  const sections = [
+    { id: 'ai-config', label: 'AI 模型配置', icon: Cpu, path: '/settings/ai-config' },
+    { id: 'embedding-config', label: 'Embedding 配置', icon: Brain, path: '/settings/embedding-config' },
+    { id: 'speech-config', label: '语音服务配置', icon: Mic, path: '/settings/speech-config' },
+    { id: 'logs', label: '系统日志', icon: FileText, path: '/settings/logs' }
+  ]
+  if (isAdmin.value) {
+    sections.push({ id: 'users', label: '账号管理', icon: Users, path: '/settings/users' })
+  }
+  return sections
+})
+
+function isActive(path) {
+  if (path === '/settings') {
+    return route.path === '/settings'
+  }
+  return route.path.startsWith(path)
+}
 
 function handleSave(msg) {
   message.value = msg || '配置已成功保存'
@@ -103,16 +112,4 @@ function handleError(err) {
   message.value = ''
   setTimeout(() => error.value = '', 3000)
 }
-
-onMounted(() => {
-  if (aiConfigRef.value) {
-    aiConfigRef.value.loadConfig()
-  }
-  if (embeddingRef.value) {
-    embeddingRef.value.loadConfig()
-  }
-  if (speechConfigRef.value) {
-    speechConfigRef.value.loadConfig()
-  }
-})
 </script>
