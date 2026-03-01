@@ -22,18 +22,33 @@ import { callAI } from "../../../services/ai/aiService.js";
  */
 export async function handleGenerateAgentConfig(req, res, next) {
   try {
-    const { prompt } = req.body;
+    const { prompt, type = 'personality' } = req.body;
 
     if (!prompt) {
       return res.status(400).json({
         error: {
-          message: "Prompt is required",
+          message: "请描述你想要的智能体",
           code: "MISSING_PROMPT",
         },
       });
     }
 
-    const systemPrompt = `You are an expert AI agent designer.
+    let systemPrompt = '';
+    
+    if (type === 'personality') {
+      systemPrompt = `你是一位专业的AI智能体设计师。用户想要创建一个智能体，描述如下：
+
+"${prompt}"
+
+请为这个智能体生成详细的人设与指令。要求：
+1. 明确智能体的角色定位和专业领域
+2. 描述智能体的性格特点和说话风格
+3. 说明智能体擅长处理的问题类型
+4. 设定智能体的回答方式和注意事项
+
+请直接输出人设内容，不要包含任何其他说明文字。字数控制在200-500字。`;
+    } else {
+      systemPrompt = `You are an expert AI agent designer.
 User request: "${prompt}"
 
 Generate a valid JSON configuration for an AI agent based on the request.
@@ -47,26 +62,35 @@ The JSON must have these fields:
 - voice: Suggest a voice id (string), choose from: 'xiaoxian' (female), 'xiaoyu' (male), 'yoyo' (child). Default to 'xiaoxian'.
 
 Return ONLY the raw JSON string. Do not include markdown formatting like \`\`\`json.`;
+    }
 
     const aiResponse = await callAI([
       { role: "system", content: systemPrompt },
       { role: "user", content: prompt },
     ]);
 
-    let configStr = aiResponse.choices[0].message.content.trim();
-    // Clean up markdown if present
-    if (configStr.startsWith("```json")) {
-      configStr = configStr.replace(/^```json\s*/, "").replace(/\s*```$/, "");
-    } else if (configStr.startsWith("```")) {
-      configStr = configStr.replace(/^```\s*/, "").replace(/\s*```$/, "");
+    const content = aiResponse.choices[0].message.content.trim();
+
+    if (type === 'personality') {
+      res.status(200).json({
+        message: "人设生成成功",
+        personality: content,
+      });
+    } else {
+      let configStr = content;
+      if (configStr.startsWith("```json")) {
+        configStr = configStr.replace(/^```json\s*/, "").replace(/\s*```$/, "");
+      } else if (configStr.startsWith("```")) {
+        configStr = configStr.replace(/^```\s*/, "").replace(/\s*```$/, "");
+      }
+
+      const config = JSON.parse(configStr);
+
+      res.status(200).json({
+        message: "Agent config generated",
+        config,
+      });
     }
-
-    const config = JSON.parse(configStr);
-
-    res.status(200).json({
-      message: "Agent config generated",
-      config,
-    });
   } catch (error) {
     console.error("❌ Failed to generate agent config:", error);
     next(error);
