@@ -117,6 +117,17 @@
                 :class="['bubble', message.role === 'user' ? 'bubble-user' : 'bubble-assistant']"
               >
                 <div class="bubble-content" v-html="renderMessageContent(message.content)"></div>
+                <button
+                  v-if="message.role === 'assistant' && message.content"
+                  class="play-btn"
+                  :class="{ 'playing': playingMessageId === message.id }"
+                  @click="playMessageAudio(message)"
+                  :title="playingMessageId === message.id ? '停止播放' : '播放语音'"
+                >
+                  <Loader2 v-if="playingMessageId === message.id && isPlayingLoading" :size="14" class="animate-spin" />
+                  <Square v-else-if="playingMessageId === message.id" :size="14" />
+                  <Volume2 v-else :size="14" />
+                </button>
               </div>
               <div v-if="isLoading" ref="loadingRef" class="bubble bubble-assistant">
                 <div class="bubble-content">
@@ -127,22 +138,56 @@
             </div>
           </div>
           <div class="input-area">
-            <VoiceTextInput 
-              v-model="inputText"
-              :disabled="isLoading"
-              :placeholder="'输入消息...'"
-              @submit="sendMessage"
-              @autoSubmit="handleAutoSubmit"
-            />
-            <div class="input-foot-wrapper">
-              <div class="input-foot-left">
-                <span><i>📝</i> 支持 Markdown</span>
-                <span><i>⌨️</i> Enter 发送</span>
-                <span class="input-foot-dividing-line"></span>
-                <span class="input-foot-maxlength">{{ inputText.length }}/2000</span>
+            <div class="input-container">
+              <div class="input-wrapper">
+                <textarea
+                  ref="textareaRef"
+                  v-model="inputText"
+                  class="input-textarea"
+                  placeholder="输入消息..."
+                  :disabled="isLoading"
+                  rows="1"
+                  @keydown.enter.exact.prevent="handleEnterSend"
+                  @keydown.enter.shift.exact.prevent="insertNewline"
+                  @input="adjustTextareaHeight"
+                />
+                <div class="input-actions">
+                  <button
+                    type="button"
+                    class="action-btn voice-btn"
+                    :class="{ 'recording': isVoiceRecording }"
+                    @mousedown="startVoiceRecording"
+                    @mouseup="stopVoiceRecording"
+                    @mouseleave="cancelVoiceRecording"
+                    @touchstart.prevent="startVoiceRecording"
+                    @touchend.prevent="stopVoiceRecording"
+                    :title="isVoiceRecording ? '松开发送' : '按住说话'"
+                    :disabled="isLoading"
+                  >
+                    <Mic v-if="!isVoiceRecording" :size="20" />
+                    <MicOff v-else :size="20" />
+                  </button>
+                  <button
+                    type="button"
+                    class="action-btn send-btn"
+                    :disabled="!inputText.trim() || isLoading"
+                    @click="sendMessage"
+                  >
+                    <Send :size="20" />
+                  </button>
+                </div>
               </div>
-              <div class="input-foot-right">
-                <button class="clear-btn" :disabled="!inputText" @click="inputText = ''">清空输入</button>
+              <div class="input-footer">
+                <div class="footer-left">
+                  <span class="footer-hint">
+                    <kbd>Enter</kbd> 发送 · <kbd>Shift+Enter</kbd> 换行
+                  </span>
+                </div>
+                <div class="footer-right">
+                  <span class="char-count" :class="{ 'warning': inputText.length > 1800 }">
+                    {{ inputText.length }}/2000
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -155,15 +200,15 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed, nextTick, watch } from 'vue'
 import { useRoute, onBeforeRouteLeave } from 'vue-router'
-import { Volume2, VolumeX, Trash2 } from 'lucide-vue-next'
+import { Volume2, VolumeX, Trash2, Square, Loader2 } from 'lucide-vue-next'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { Conversation, ConversationContent } from '@/components/ai-elements/conversation'
 import { Message, MessageContent } from '@/components/ai-elements/message'
 import { Loader } from '@/components/ai-elements/loader'
-import VoiceTextInput from '@/components/chat/VoiceTextInput.vue'
 import McIntroduction from '@/components/chat/McIntroduction.vue'
 import PromptShortcut from '@/components/chat/PromptShortcut.vue'
+import { Mic, MicOff, Send } from 'lucide-vue-next'
 import { token } from '@/stores/authStore.js'
 import { 
   getAgent, 
@@ -177,7 +222,11 @@ import {
 
 const route = useRoute()
 const agentId = route.params.agentId
-const voiceInputRef = ref(null)
+const textareaRef = ref(null)
+const isVoiceRecording = ref(false)
+const playingMessageId = ref(null)
+const isPlayingLoading = ref(false)
+let messageAudioElement = null
 
 // 智能体相关状态
 const agent = ref(null)
@@ -251,10 +300,6 @@ const agentDescription = computed(() => {
   let desc = ''
   if (agent.value.initialMemory) {
     desc += `<p>${agent.value.initialMemory}</p>`
-  }
-  
-  if (agent.value.personality) {
-    desc += `<p><em>${agent.value.personality}</em></p>`
   }
   
   if (!desc) {
@@ -489,17 +534,169 @@ async function sendMessage() {
   if (!text || isLoading.value) return
 
   inputText.value = ''
+  if (textareaRef.value) {
+    textareaRef.value.style.height = 'auto'
+  }
   await sendMessageToAI(text)
 }
 
-// 自动提交（语音识别后）
-async function handleAutoSubmit(text) {
-  console.log('🎤 收到自动提交事件，文本:', text)
-  if (!text || isLoading.value) {
-    console.warn('⚠️ 无法自动提交:', { text, isLoading: isLoading.value })
+function handleEnterSend() {
+  if (inputText.value.trim() && !isLoading.value) {
+    sendMessage()
+  }
+}
+
+function insertNewline() {
+  const textarea = textareaRef.value
+  if (!textarea) return
+  
+  const start = textarea.selectionStart
+  const end = textarea.selectionEnd
+  inputText.value = inputText.value.substring(0, start) + '\n' + inputText.value.substring(end)
+  
+  nextTick(() => {
+    textarea.selectionStart = textarea.selectionEnd = start + 1
+    adjustTextareaHeight()
+  })
+}
+
+function adjustTextareaHeight() {
+  const textarea = textareaRef.value
+  if (textarea) {
+    textarea.style.height = 'auto'
+    textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px'
+  }
+}
+
+let voiceMediaRecorder = null
+let voiceAudioChunks = []
+
+async function startVoiceRecording() {
+  if (isLoading.value) return
+  
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    voiceMediaRecorder = new MediaRecorder(stream)
+    voiceAudioChunks = []
+    
+    voiceMediaRecorder.ondataavailable = (e) => {
+      voiceAudioChunks.push(e.data)
+    }
+    
+    voiceMediaRecorder.onstop = async () => {
+      stream.getTracks().forEach(track => track.stop())
+      
+      const audioBlob = new Blob(voiceAudioChunks, { type: 'audio/webm' })
+      const formData = new FormData()
+      formData.append('file', audioBlob, 'recording.webm')
+      
+      try {
+        const response = await fetch('/api/asr', {
+          method: 'POST',
+          body: formData
+        })
+        
+        const result = await response.json()
+        
+        if (response.ok && result.text) {
+          inputText.value = result.text
+          adjustTextareaHeight()
+        } else {
+          console.error('语音识别失败:', result)
+          alert('语音识别失败: ' + (result.message || result.error || '未知错误'))
+        }
+      } catch (err) {
+        console.error('语音识别失败:', err)
+        alert('语音识别失败: ' + err.message)
+      }
+    }
+    
+    voiceMediaRecorder.start()
+    isVoiceRecording.value = true
+  } catch (err) {
+    console.error('无法访问麦克风:', err)
+    alert('无法访问麦克风，请检查权限设置')
+  }
+}
+
+function stopVoiceRecording() {
+  if (voiceMediaRecorder && voiceMediaRecorder.state !== 'inactive') {
+    voiceMediaRecorder.stop()
+    isVoiceRecording.value = false
+  }
+}
+
+function cancelVoiceRecording() {
+  if (isVoiceRecording.value) {
+    voiceAudioChunks = []
+    stopVoiceRecording()
+  }
+}
+
+async function playMessageAudio(message) {
+  if (playingMessageId.value === message.id) {
+    if (messageAudioElement) {
+      messageAudioElement.pause()
+      messageAudioElement = null
+    }
+    playingMessageId.value = null
     return
   }
-  await sendMessageToAI(text)
+  
+  if (messageAudioElement) {
+    messageAudioElement.pause()
+    messageAudioElement = null
+  }
+  
+  playingMessageId.value = message.id
+  isPlayingLoading.value = true
+  
+  try {
+    const text = message.content.replace(/<[^>]*>/g, '').trim()
+    if (!text) {
+      playingMessageId.value = null
+      isPlayingLoading.value = false
+      return
+    }
+    
+    const response = await fetch('/api/tts', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        text: text.substring(0, 1000),
+        voice: agent.value?.voice || undefined,
+        speed: agent.value?.speechRate || 150
+      })
+    })
+    
+    if (!response.ok) {
+      throw new Error('语音合成失败')
+    }
+    
+    const blob = await response.blob()
+    const url = URL.createObjectURL(blob)
+    
+    messageAudioElement = new Audio(url)
+    messageAudioElement.onended = () => {
+      playingMessageId.value = null
+      isPlayingLoading.value = false
+      URL.revokeObjectURL(url)
+    }
+    messageAudioElement.onerror = () => {
+      playingMessageId.value = null
+      isPlayingLoading.value = false
+      URL.revokeObjectURL(url)
+    }
+    
+    isPlayingLoading.value = false
+    await messageAudioElement.play()
+  } catch (err) {
+    console.error('播放消息音频失败:', err)
+    playingMessageId.value = null
+    isPlayingLoading.value = false
+  }
 }
 
 // 发送消息到 AI（使用智能体专用接口）
@@ -1088,56 +1285,180 @@ onBeforeRouteLeave((to, from, next) => {
   word-break: break-word;
 }
 
+.play-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-top: 8px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  @apply bg-transparent text-muted-foreground hover:bg-accent hover:text-accent-foreground;
+}
+
+.play-btn:hover {
+  transform: scale(1.1);
+}
+
+.play-btn.playing {
+  @apply bg-primary/10 text-primary;
+}
+
+.play-btn:active {
+  transform: scale(0.95);
+}
+
 .input-area {
   position: sticky;
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 1rem 1.5rem;
-  @apply bg-background/80 backdrop-blur-sm;
+  padding: 1rem 1.5rem 1.5rem;
+  @apply bg-gradient-to-t from-background via-background/95 to-transparent;
   z-index: 10;
   max-width: 900px;
   margin: 0 auto;
   width: 100%;
 }
 
-.input-foot-wrapper {
+.input-container {
+  @apply bg-card border border-border rounded-2xl shadow-lg;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.input-container:focus-within {
+  @apply border-primary/50 shadow-md shadow-primary/5;
+}
+
+.input-wrapper {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+}
+
+.input-textarea {
+  flex: 1;
+  min-height: 24px;
+  max-height: 150px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  line-height: 1.6;
+  resize: none;
+  outline: none;
+  @apply text-foreground placeholder:text-muted-foreground;
+}
+
+.input-textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.input-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  @apply bg-muted text-muted-foreground;
+}
+
+.action-btn:hover:not(:disabled) {
+  @apply bg-accent text-accent-foreground;
+}
+
+.action-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.voice-btn.recording {
+  @apply bg-red-500/10 text-red-500;
+  animation: pulse-recording 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-recording {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+  }
+}
+
+.send-btn:not(:disabled) {
+  @apply bg-primary text-primary-foreground;
+}
+
+.send-btn:not(:disabled):hover {
+  @apply bg-primary/90;
+}
+
+.input-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-top: 6px;
+  padding: 8px 16px;
+  border-top: 1px solid;
+  @apply border-border bg-muted/30;
 }
 
-.input-foot-left {
+.footer-left {
   display: flex;
   align-items: center;
   gap: 8px;
-  @apply text-muted-foreground;
-  font-size: 0.85rem;
 }
 
-.input-foot-dividing-line {
-  width: 1px;
-  height: 14px;
-  @apply bg-border;
-}
-
-.input-foot-maxlength {
+.footer-hint {
+  font-size: 12px;
   @apply text-muted-foreground;
 }
 
-.input-foot-right .clear-btn {
-  padding: 4px 10px;
-  @apply border border-border bg-muted text-muted-foreground;
-  border-radius: 16px;
-  font-size: 0.8rem;
-  cursor: pointer;
+.footer-hint kbd {
+  display: inline-block;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-family: inherit;
+  border-radius: 4px;
+  @apply bg-muted text-muted-foreground border border-border;
 }
 
-.input-foot-right .clear-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.footer-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.char-count {
+  font-size: 12px;
+  @apply text-muted-foreground;
+}
+
+.char-count.warning {
+  @apply text-amber-500;
 }
 
 :deep(.markdown-content) h1 {

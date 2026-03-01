@@ -118,23 +118,47 @@
                 class="px-3 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 dark:text-emerald-400 rounded-lg text-sm font-medium transition-colors disabled:opacity-50">
                 {{ testingTTS.aliyun ? '测试中...' : '测试语音' }}
               </button>
-              <a href="https://help.aliyun.com/zh/model-studio/get-api-key" target="_blank" rel="noopener noreferrer"
+              <a href="https://nls-portal.console.aliyun.com/" target="_blank" rel="noopener noreferrer"
                 class="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 dark:text-blue-400 rounded-lg text-sm font-medium transition-colors">
-                查看凭证
+                控制台
               </a>
             </div>
           </div>
           <div class="space-y-3">
             <div class="space-y-2">
-              <label class="text-sm font-medium text-slate-700 dark:text-slate-300">DashScope API Key</label>
+              <label class="text-sm font-medium text-slate-700 dark:text-slate-300">AccessKey ID</label>
               <div class="flex gap-2">
-                <input :type="showKeys.aliyun ? 'text' : 'password'" v-model="providers.aliyun.apiKey"
-                  placeholder="请输入阿里百炼 DashScope API Key"
+                <input :type="showKeys.aliyun ? 'text' : 'password'" v-model="providers.aliyun.accessKeyId"
+                  placeholder="请输入阿里云 AccessKey ID"
+                  class="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-300" />
+              </div>
+            </div>
+            <div class="space-y-2">
+              <label class="text-sm font-medium text-slate-700 dark:text-slate-300">AccessKey Secret</label>
+              <div class="flex gap-2">
+                <input :type="showKeys.aliyun ? 'text' : 'password'" v-model="providers.aliyun.accessKeySecret"
+                  placeholder="请输入阿里云 AccessKey Secret"
+                  class="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-300" />
+              </div>
+            </div>
+            <div class="space-y-2">
+              <label class="text-sm font-medium text-slate-700 dark:text-slate-300">AppKey</label>
+              <div class="flex gap-2">
+                <input :type="showKeys.aliyun ? 'text' : 'password'" v-model="providers.aliyun.appKey"
+                  placeholder="请输入智能语音服务 AppKey"
                   class="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-300" />
                 <button @click="showKeys.aliyun = !showKeys.aliyun"
                   class="px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700">
                   {{ showKeys.aliyun ? '隐藏' : '显示' }}
                 </button>
+              </div>
+            </div>
+            <div class="space-y-2">
+              <label class="text-sm font-medium text-slate-700 dark:text-slate-300">DashScope API Key (可选，用于百炼 TTS)</label>
+              <div class="flex gap-2">
+                <input :type="showKeys.aliyun ? 'text' : 'password'" v-model="providers.aliyun.apiKey"
+                  placeholder="用于阿里百炼 TTS 服务"
+                  class="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-300" />
               </div>
             </div>
           </div>
@@ -178,6 +202,9 @@ const providers = ref({
   },
   aliyun: {
     apiKey: '',
+    accessKeyId: '',
+    accessKeySecret: '',
+    appKey: '',
     ttsVoice: 'Cherry'
   }
 })
@@ -205,6 +232,9 @@ async function loadConfig() {
             providers.value[provider.id].asrModel = provider.asrModel || providers.value[provider.id].asrModel
             if (provider.id === 'aliyun') {
               providers.value[provider.id].apiKey = provider.apiKey || providers.value[provider.id].apiKey
+              providers.value[provider.id].accessKeyId = provider.accessKeyId || providers.value[provider.id].accessKeyId
+              providers.value[provider.id].accessKeySecret = provider.accessKeySecret || providers.value[provider.id].accessKeySecret
+              providers.value[provider.id].appKey = provider.appKey || providers.value[provider.id].appKey
             }
           }
         })
