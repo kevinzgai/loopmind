@@ -1,4 +1,4 @@
-import { getModel } from '../services/langchainService.js';
+import { getModel } from '../services/ai/langchainService.js';
 import { createRetriever } from '../modules/knowledge/services/langchainRetriever.js';
 import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
 import { RunnableSequence, RunnablePassthrough } from "@langchain/core/runnables";
@@ -18,7 +18,7 @@ import {
     getAgentConversationMessagesById,
     appendMessagesByConversationId,
     deleteAgentConversation
-} from '../services/conversationService.js';
+} from '../services/database/conversationService.js';
 
 /**
  * @api {get} /external/agents 获取公开智能体列表

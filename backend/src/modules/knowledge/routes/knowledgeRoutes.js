@@ -12,8 +12,8 @@ import {
   handlePreviewChunks,
   handleQueryKB
 } from '../controllers/knowledgeController.js';
-import { authenticateToken as authenticate } from '../../../middleware/authMiddleware.js';
-import { uploadLimiter } from '../../../middleware/securityMiddleware.js';
+import { authenticateToken as authenticate } from '../../../middleware/auth.middleware.js';
+import { uploadLimiter } from '../../../middleware/security.middleware.js';
 import path from 'path';
 import fs from 'fs';
 

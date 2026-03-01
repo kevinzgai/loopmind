@@ -2,8 +2,8 @@ import {
     getConversationHistory, 
     addMessageToHistory, 
     callAI 
-} from '../services/aiService.js';
-import { textToSpeech, checkConfig } from '../services/aliTtsService.js';
+} from '../services/ai/aiService.js';
+import { textToSpeech, checkConfig } from '../services/voice/aliTtsService.js';
 
 /**
  * 处理完整的语音对话流程

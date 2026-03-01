@@ -10,7 +10,7 @@ import {
   getOrCreateMemory,
   getUserMemory,
 } from "../services/agentService.js";
-import { callAI } from "../../../services/aiService.js";
+import { callAI } from "../../../services/ai/aiService.js";
 
 /**
  * 智能体控制器

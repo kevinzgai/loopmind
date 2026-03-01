@@ -1,6 +1,6 @@
 import express from 'express';
 import multer from 'multer';
-import { verifyApiKey } from '../middleware/externalAuth.js';
+import { verifyApiKey } from '../middleware/externalAuth.middleware.js';
 import { 
     handleExternalAgentChat, 
     handleGetPublicAgents,

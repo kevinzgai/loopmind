@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { handleChatMessage, getChatHistory, getProviders, getUserConversations } from '../controllers/chatController.js';
-import { optionalAuthenticateToken } from '../shared/middleware/authMiddleware.js';
-import { chatLimiter } from '../middleware/securityMiddleware.js';
+import { optionalAuthenticateToken } from '../middleware/auth.middleware.js';
+import { chatLimiter } from '../middleware/security.middleware.js';
 
 const router = Router();
 
