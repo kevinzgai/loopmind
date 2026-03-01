@@ -337,6 +337,243 @@ export async function updateUserProfile(userId, profileData) {
   }
 }
 
+/**
+ * 获取所有用户列表（管理员功能）
+ */
+export async function getAllUsers(options = {}) {
+  try {
+    const { page = 1, limit = 20, search = '' } = options;
+    const skip = (page - 1) * limit;
+    
+    let query = {};
+    if (search) {
+      query = {
+        $or: [
+          { username: { $regex: search, $options: 'i' } },
+          { email: { $regex: search, $options: 'i' } }
+        ]
+      };
+    }
+    
+    const total = await User.countDocuments(query);
+    const users = await User.find(query)
+      .select('-passwordHash')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+    
+    return {
+      users: users.map(u => u.toJSON()),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    };
+  } catch (error) {
+    console.error('❌ 获取用户列表失败:', error.message);
+    throw error;
+  }
+}
+
+/**
+ * 创建用户（管理员功能）
+ */
+export async function createUser(userData) {
+  try {
+    const { username, email, password, role = 'user' } = userData;
+    
+    // 验证输入
+    if (!username || username.length < 3) {
+      throw new Error('用户名至少 3 个字符');
+    }
+    if (!email || !isValidEmail(email)) {
+      throw new Error('邮箱格式不正确');
+    }
+    if (!password || password.length < 6) {
+      throw new Error('密码至少 6 个字符');
+    }
+    
+    // 检查用户名是否已存在
+    const existingUsername = await User.findOne({ username });
+    if (existingUsername) {
+      throw new Error('用户名已存在');
+    }
+    
+    // 检查邮箱是否已存在
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail) {
+      throw new Error('邮箱已被注册');
+    }
+    
+    // 如果要创建管理员，检查是否已存在管理员
+    if (role === 'admin') {
+      const existingAdmin = await User.findOne({ role: 'admin' });
+      if (existingAdmin) {
+        throw new Error('系统已存在管理员，不能创建多个管理员账号');
+      }
+    }
+    
+    const passwordHash = hashPassword(password);
+    const user = new User({
+      username,
+      email,
+      passwordHash,
+      role
+    });
+    
+    await user.save();
+    console.log(`✅ 用户创建成功: ${username} (${role})`);
+    return user.toJSON();
+  } catch (error) {
+    console.error('❌ 创建用户失败:', error.message);
+    throw error;
+  }
+}
+
+/**
+ * 更新用户（管理员功能）
+ */
+export async function updateUser(userId, userData) {
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new Error('用户不存在');
+    }
+    
+    const { username, email, role, isActive } = userData;
+    
+    // 如果要修改用户名，检查是否已存在
+    if (username && username !== user.username) {
+      const existingUsername = await User.findOne({ username, _id: { $ne: userId } });
+      if (existingUsername) {
+        throw new Error('用户名已存在');
+      }
+      user.username = username;
+    }
+    
+    // 如果要修改邮箱，检查是否已存在
+    if (email && email !== user.email) {
+      if (!isValidEmail(email)) {
+        throw new Error('邮箱格式不正确');
+      }
+      const existingEmail = await User.findOne({ email, _id: { $ne: userId } });
+      if (existingEmail) {
+        throw new Error('邮箱已被使用');
+      }
+      user.email = email;
+    }
+    
+    // 如果要修改角色
+    if (role !== undefined && role !== user.role) {
+      // 如果要将用户改为管理员
+      if (role === 'admin') {
+        const existingAdmin = await User.findOne({ role: 'admin', _id: { $ne: userId } });
+        if (existingAdmin) {
+          throw new Error('系统已存在管理员，不能设置多个管理员账号');
+        }
+      }
+      // 如果要将当前管理员改为普通用户
+      if (user.role === 'admin' && role !== 'admin') {
+        throw new Error('不能取消唯一管理员的权限');
+      }
+      user.role = role;
+    }
+    
+    // 修改激活状态
+    if (isActive !== undefined) {
+      user.isActive = isActive;
+    }
+    
+    await user.save();
+    console.log(`✅ 用户更新成功: ${user.username}`);
+    return user.toJSON();
+  } catch (error) {
+    console.error('❌ 更新用户失败:', error.message);
+    throw error;
+  }
+}
+
+/**
+ * 删除用户（管理员功能）
+ */
+export async function deleteUser(userId) {
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new Error('用户不存在');
+    }
+    
+    // 不能删除管理员
+    if (user.role === 'admin') {
+      throw new Error('不能删除管理员账号');
+    }
+    
+    // 删除用户的所有 Token
+    await Token.deleteMany({ userId });
+    
+    // 删除用户
+    await User.findByIdAndDelete(userId);
+    console.log(`✅ 用户删除成功: ${user.username}`);
+    return { message: '用户已删除' };
+  } catch (error) {
+    console.error('❌ 删除用户失败:', error.message);
+    throw error;
+  }
+}
+
+/**
+ * 重置用户密码（管理员功能）
+ */
+export async function resetUserPassword(userId, newPassword) {
+  try {
+    const user = await User.findById(userId).select('+passwordHash');
+    if (!user) {
+      throw new Error('用户不存在');
+    }
+    
+    if (!newPassword || newPassword.length < 6) {
+      throw new Error('新密码至少 6 个字符');
+    }
+    
+    user.passwordHash = hashPassword(newPassword);
+    await user.save();
+    
+    // 删除该用户的所有 Token，强制重新登录
+    await Token.deleteMany({ userId });
+    
+    console.log(`✅ 用户密码重置成功: ${user.username}`);
+    return { message: '密码已重置' };
+  } catch (error) {
+    console.error('❌ 重置密码失败:', error.message);
+    throw error;
+  }
+}
+
+/**
+ * 获取用户统计信息（管理员功能）
+ */
+export async function getUserStats() {
+  try {
+    const totalUsers = await User.countDocuments();
+    const activeUsers = await User.countDocuments({ isActive: true });
+    const adminCount = await User.countDocuments({ role: 'admin' });
+    const todayLogins = await User.countDocuments({
+      lastLoginAt: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) }
+    });
+    
+    return {
+      totalUsers,
+      activeUsers,
+      inactiveUsers: totalUsers - activeUsers,
+      adminCount,
+      todayLogins
+    };
+  } catch (error) {
+    console.error('❌ 获取用户统计失败:', error.message);
+    throw error;
+  }
+}
+
 export default {
   register,
   login,
@@ -347,5 +584,11 @@ export default {
   getUserInfo,
   updateUserProfile,
   getTokenInfo,
-  clearAllTokens
+  clearAllTokens,
+  getAllUsers,
+  createUser,
+  updateUser,
+  deleteUser,
+  resetUserPassword,
+  getUserStats
 };

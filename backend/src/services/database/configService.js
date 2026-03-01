@@ -82,6 +82,11 @@ export async function ensureConfigInitialized() {
       baseURL: OLLAMA_BASE_URL || "",
       model: OLLAMA_MODEL || "",
     },
+    siliconflow: {
+      apiKey: SILICONFLOW_API_KEY || "",
+      baseURL: SILICONFLOW_BASE_URL || "https://api.siliconflow.cn/v1",
+      model: "Pro/deepseek-ai/DeepSeek-V3",
+    },
     embedding: {
       apiKey: "",
       baseURL: "",

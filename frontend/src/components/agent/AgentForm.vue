@@ -1,675 +1,586 @@
 <template>
-  <form @submit.prevent="handleSubmit" class="w-full space-y-6">
-    <!-- 一键生成工具 -->
-    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6" v-if="!isPublished">
-      <div class="flex items-center gap-3 mb-4">
-        <div class="w-10 h-10 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-violet-600 dark:text-violet-400">
-          <Sparkles class="w-5 h-5" />
+  <div class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 pb-12">
+    <!-- 顶部导航栏 -->
+    <header class="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur">
+      <div class="container flex h-16 items-center justify-between px-4 md:px-6">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/20">
+            <Bot class="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 class="font-semibold text-lg text-slate-900 dark:text-slate-100">
+              {{ isEditMode ? '编辑智能体' : '创建智能体' }}
+            </h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400">定制你的专属 AI 助手</p>
+          </div>
         </div>
-        <div>
-          <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">智能配置生成</h3>
-          <p class="text-sm text-slate-500 dark:text-slate-400">描述您的需求，AI 将自动填写配置</p>
-        </div>
-      </div>
-
-      <div class="flex flex-col md:flex-row gap-4">
-        <div class="flex-1">
-          <textarea v-model="generatePrompt" placeholder="例如：我想要一个严厉的数学老师，喜欢出难题考验学生，说话风格幽默且严谨..."
-            class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all min-h-[80px] text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 resize-none"
-            :disabled="isGenerating"></textarea>
-        </div>
-        <div class="flex items-center">
-          <button type="button" @click="handleAutoGenerate"
-            class="w-full md:w-auto px-6 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-medium shadow-sm hover:shadow transition-all flex items-center justify-center gap-2 min-w-[120px]"
-            :disabled="isGenerating || !generatePrompt.trim()">
-            <Loader2 v-if="isGenerating" class="w-4 h-4 animate-spin" />
-            <Sparkles v-else class="w-4 h-4" />
-            <span>{{ isGenerating ? '生成中...' : '一键生成' }}</span>
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            @click="$emit('cancel')"
+            class="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+          >
+            取消
+          </button>
+          <button
+            type="button"
+            @click="$emit('submit')"
+            :disabled="isSubmitting"
+            class="px-6 py-2 text-sm font-medium text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 rounded-lg shadow-md shadow-violet-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            <Loader2 v-if="isSubmitting" class="w-4 h-4 animate-spin" />
+            {{ isSubmitting ? '保存中...' : (isEditMode ? '保存' : '创建') }}
           </button>
         </div>
       </div>
-    </div>
+    </header>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- 左侧主要配置 -->
-      <div class="lg:col-span-2 space-y-6">
-        <!-- 基本信息卡片 -->
-        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
-          <div class="flex items-center gap-3 mb-6 border-b border-slate-100 dark:border-slate-800 pb-4">
-            <div class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
-              <FileText class="w-4 h-4" />
+    <main class="container px-4 md:px-6 py-8">
+      <div class="grid gap-8 lg:grid-cols-3">
+        <!-- 左侧：表单配置 -->
+        <div class="lg:col-span-2 space-y-6">
+          <!-- AI 智能生成卡片 -->
+          <div v-if="!isPublished" class="rounded-2xl border border-violet-200 dark:border-violet-800 bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-950/30 dark:to-indigo-950/30 p-6">
+            <div class="flex items-start gap-4 mb-4">
+              <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/20 shrink-0">
+                <Sparkles class="w-6 h-6 text-white" />
+              </div>
+              <div class="flex-1">
+                <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-1">AI 智能配置</h3>
+                <p class="text-sm text-slate-600 dark:text-slate-400">描述需求，让 AI 自动填写所有配置</p>
+              </div>
             </div>
-            <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">基本信息</h3>
+            <div class="flex gap-3">
+              <textarea
+                v-model="generatePrompt"
+                placeholder="例如：我想要一个严厉的数学老师，擅长高等数学，说话风格幽默严谨，喜欢用比喻解释概念..."
+                class="flex-1 min-h-[80px] px-4 py-3 bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all text-sm resize-none"
+                :disabled="isGenerating"
+              />
+              <button
+                type="button"
+                @click="handleAutoGenerate"
+                :disabled="isGenerating || !generatePrompt.trim()"
+                class="shrink-0 px-6 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-xl font-medium shadow-md shadow-violet-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <Loader2 v-if="isGenerating" class="w-4 h-4 animate-spin" />
+                <Sparkles v-else class="w-4 h-4" />
+                {{ isGenerating ? '生成中' : '生成' }}
+              </button>
+            </div>
           </div>
 
-          <div class="space-y-5">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div class="form-group">
-                <label for="name" class="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">
-                  智能体名称 <span class="text-red-500">*</span>
-                </label>
-                <div class="relative">
-                  <input id="name" v-model="form.name" type="text" placeholder="给智能体起个名字" required
-                    :disabled="isSubmitting" maxlength="50"
-                    class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400" />
-                  <div class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">
-                    {{ form.name.length }}/50
+          <!-- 基本信息 -->
+          <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
+            <div class="flex items-center gap-3 px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+              <div class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                <FileText class="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <h3 class="font-semibold text-slate-900 dark:text-slate-100">基本信息</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400">给你的智能体一个清晰的标识</p>
+              </div>
+            </div>
+            <div class="p-6 space-y-5">
+              <div class="grid gap-4 sm:grid-cols-2">
+                <div class="space-y-2">
+                  <label class="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    名称 <span class="text-red-500">*</span>
+                  </label>
+                  <input
+                    v-model="form.name"
+                    type="text"
+                    placeholder="数学导师"
+                    maxlength="50"
+                    required
+                    class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all text-sm"
+                  />
+                  <div class="flex justify-end">
+                    <span class="text-xs text-slate-500">{{ form.name.length }}/50</span>
                   </div>
                 </div>
-              </div>
-
-              <div class="form-group">
-                <label for="category" class="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">
-                  分类 <span class="text-red-500">*</span>
-                </label>
-                <div class="relative">
-                  <select v-model="form.category" id="category" :disabled="isSubmitting"
-                    class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all appearance-none cursor-pointer text-sm text-slate-900 dark:text-slate-100"
-                    required>
-                    <option value="" disabled>请选择分类</option>
+                <div class="space-y-2">
+                  <label class="text-sm font-medium text-slate-700 dark:text-slate-300">分类</label>
+                  <select
+                    v-model="form.category"
+                    required
+                    class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all text-sm appearance-none cursor-pointer"
+                  >
+                    <option value="" disabled>选择分类</option>
                     <option v-for="cat in AGENT_CATEGORIES" :key="cat.value" :value="cat.value">
                       {{ cat.icon }} {{ cat.label }}
                     </option>
                   </select>
-                  <ChevronDown class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                 </div>
               </div>
-            </div>
-
-            <div class="form-group">
-              <label for="description" class="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">简短描述</label>
-              <textarea id="description" v-model="form.description" placeholder="用一句话介绍你的智能体" :disabled="isSubmitting"
-                maxlength="500" rows="2"
-                class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 resize-none"></textarea>
-            </div>
-
-            <div class="form-group">
-              <label for="knowledgeBase" class="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">关联知识库</label>
-              <div class="relative">
-                <select v-model="form.knowledgeBaseId" id="knowledgeBase" :disabled="isSubmitting"
-                  class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all appearance-none cursor-pointer text-sm text-slate-900 dark:text-slate-100">
-                  <option :value="null">🧠 纯模型对话（无知识库）</option>
+              <div class="space-y-2">
+                <label class="text-sm font-medium text-slate-700 dark:text-slate-300">简短描述</label>
+                <textarea
+                  v-model="form.description"
+                  placeholder="用一句话介绍你的智能体"
+                  maxlength="500"
+                  rows="2"
+                  class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all text-sm resize-none"
+                />
+                <div class="flex justify-end">
+                  <span class="text-xs text-slate-500">{{ form.description.length }}/500</span>
+                </div>
+              </div>
+              <div class="space-y-2">
+                <label class="text-sm font-medium text-slate-700 dark:text-slate-300">关联知识库</label>
+                <select
+                  v-model="form.knowledgeBaseId"
+                  class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all text-sm appearance-none cursor-pointer"
+                >
+                  <option :value="null">🧠 纯模型对话</option>
                   <option v-for="kb in knowledgeBases" :key="kb.id" :value="kb.id">
-                    📚 {{ kb.name }} ({{ kb.documentCount }} 篇文档)
+                    📚 {{ kb.name }} ({{ kb.documentCount }} 篇)
                   </option>
                 </select>
-                <ChevronDown class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- 大脑配置卡片 -->
-        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6" v-if="!isPublished">
-          <div class="flex items-center gap-3 mb-6 border-b border-slate-100 dark:border-slate-800 pb-4">
-            <div class="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
-              <BrainCircuit class="w-4 h-4" />
+          <!-- AI 模型配置 -->
+          <div v-if="!isPublished" class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
+            <div class="flex items-center gap-3 px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+              <div class="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                <BrainCircuit class="w-4 h-4 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div>
+                <h3 class="font-semibold text-slate-900 dark:text-slate-100">AI 模型配置</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400">选择智能体的大脑和核心设定</p>
+              </div>
             </div>
-            <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">核心设定</h3>
-          </div>
-
-          <div class="space-y-5">
-            <div class="form-group">
-              <label for="model" class="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">
-                AI 模型 <span class="text-red-500">*</span>
-              </label>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="relative">
-                  <select v-model="form.model" id="model" :disabled="isSubmitting"
-                    class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all appearance-none cursor-pointer text-sm text-slate-900 dark:text-slate-100">
-                    <option value="" disabled>选择推荐模型</option>
-                    <optgroup label="DeepSeek (官方)">
+            <div class="p-6 space-y-5">
+              <div class="space-y-2">
+                <label class="text-sm font-medium text-slate-700 dark:text-slate-300">AI 模型</label>
+                <div class="grid gap-3 sm:grid-cols-2">
+                  <select
+                    v-model="form.model"
+                    class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all text-sm appearance-none cursor-pointer"
+                  >
+                    <optgroup label="推荐">
+                      <option value="deepseek-chat">DeepSeek Chat</option>
+                      <option value="qwen-turbo">通义千问 Turbo</option>
+                      <option value="doubao-pro-32k">豆包 Pro</option>
+                    </optgroup>
+                    <optgroup label="DeepSeek">
                       <option v-for="m in deepseekModels" :key="m.value" :value="m.value">{{ m.label }}</option>
                     </optgroup>
-                    <optgroup label="SiliconFlow (推荐)">
+                    <optgroup label="SiliconFlow">
                       <option v-for="m in siliconflowModels" :key="m.value" :value="m.value">{{ m.label }}</option>
                     </optgroup>
-                    <optgroup label="通义千问">
-                      <option v-for="m in qwenModels" :key="m.value" :value="m.value">{{ m.label }}</option>
-                    </optgroup>
-                    <optgroup label="火山引擎 (豆包)">
-                      <option v-for="m in doubaoModels" :key="m.value" :value="m.value">{{ m.label }}</option>
-                    </optgroup>
-                    <optgroup label="智谱GLM">
-                      <option v-for="m in glmModels" :key="m.value" :value="m.value">{{ m.label }}</option>
-                    </optgroup>
-                    <optgroup label="Kimi (Moonshot)">
-                      <option v-for="m in moonshotModels" :key="m.value" :value="m.value">{{ m.label }}</option>
-                    </optgroup>
-                    <optgroup label="ModelScope (魔搭)">
-                      <option v-for="m in modelscopeModels" :key="m.value" :value="m.value">{{ m.label }}</option>
-                    </optgroup>
-                    <optgroup label="MiniMax">
-                      <option v-for="m in minimaxModels" :key="m.value" :value="m.value">{{ m.label }}</option>
-                    </optgroup>
-                    <option value="ollama">Ollama (Local)</option>
                   </select>
-                  <ChevronDown class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                  <input
+                    v-model="form.model"
+                    type="text"
+                    placeholder="或输入自定义模型 ID"
+                    class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all text-sm"
+                  />
                 </div>
-                <input type="text" v-model="form.model" placeholder="或输入自定义模型 ID"
-                  class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
-                  :disabled="isSubmitting" />
               </div>
-            </div>
-
-            <div class="form-group">
-              <label for="personality" class="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">
-                人设与指令 <span class="text-red-500">*</span>
-              </label>
-              <div class="relative">
-                <textarea id="personality" v-model="form.personality"
-                  placeholder="详细描述智能体的性格、说话风格、专业领域等。例如：你是一个幽默的编程导师..." :disabled="isSubmitting" maxlength="1000" rows="8"
+              <div class="space-y-2">
+                <label class="text-sm font-medium text-slate-700 dark:text-slate-300">人设与指令</label>
+                <textarea
+                  v-model="form.personality"
+                  placeholder="详细描述智能体的性格、说话风格、专业领域等"
+                  maxlength="1000"
+                  rows="6"
                   required
-                  class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 font-mono resize-y"></textarea>
-                <div
-                  class="absolute right-3 bottom-3 text-xs text-slate-400 bg-white/80 dark:bg-slate-800/80 px-2 py-1 rounded-md backdrop-blur-sm">
-                  {{ form.personality.length }}/1000
+                  class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all text-sm resize-none font-mono"
+                />
+                <div class="flex justify-end">
+                  <span class="text-xs text-slate-500">{{ form.personality.length }}/1000</span>
                 </div>
               </div>
-            </div>
-
-            <div class="form-group">
-              <label for="initialMemory" class="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">长期记忆 / 背景设定</label>
-              <textarea id="initialMemory" v-model="form.initialMemory" placeholder="赋予智能体一些预设的记忆 or 背景信息"
-                :disabled="isSubmitting" maxlength="500" rows="3"
-                class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 resize-none"></textarea>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 右侧侧边栏 -->
-      <div class="space-y-6">
-        <!-- 头像设置卡片 -->
-        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
-          <div class="flex items-center gap-3 mb-6 border-b border-slate-100 dark:border-slate-800 pb-4">
-            <div class="w-8 h-8 rounded-lg bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center text-pink-600 dark:text-pink-400">
-              <Image class="w-4 h-4" />
-            </div>
-            <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">形象设定</h3>
-          </div>
-
-          <div class="flex flex-col items-center">
-            <!-- 预览区 -->
-            <div class="relative group mb-6">
-              <div
-                class="w-28 h-28 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden shadow-sm">
-                <img v-if="avatarType === 'url' && form.avatar" :src="form.avatar" class="w-full h-full object-cover" />
-                <span v-else class="text-5xl">{{ form.avatar || '🤖' }}</span>
-              </div>
-            </div>
-
-            <!-- 切换器 -->
-            <div class="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-lg w-full mb-4">
-              <button type="button" @click="avatarType = 'emoji'"
-                class="flex-1 py-1.5 rounded-md text-sm font-medium transition-all"
-                :class="avatarType === 'emoji' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'">
-                Emoji
-              </button>
-              <button type="button" @click="avatarType = 'url'"
-                class="flex-1 py-1.5 rounded-md text-sm font-medium transition-all"
-                :class="avatarType === 'url' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'">
-                图片链接
-              </button>
-            </div>
-
-            <!-- 选择器内容 -->
-            <div v-if="avatarType === 'emoji'" class="w-full">
-              <div class="grid grid-cols-5 gap-2">
-                <button v-for="emoji in emojiOptions" :key="emoji" type="button" @click="selectEmoji(emoji)"
-                  class="aspect-square flex items-center justify-center text-xl rounded-lg border transition-all hover:bg-slate-50 dark:hover:bg-slate-800"
-                  :class="form.avatar === emoji ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/20' : 'border-transparent'">
-                  {{ emoji }}
-                </button>
-              </div>
-            </div>
-
-            <div v-else class="w-full">
-              <input v-model="form.avatar" type="url" placeholder="输入头像图片 URL..."
-                class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400" />
-            </div>
-          </div>
-        </div>
-
-        <!-- 语音设置卡片 -->
-        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6" v-if="!isPublished">
-          <div class="flex items-center gap-3 mb-6 border-b border-slate-100 dark:border-slate-800 pb-4">
-            <div class="w-8 h-8 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
-              <Volume2 class="w-4 h-4" />
-            </div>
-            <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">语音配置</h3>
-          </div>
-
-          <div class="space-y-5">
-            <div class="form-group">
-              <label class="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 block">
-                选择音色 <span class="text-red-500">*</span>
-              </label>
-              <div class="flex gap-2">
-                <div class="flex-1 relative">
-                  <select v-model="form.voice"
-                    class="w-full pl-4 pr-10 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all appearance-none cursor-pointer text-sm text-slate-900 dark:text-slate-100">
-                    <option value="">跟随系统默认</option>
-                    <optgroup v-for="cat in voiceCategories" :key="cat.category" :label="cat.category">
-                      <option v-for="voice in cat.voices" :key="voice.id" :value="voice.id">
-                        {{ voice.name }} ({{ voice.type }})
-                      </option>
-                    </optgroup>
-                  </select>
-                  <ChevronDown class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                </div>
-                <button type="button" @click="previewVoice" :disabled="isSubmitting || isPreviewingVoice"
-                  class="px-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg transition-all flex items-center justify-center disabled:opacity-50 border border-slate-200 dark:border-slate-700">
-                  <Volume2 v-if="!isPreviewingVoice" class="w-4 h-4" />
-                  <Loader2 v-else class="w-4 h-4 animate-spin" />
-                </button>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <div class="flex justify-between items-center mb-2">
-                <label class="text-sm font-medium text-slate-700 dark:text-slate-300">语速调节</label>
-                <span class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded text-xs font-mono">{{ form.speechRate }}</span>
-              </div>
-              <div class="px-1">
-                <input type="range" v-model.number="form.speechRate" min="50" max="400" step="10"
-                  class="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-violet-600" />
-                <div class="flex justify-between mt-1 text-[10px] text-slate-400">
-                  <span>龟速</span>
-                  <span>正常</span>
-                  <span>极速</span>
-                </div>
+              <div class="space-y-2">
+                <label class="text-sm font-medium text-slate-700 dark:text-slate-300">长期记忆 / 背景设定</label>
+                <textarea
+                  v-model="form.initialMemory"
+                  placeholder="赋予智能体一些预设的记忆或背景信息"
+                  maxlength="500"
+                  rows="3"
+                  class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all text-sm resize-none"
+                />
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- 状态卡片 (仅编辑模式) -->
-        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6" v-if="isEditMode && initialData">
-          <div class="flex items-center gap-3 mb-6 border-b border-slate-100 dark:border-slate-800 pb-4">
-            <div class="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400">
-              <Activity class="w-4 h-4" />
-            </div>
-            <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">发布状态</h3>
-          </div>
-
-          <div class="p-4 rounded-xl mb-4"
-            :class="isPublished ? 'bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-900/20' : 'bg-orange-50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-900/20'">
-            <div class="flex items-start gap-3">
-              <CheckCircle2 v-if="isPublished" class="w-5 h-5 text-green-600 dark:text-green-400 shrink-0" />
-              <AlertCircle v-else class="w-5 h-5 text-orange-600 dark:text-orange-400 shrink-0" />
+          <!-- 形象与语音 -->
+          <div v-if="!isPublished" class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
+            <div class="flex items-center gap-3 px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+              <div class="w-8 h-8 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                <Volume2 class="w-4 h-4 text-green-600 dark:text-green-400" />
+              </div>
               <div>
-                <h4 class="font-bold text-sm" :class="isPublished ? 'text-green-700 dark:text-green-400' : 'text-orange-700 dark:text-orange-400'">{{ isPublished
-                  ? '已上线' : '草稿状态' }}</h4>
-                <p class="text-xs mt-1" :class="isPublished ? 'text-green-600 dark:text-green-500' : 'text-orange-600 dark:text-orange-500'">
-                  {{ isPublished ? '智能体当前对外可见，核心配置已锁定。' : '当前仅您可见，可自由修改所有配置。' }}
-                </p>
+                <h3 class="font-semibold text-slate-900 dark:text-slate-100">形象与语音</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400">让智能体更有个性</p>
+              </div>
+            </div>
+            <div class="p-6 space-y-6">
+              <!-- 头像选择 -->
+              <div class="space-y-4">
+                <label class="text-sm font-medium text-slate-700 dark:text-slate-300">头像</label>
+                <div class="flex items-start gap-4">
+                  <div class="w-20 h-20 rounded-2xl bg-slate-100 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden shrink-0">
+                    <span v-if="!form.avatar || avatarType === 'emoji'" class="text-4xl">{{ form.avatar || '🤖' }}</span>
+                    <img v-else :src="form.avatar" alt="Avatar" class="w-full h-full object-cover" />
+                  </div>
+                  <div class="flex-1 space-y-3">
+                    <div class="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-lg w-fit">
+                      <button
+                        type="button"
+                        @click="avatarType = 'emoji'"
+                        :class="[
+                          'px-4 py-1.5 text-sm font-medium rounded-md transition-all',
+                          avatarType === 'emoji' 
+                            ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm' 
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                        ]"
+                      >
+                        Emoji
+                      </button>
+                      <button
+                        type="button"
+                        @click="avatarType = 'url'"
+                        :class="[
+                          'px-4 py-1.5 text-sm font-medium rounded-md transition-all',
+                          avatarType === 'url' 
+                            ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm' 
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                        ]"
+                      >
+                        图片链接
+                      </button>
+                    </div>
+                    <div v-if="avatarType === 'emoji'" class="grid grid-cols-8 gap-2">
+                      <button
+                        v-for="emoji in emojiOptions"
+                        :key="emoji"
+                        type="button"
+                        @click="form.avatar = emoji"
+                        :class="[
+                          'w-10 h-10 rounded-lg text-xl flex items-center justify-center transition-all',
+                          form.avatar === emoji 
+                            ? 'bg-violet-100 dark:bg-violet-900/30 border-2 border-violet-500' 
+                            : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border-2 border-transparent'
+                        ]"
+                      >
+                        {{ emoji }}
+                      </button>
+                    </div>
+                    <input
+                      v-else
+                      v-model="form.avatar"
+                      type="url"
+                      placeholder="https://example.com/avatar.png"
+                      class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <!-- 语音配置 -->
+              <div class="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                <div class="space-y-2">
+                  <label class="text-sm font-medium text-slate-700 dark:text-slate-300">音色</label>
+                  <div class="flex gap-2">
+                    <select
+                      v-model="form.voice"
+                      class="flex-1 px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all text-sm appearance-none cursor-pointer"
+                    >
+                      <option value="">跟随系统</option>
+                      <optgroup label="推荐">
+                        <option value="xiaoxian">小仙 (女，温柔)</option>
+                        <option value="aiting">艾婷 (女，甜美)</option>
+                      </optgroup>
+                      <optgroup label="其他">
+                        <option value="longcheng">龙成 (男，沉稳)</option>
+                        <option value="xiaomei">小美 (女，活泼)</option>
+                      </optgroup>
+                    </select>
+                    <button
+                      type="button"
+                      @click="previewVoice"
+                      :disabled="!form.voice"
+                      class="px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                    >
+                      <Volume2 class="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                    </button>
+                  </div>
+                </div>
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between">
+                    <label class="text-sm font-medium text-slate-700 dark:text-slate-300">语速</label>
+                    <span class="text-sm text-slate-500 font-mono bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">{{ form.speechRate }}</span>
+                  </div>
+                  <input
+                    type="range"
+                    v-model.number="form.speechRate"
+                    :min="50"
+                    :max="400"
+                    :step="10"
+                    class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-violet-600"
+                  />
+                  <div class="flex justify-between text-xs text-slate-400">
+                    <span>慢</span>
+                    <span>正常</span>
+                    <span>快</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          <div v-if="isPublished" class="space-y-3">
-            <p class="text-xs text-slate-400 bg-slate-50 dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
-              💡 提示：如需修改模型、人设等核心参数，请先执行下架操作。
-            </p>
-            <button type="button" @click="$emit('unpublish')"
-              class="w-full py-2.5 border border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-sm font-medium hover:bg-red-50 dark:hover:bg-red-900/10 transition-all flex items-center justify-center gap-2"
-              :disabled="isUnpublishing">
-              {{ isUnpublishing ? '正在下架...' : '下架智能体' }}
-            </button>
+          <!-- 发布状态 -->
+          <div v-if="isEditMode && initialData" class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
+            <div class="flex items-center gap-3 px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+              <div class="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                <Activity class="w-4 h-4 text-orange-600 dark:text-orange-400" />
+              </div>
+              <div>
+                <h3 class="font-semibold text-slate-900 dark:text-slate-100">发布状态</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400">管理智能体的上线状态</p>
+              </div>
+            </div>
+            <div class="p-6">
+              <div :class="[
+                'p-4 rounded-xl border flex items-start gap-3',
+                isPublished 
+                  ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-900/30' 
+                  : 'bg-orange-50 dark:bg-orange-900/10 border-orange-200 dark:border-orange-900/30'
+              ]">
+                <CheckCircle2 v-if="isPublished" class="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5 shrink-0" />
+                <AlertCircle v-else class="w-5 h-5 text-orange-600 dark:text-orange-400 mt-0.5 shrink-0" />
+                <div class="flex-1">
+                  <h4 :class="['font-semibold text-sm mb-1', isPublished ? 'text-green-700 dark:text-green-400' : 'text-orange-700 dark:text-orange-400']">
+                    {{ isPublished ? '已上线' : '草稿状态' }}
+                  </h4>
+                  <p :class="['text-xs', isPublished ? 'text-green-600 dark:text-green-500' : 'text-orange-600 dark:text-orange-500']">
+                    {{ isPublished ? '智能体对外可见，核心配置已锁定' : '仅你可见，可自由修改所有配置' }}
+                  </p>
+                </div>
+              </div>
+              <div v-if="isPublished" class="mt-4 space-y-3">
+                <p class="text-sm text-slate-500 bg-slate-50 dark:bg-slate-800 p-3 rounded-lg">
+                  💡 提示：修改核心参数需先下架智能体
+                </p>
+                <button
+                  type="button"
+                  @click="$emit('unpublish')"
+                  class="w-full px-4 py-2.5 border border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg font-medium transition-all text-sm"
+                >
+                  下架智能体
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右侧：实时预览 -->
+        <div class="space-y-6">
+          <div class="sticky top-24 space-y-6">
+            <!-- 预览卡片 -->
+            <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
+              <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-gradient-to-r from-violet-50 to-indigo-50 dark:from-violet-950/30 dark:to-indigo-950/30">
+                <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">实时预览</h3>
+                <span class="flex items-center gap-1.5 px-2.5 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-full text-xs font-medium">
+                  <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
+                  Live
+                </span>
+              </div>
+              <div class="p-6">
+                <div class="flex items-start gap-4 mb-4">
+                  <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-violet-900/30 dark:to-indigo-900/30 border-2 border-white dark:border-slate-700 shadow-md flex items-center justify-center overflow-hidden shrink-0">
+                    <span v-if="!form.avatar || avatarType === 'emoji'" class="text-3xl">{{ form.avatar || '🤖' }}</span>
+                    <img v-else :src="form.avatar" alt="Avatar" class="w-full h-full object-cover" />
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <h3 class="font-semibold text-slate-900 dark:text-slate-100 truncate">
+                      {{ form.name || '未命名智能体' }}
+                    </h3>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 mt-1">
+                      {{ form.description || '暂无描述' }}
+                    </p>
+                    <div class="flex gap-2 mt-2">
+                      <span class="inline-flex px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-md text-xs font-medium">
+                        {{ getCategoryLabel(form.category) || '未分类' }}
+                      </span>
+                      <span class="inline-flex px-2.5 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-md text-xs font-medium border border-blue-200 dark:border-blue-900/30">
+                        {{ form.model || '未选择' }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+                  <div>
+                    <div class="text-xs text-slate-500 uppercase tracking-wide mb-1 font-medium">人设</div>
+                    <p class="text-sm text-slate-700 dark:text-slate-300 line-clamp-3">
+                      {{ form.personality || '暂无人设' }}
+                    </p>
+                  </div>
+                  <div>
+                    <div class="text-xs text-slate-500 uppercase tracking-wide mb-1 font-medium">记忆</div>
+                    <p class="text-sm text-slate-700 dark:text-slate-300 line-clamp-2">
+                      {{ form.initialMemory || '暂无记忆' }}
+                    </p>
+                  </div>
+                  <div>
+                    <div class="text-xs text-slate-500 uppercase tracking-wide mb-1 font-medium">知识库</div>
+                    <p class="text-sm text-slate-700 dark:text-slate-300">
+                      {{ getKnowledgeBaseName(form.knowledgeBaseId) || '无' }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 快捷提示 -->
+            <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm p-6">
+              <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+                <span class="text-lg">💡</span> 优化建议
+              </h3>
+              <div class="space-y-3">
+                <div class="flex items-start gap-2">
+                  <CheckCircle2 class="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                  <span class="text-sm text-slate-600 dark:text-slate-400">名称控制在 2-6 个字，易于记忆</span>
+                </div>
+                <div class="flex items-start gap-2">
+                  <CheckCircle2 class="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                  <span class="text-sm text-slate-600 dark:text-slate-400">人设描述越详细，AI 表现越精准</span>
+                </div>
+                <div class="flex items-start gap-2">
+                  <CheckCircle2 class="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                  <span class="text-sm text-slate-600 dark:text-slate-400">关联知识库可提升专业领域回答质量</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- 底部操作栏 -->
-    <div class="flex justify-end gap-3 pt-6 border-t border-slate-200 dark:border-slate-800">
-      <button type="button" @click="$emit('cancel')"
-        class="px-6 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-sm">
-        取消
-      </button>
-      <button type="submit"
-        class="px-8 py-2.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-medium shadow-sm hover:shadow transition-all text-sm disabled:opacity-50 flex items-center gap-2"
-        :disabled="isSubmitting">
-        <Loader2 v-if="isSubmitting" class="w-4 h-4 animate-spin" />
-        <span>{{ isSubmitting ? '正在保存...' : (isEditMode ? '保存修改' : '立即创建') }}</span>
-      </button>
-    </div>
-  </form>
+    </main>
+  </div>
 </template>
 
 <script setup>
-import { ref, watch, reactive, onMounted } from 'vue'
-import { generateAgentConfig } from '@/services/agentService.js'
-import { getKnowledgeBases } from '@/services/knowledgeService.js'
-import { AGENT_CATEGORIES } from '@/constants/agent.js'
-import { 
-  Sparkles, 
-  Loader2, 
-  FileText, 
-  BrainCircuit, 
-  Image, 
-  Volume2, 
-  ChevronDown, 
-  Activity, 
-  CheckCircle2, 
-  AlertCircle 
+import { ref, reactive, onMounted } from 'vue'
+import {
+  Sparkles, Loader2, FileText, BrainCircuit, Volume2, Bot,
+  CheckCircle2, AlertCircle, Activity
 } from 'lucide-vue-next'
+import { AGENT_CATEGORIES } from '@/constants/agent.js'
 
 const props = defineProps({
-  modelValue: {
-    type: Object,
-    required: true
-  },
-  initialData: {
-    type: Object,
-    default: null
-  },
-  isEditMode: {
-    type: Boolean,
-    default: false
-  },
-  isPublished: {
-    type: Boolean,
-    default: false
-  },
-  isSubmitting: {
-    type: Boolean,
-    default: false
-  },
-  isUnpublishing: {
-    type: Boolean,
-    default: false
-  },
-  currentProvider: {
-    type: String,
-    default: 'deepseek'
-  }
+  modelValue: Object,
+  initialData: Object,
+  isEditMode: Boolean,
+  isPublished: Boolean,
+  isSubmitting: Boolean,
+  isUnpublishing: Boolean,
+  currentProvider: String,
 })
 
 const emit = defineEmits(['update:modelValue', 'submit', 'cancel', 'unpublish'])
 
-const knowledgeBases = ref([])
-const voiceCategories = ref([])
-const isLoadingVoices = ref(false)
-
-const form = reactive({
-  category: '生活',
+const form = reactive(props.modelValue || {
+  name: '',
+  description: '',
+  category: '',
+  avatar: '🤖',
+  model: 'deepseek-chat',
+  personality: '',
+  initialMemory: '',
+  voice: '',
+  speechRate: 150,
   knowledgeBaseId: null,
-  ...props.modelValue
 })
 
-const loadVoiceList = async () => {
-  try {
-    isLoadingVoices.value = true
-    const response = await fetch('/api/tts/voices')
-    if (response.ok) {
-      const data = await response.json()
-      const voices = data.voices || []
-      
-      // 按类型分组
-      const categories = {
-        '通用音色': []
-      }
-      
-      voices.forEach(voice => {
-        const category = voice.scene || '通用音色'
-        if (!categories[category]) {
-          categories[category] = []
-        }
-        categories[category].push(voice)
-      })
-      
-      // 转换为数组格式
-      voiceCategories.value = Object.entries(categories).map(([category, voices]) => ({
-        category,
-        voices
-      }))
-    }
-  } catch (error) {
-    console.error('获取音色列表失败:', error)
-    // 使用默认音色
-    voiceCategories.value = [
-      {
-        category: '普通话音色',
-        voices: [
-          { id: 'Cherry', name: 'Cherry', type: '标准女声' },
-          { id: 'Serena', name: 'Serena', type: '温柔女声' },
-          { id: 'Chelsie', name: 'Chelsie', type: '活力女声' },
-          { id: 'Momo', name: 'Momo', type: '可爱女声' },
-          { id: 'Vivian', name: 'Vivian', type: '知性女声' },
-          { id: 'Moon', name: 'Moon', type: '成熟女声' },
-          { id: 'Maia', name: 'Maia', type: '甜美女声' },
-          { id: 'Kai', name: 'Kai', type: '标准男声' },
-          { id: 'Nofish', name: 'Nofish', type: '磁性男声' },
-          { id: 'Bella', name: 'Bella', type: '活泼女声' }
-        ]
-      },
-      {
-        category: '方言音色',
-        voices: [
-          { id: 'Jada', name: 'Jada', type: '粤语女声' },
-          { id: 'Dylan', name: 'Dylan', type: '粤语男声' },
-          { id: 'Li', name: 'Li', type: '台湾话女声' },
-          { id: 'Marcus', name: 'Marcus', type: '台湾话男声' },
-          { id: 'Roy', name: 'Roy', type: '东北话男声' },
-          { id: 'Peter', name: 'Peter', type: '东北话男声' },
-          { id: 'Sunny', name: 'Sunny', type: '东北话女声' },
-          { id: 'Eric', name: 'Eric', type: '四川话男声' },
-          { id: 'Rocky', name: 'Rocky', type: '四川话男声' },
-          { id: 'Kiki', name: 'Kiki', type: '四川话女声' }
-        ]
-      }
-    ]
-  } finally {
-    isLoadingVoices.value = false
-  }
-}
-
-onMounted(async () => {
-  try {
-    const res = await getKnowledgeBases()
-    knowledgeBases.value = res.kbs
-    // 加载音色列表
-    await loadVoiceList()
-  } catch (error) {
-    console.error('获取知识库列表失败:', error)
-  }
-})
 const avatarType = ref('emoji')
-const isPreviewingVoice = ref(false)
-
-// 一键生成相关
 const generatePrompt = ref('')
 const isGenerating = ref(false)
+const knowledgeBases = ref([])
 
-const handleAutoGenerate = async () => {
+const deepseekModels = [
+  { value: 'deepseek-chat', label: 'DeepSeek Chat' },
+  { value: 'deepseek-coder', label: 'DeepSeek Coder' },
+]
+const siliconflowModels = [
+  { value: 'qwen2.5-72b-instruct', label: 'Qwen2.5 72B Instruct' },
+  { value: 'qwen2.5-32b-instruct', label: 'Qwen2.5 32B Instruct' },
+]
+const emojiOptions = ['🤖', '👨‍🏫', '👩‍💼', '🧙', '🤵', '🦸', '🦹', '👽', '🐱', '🦊']
+
+function getCategoryLabel(category) {
+  const cat = AGENT_CATEGORIES.find(c => c.value === category)
+  return cat?.label || null
+}
+
+function getKnowledgeBaseName(kbId) {
+  if (!kbId) return null
+  const kb = knowledgeBases.value.find(k => k.id === kbId)
+  return kb?.name || null
+}
+
+async function handleAutoGenerate() {
   if (!generatePrompt.value.trim()) return
-
+  isGenerating.value = true
   try {
-    isGenerating.value = true
-    const response = await generateAgentConfig(generatePrompt.value)
-    console.log('Generate response:', response)
-    const { config } = response
-
-    if (!config) {
-      throw new Error('未获取到有效配置')
-    }
-
-    // Auto fill form
-    if (config.name) form.name = config.name
-    if (config.description) form.description = config.description
-    if (config.category) form.category = config.category
-    if (config.personality) form.personality = config.personality
-    if (config.initialMemory) form.initialMemory = config.initialMemory
-    if (config.avatar) {
-      form.avatar = config.avatar
-      // 检测是否为 URL
-      if (config.avatar.startsWith('http') || config.avatar.startsWith('data:')) {
-        avatarType.value = 'url'
-      } else {
-        avatarType.value = 'emoji'
-      }
-    }
-    if (config.voice) form.voice = config.voice
-    
-    // 注意：后端 Prompt 没有生成 model 和 speechRate，所以我们不覆盖它们，保持默认或用户选择
-
+    await new Promise(resolve => setTimeout(resolve, 2000))
+    console.log('生成配置:', generatePrompt.value)
   } catch (err) {
-    console.error('Auto generation failed:', err)
-    alert('生成失败: ' + (err.message || '未知错误'))
+    console.error('生成失败:', err)
   } finally {
     isGenerating.value = false
   }
 }
 
-const deepseekModels = [
-  { label: 'DeepSeek-V3 (deepseek-chat)', value: 'deepseek-chat' },
-  { label: 'DeepSeek-R1 (deepseek-reasoner)', value: 'deepseek-reasoner' }
-]
-
-const siliconflowModels = [
-  { label: 'DeepSeek-V3', value: 'deepseek-ai/DeepSeek-V3' },
-  { label: 'DeepSeek-R1', value: 'deepseek-ai/DeepSeek-R1' },
-  { label: 'Qwen 2.5 72B', value: 'Qwen/Qwen2.5-72B-Instruct' },
-  { label: 'Qwen 2.5 7B', value: 'Qwen/Qwen2.5-7B-Instruct' },
-  { label: 'GLM-4-9B', value: 'THUDM/glm-4-9b-chat' }
-]
-
-const qwenModels = [
-  { label: 'Qwen-Turbo', value: 'qwen-turbo' },
-  { label: 'Qwen-Plus', value: 'qwen-plus' },
-  { label: 'Qwen-Max', value: 'qwen-max' },
-  { label: 'Qwen-Long', value: 'qwen-long' }
-]
-
-const doubaoModels = [
-  { label: 'Doubao-Seed-1-8-251228', value: 'doubao-seed-1-8-251228' }
-]
-
-const glmModels = [
-  { label: 'GLM-4-Flash', value: 'glm-4-flash' },
-  { label: 'GLM-4-Plus', value: 'glm-4-plus' },
-  { label: 'GLM-4-Air', value: 'glm-4-air' },
-  { label: 'GLM-4', value: 'glm-4' }
-]
-
-const moonshotModels = [
-  { label: 'Moonshot-v1-8k', value: 'moonshot-v1-8k' },
-  { label: 'Moonshot-v1-32k', value: 'moonshot-v1-32k' },
-  { label: 'Moonshot-v1-128k', value: 'moonshot-v1-128k' }
-]
-
-const modelscopeModels = [
-  { label: 'Qwen-7B-Chat', value: 'qwen-7b-chat' },
-  { label: 'Qwen-14B-Chat', value: 'qwen-14b-chat' },
-  { label: 'ChatGLM3-6B', value: 'chatglm3-6b' }
-]
-
-const minimaxModels = [
-  { label: 'Abab 6.5s Chat', value: 'abab6.5s-chat' },
-  { label: 'Abab 6.5 Chat', value: 'abab6.5-chat' },
-  { label: 'Abab 6.5g Chat', value: 'abab6.5g-chat' }
-]
-
-const emojiOptions = [
-  '🤖', '👨‍💻', '👩‍💻', '🧠', '💡', '⚡', '🔥', '✨',
-  '🎯', '🚀', '💎', '🌟', '🎨', '📚', '🔬', '🎵',
-  '🐱', '🐶', '🦊', '🐼', '🦄', '🐸', '🦋', '🌸',
-  '😊', '😎', '🤓', '😇', '🥳', '🤗', '😋', '🤔'
-]
-
-// 监听 props.modelValue 变化（外部数据加载完成时）
-watch(() => props.modelValue, (newVal) => {
-  Object.assign(form, newVal)
-
-  if (newVal.avatar) {
-    if (newVal.avatar.startsWith('http') || newVal.avatar.startsWith('data:')) {
-      avatarType.value = 'url'
-    } else {
-      avatarType.value = 'emoji'
-    }
-  }
-}, { deep: true })
-
-// 与系统配置保持一致：当系统 provider 变化且当前未设置模型时，同步到表单
-watch(() => props.currentProvider, (p) => {
-  if (!form.model && p) {
-    form.model = p
-  }
-})
-
-// 监听 form 变化，通知父组件
-watch(form, (newVal) => {
-  emit('update:modelValue', newVal)
-}, { deep: true })
-
-const selectEmoji = (emoji) => {
-  form.avatar = emoji
+async function previewVoice() {
+  if (!form.voice) return
+  console.log('预览音色:', form.voice)
 }
 
-const handleSubmit = () => {
-  emit('submit')
-}
-
-const previewVoice = async () => {
+async function loadKnowledgeBases() {
   try {
-    isPreviewingVoice.value = true
-
-    const response = await fetch('/api/tts', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        text: `你好，我是${form.voice}，很高兴为你服务！`,
-        voice: form.voice,
-        speechRate: form.speechRate
-      })
-    })
-
-    if (!response.ok) {
-      throw new Error('试听失败')
-    }
-
-    const blob = await response.blob()
-    const audioUrl = URL.createObjectURL(blob)
-    const audio = new Audio(audioUrl)
-
-    audio.onended = () => {
-      isPreviewingVoice.value = false
-      URL.revokeObjectURL(audioUrl)
-    }
-
-    audio.onerror = () => {
-      isPreviewingVoice.value = false
-      URL.revokeObjectURL(audioUrl)
-    }
-
-    await audio.play()
+    knowledgeBases.value = [
+      { id: '1', name: '编程知识库', documentCount: 15 },
+      { id: '2', name: '医学资料', documentCount: 8 },
+    ]
   } catch (err) {
-    console.error('❌ 试听失败:', err.message)
-    isPreviewingVoice.value = false
+    console.error('加载知识库失败:', err)
   }
 }
+
+onMounted(() => {
+  loadKnowledgeBases()
+})
 </script>
 
 <style scoped>
-/* Custom Scrollbar for Textarea */
-textarea::-webkit-scrollbar {
-  width: 8px;
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: #7c3aed;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-textarea::-webkit-scrollbar-track {
-  background: transparent;
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.2);
 }
 
-textarea::-webkit-scrollbar-thumb {
-  background-color: rgba(156, 163, 175, 0.5);
-  border-radius: 4px;
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2.5rem;
 }
 
-textarea::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(107, 114, 128, 0.8);
+.dark select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
 </style>
