@@ -4,9 +4,9 @@ import { WebSocketServer } from 'ws';
 import { PORT } from './config/config.js';
 import { connectDatabase, disconnectDatabase } from './config/database.js';
 // 使用完整版本
-import { handleStreamConnection as handleAliAsrStream } from './services/aliAsrStreamService.js';
-import { handleStreamConnection as handleSiliconAsrStream } from './services/siliconFlowAsrStreamService.js';
-import { createTTSStream, sendTextWithStart, sendComplete, parseMessage } from './services/aliTtsStreamService.js';
+import { handleStreamConnection as handleAliAsrStream } from './services/voice/aliAsrStreamService.js';
+import { handleStreamConnection as handleSiliconAsrStream } from './services/voice/siliconFlowAsrStreamService.js';
+import { createTTSStream, sendTextWithStart, sendComplete, parseMessage } from './services/voice/aliTtsStreamService.js';
 import { v4 as uuidv4 } from 'uuid';
 import User from './models/UserSchema.js';
 import crypto from 'crypto';
@@ -27,7 +27,7 @@ wss.on('connection', async (ws, req) => {
         console.log('✅ 流式 ASR 客户端已连接');
         // 根据系统配置的 ASR 服务商来决定使用哪个服务
         try {
-            const { getConfigUnmasked } = await import('./services/configService.js');
+            const { getConfigUnmasked } = await import('./services/database/configService.js');
             const unmaskedConfig = await getConfigUnmasked();
             const asrProvider = unmaskedConfig.speech?.asrProvider || 'siliconflow';
             

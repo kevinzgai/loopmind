@@ -6,7 +6,7 @@ import {
   changePassword,
   getUserInfo,
   updateUserProfile
-} from '../services/authServiceDB.js';
+} from '../services/auth/authServiceDB.js';
 
 /**
  * 认证控制器

@@ -8,8 +8,8 @@ import {
   handleChangePassword,
   handleUpdateProfile
 } from '../controllers/authController.js';
-import { authenticateToken } from '../shared/middleware/authMiddleware.js';
-import { authLimiter } from '../middleware/securityMiddleware.js';
+import { authenticateToken } from '../middleware/auth.middleware.js';
+import { authLimiter } from '../middleware/security.middleware.js';
 
 const router = express.Router();
 

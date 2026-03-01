@@ -1,7 +1,7 @@
-import { recognizeFile as aliRecognizeFile } from "../services/aliAsrService.js";
-import { recognizeFile as siliconRecognizeFile } from "../services/siliconFlowAsrService.js";
+import { recognizeFile as aliRecognizeFile } from "../services/voice/aliAsrService.js";
+import { recognizeFile as siliconRecognizeFile } from "../services/voice/siliconFlowAsrService.js";
 import { convertToPcm } from "../utils/audioConverter.js";
-import { getConfigUnmasked } from "../services/configService.js";
+import { getConfigUnmasked } from "../services/database/configService.js";
 
 /**
  * @api {post} /external/asr 语音识别
@@ -189,7 +189,7 @@ export async function healthCheck(req, res) {
 
     let isConfigured = false;
     if (asrProvider === "aliyun") {
-      const { checkConfig } = await import("../services/aliAsrService.js");
+      const { checkConfig } = await import("../services/voice/aliAsrService.js");
       isConfigured = checkConfig(speechConfig.aliyun);
     } else if (asrProvider === "siliconflow") {
       isConfigured = !!speechConfig.siliconflow?.apiKey;

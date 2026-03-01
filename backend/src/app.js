@@ -12,9 +12,9 @@ import knowledgeRoutes from './modules/knowledge/routes/knowledgeRoutes.js';
 import adminConfigRoutes from './routes/adminConfigRoutes.js';
 import externalRoutes from './routes/externalRoutes.js';
 import apiKeyRoutes from './routes/apiKeyRoutes.js';
-import { errorHandler } from './shared/middleware/errorHandler.js';
-import { errorHandler as authErrorHandler } from './shared/middleware/authMiddleware.js';
-import { setupSecurityMiddleware } from './middleware/securityMiddleware.js';
+import { errorHandler } from './middleware/error.middleware.js';
+import { errorHandler as authErrorHandler } from './middleware/auth.middleware.js';
+import { setupSecurityMiddleware } from './middleware/security.middleware.js';
 import { requestLogger } from './utils/logger.js';
 
 // 获取__dirname的ES模块等价物

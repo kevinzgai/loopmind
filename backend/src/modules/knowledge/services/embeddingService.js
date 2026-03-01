@@ -1,4 +1,4 @@
-import { getRawConfigCached } from '../../../services/configService.js';
+import { getRawConfigCached } from '../../../services/database/configService.js';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { AlibabaTongyiEmbeddings } from '@langchain/community/embeddings/alibaba_tongyi';
 

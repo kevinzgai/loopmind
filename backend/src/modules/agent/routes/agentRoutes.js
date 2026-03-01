@@ -20,7 +20,7 @@ import {
   handleAgentChatInConversation,
   handleDeleteAgentConversation
 } from '../controllers/agentChatController.js';
-import { authenticateToken, optionalAuthenticateToken } from '../../../shared/middleware/authMiddleware.js';
+import { authenticateToken, optionalAuthenticateToken } from '../../../middleware/auth.middleware.js';
 
 const router = express.Router();
 

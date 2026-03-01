@@ -1,10 +1,10 @@
 import express from "express";
-import { authenticateToken } from "../shared/middleware/authMiddleware.js";
-import { authorizeAdmin } from "../shared/middleware/authMiddleware.js";
-import { getConfigUnmasked, updateConfig, getAIConfig, updateAIConfig, getEmbeddingConfig, updateEmbeddingConfig, getSpeechConfig, updateSpeechConfig } from "../services/configService.js";
-import { testConnectivity } from "../services/aiService.js";
-import { textToSpeech as aliTextToSpeech } from "../services/aliTtsService.js";
-import { textToSpeech as siliconTextToSpeech } from "../services/siliconFlowTtsService.js";
+import { authenticateToken } from "../middleware/auth.middleware.js";
+import { authorizeAdmin } from "../middleware/auth.middleware.js";
+import { getConfigUnmasked, updateConfig, getAIConfig, updateAIConfig, getEmbeddingConfig, updateEmbeddingConfig, getSpeechConfig, updateSpeechConfig } from "../services/database/configService.js";
+import { testConnectivity } from "../services/ai/aiService.js";
+import { textToSpeech as aliTextToSpeech } from "../services/voice/aliTtsService.js";
+import { textToSpeech as siliconTextToSpeech } from "../services/voice/siliconFlowTtsService.js";
 import path from "path";
 import fs from "fs";
 import readline from "readline";

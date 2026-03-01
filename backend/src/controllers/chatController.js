@@ -3,14 +3,14 @@ import {
     addMessageToHistory,
     callAIStream,
     callAI
-} from '../services/aiService.js';
-import { getConfigMasked, getRawConfigCached } from '../services/configService.js';
+} from '../services/ai/aiService.js';
+import { getConfigMasked, getRawConfigCached } from '../services/database/configService.js';
 import {
     appendConversationMessages,
     createConversation,
     getConversationMessages,
     getConversations
-} from '../services/conversationService.js';
+} from '../services/database/conversationService.js';
 
 // 处理聊天消息（支持流式响应）
 export async function handleChatMessage(req, res) {

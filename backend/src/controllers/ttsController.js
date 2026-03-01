@@ -1,12 +1,12 @@
 import {
   textToSpeech as aliTextToSpeech,
   getSupportedVoices as getAliVoices,
-} from "../services/aliTtsService.js";
+} from "../services/voice/aliTtsService.js";
 import {
   textToSpeech as siliconTextToSpeech,
   getSupportedVoices as getSiliconVoices,
-} from "../services/siliconFlowTtsService.js";
-import { getConfigUnmasked } from "../services/configService.js";
+} from "../services/voice/siliconFlowTtsService.js";
+import { getConfigUnmasked } from "../services/database/configService.js";
 
 /**
  * @api {post} /external/tts 文字转语音
