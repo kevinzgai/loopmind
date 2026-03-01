@@ -2,6 +2,16 @@
  * 音频格式转换工具
  */
 
+import ffmpeg from 'fluent-ffmpeg';
+import { path as ffmpegPath } from '@ffmpeg-installer/ffmpeg';
+import { tmpdir } from 'os';
+import { writeFileSync, unlinkSync, readFileSync } from 'fs';
+import { join } from 'path';
+import { v4 as uuidv4 } from 'uuid';
+
+// 设置 ffmpeg 路径
+ffmpeg.setFfmpegPath(ffmpegPath);
+
 /**
  * 将 PCM 数据转换为 WAV 格式
  * @param {Buffer} pcmBuffer - PCM 音频数据
@@ -82,13 +92,75 @@ export function isValidAudioData(buffer) {
  * @returns {Promise<Buffer>} PCM 音频数据
  */
 export async function convertToPcm(audioBuffer, format, options = {}) {
+    const { sampleRate = 16000, channels = 1, bitDepth = 16 } = options;
+    
     // 对于简单的 PCM 转换，我们直接返回
     if (format === 'pcm') {
         return audioBuffer;
     }
     
-    // 这里应该实现实际的音频转换逻辑
-    // 为了简化，暂时直接返回输入（实际应用中需要使用 ffmpeg 或其他库）
-    console.warn(`⚠️ 未实现从 ${format} 到 PCM 的转换，直接返回原始数据`);
-    return audioBuffer;
+    // WAV 格式需要提取 PCM 数据
+    if (format === 'wav') {
+        // WAV 文件的 PCM 数据从第 44 字节开始
+        // 但需要验证是否是标准 WAV 格式
+        if (audioBuffer.length > 44) {
+            const riff = audioBuffer.slice(0, 4).toString('ascii');
+            if (riff === 'RIFF') {
+                // 找到 data 块
+                let offset = 12;
+                while (offset < audioBuffer.length - 8) {
+                    const chunkId = audioBuffer.slice(offset, offset + 4).toString('ascii');
+                    const chunkSize = audioBuffer.readUInt32LE(offset + 4);
+                    
+                    if (chunkId === 'data') {
+                        return audioBuffer.slice(offset + 8, offset + 8 + chunkSize);
+                    }
+                    offset += 8 + chunkSize;
+                }
+            }
+        }
+        // 如果无法解析，直接跳过头部
+        return audioBuffer.slice(44);
+    }
+    
+    // 使用 ffmpeg 转换其他格式
+    return new Promise((resolve, reject) => {
+        const tempDir = tmpdir();
+        const inputPath = join(tempDir, `audio-input-${uuidv4()}.${format}`);
+        const outputPath = join(tempDir, `audio-output-${uuidv4()}.pcm`);
+        
+        try {
+            // 写入临时输入文件
+            writeFileSync(inputPath, audioBuffer);
+            
+            ffmpeg(inputPath)
+                .audioFrequency(sampleRate)
+                .audioChannels(channels)
+                .audioCodec('pcm_s16le')
+                .format('s16le')
+                .on('error', (err) => {
+                    console.error('❌ FFmpeg 转换错误:', err.message);
+                    // 清理临时文件
+                    try { unlinkSync(inputPath); } catch (e) {}
+                    try { unlinkSync(outputPath); } catch (e) {}
+                    reject(new Error(`音频转换失败: ${err.message}`));
+                })
+                .on('end', () => {
+                    try {
+                        const pcmBuffer = readFileSync(outputPath);
+                        // 清理临时文件
+                        try { unlinkSync(inputPath); } catch (e) {}
+                        try { unlinkSync(outputPath); } catch (e) {}
+                        console.log(`✅ FFmpeg 转换成功: ${format} -> PCM, 大小: ${pcmBuffer.length} bytes`);
+                        resolve(pcmBuffer);
+                    } catch (err) {
+                        reject(new Error(`读取转换结果失败: ${err.message}`));
+                    }
+                })
+                .save(outputPath);
+        } catch (err) {
+            console.error('❌ 音频转换失败:', err);
+            reject(new Error(`音频转换失败: ${err.message}`));
+        }
+    });
 }

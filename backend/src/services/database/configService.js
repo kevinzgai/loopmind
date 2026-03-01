@@ -308,10 +308,13 @@ export async function getConfigUnmasked() {
         ttsModel: cfg.speech?.siliconflow?.ttsModel || "",
         ttsVoice: cfg.speech?.siliconflow?.ttsVoice || "anna",
         speechRate: cfg.speech?.siliconflow?.speechRate || 150,
-        asrModel: cfg.speech?.siliconflow?.asrModel || "",
+        asrModel: cfg.speech?.siliconflow?.asrModel || "FunAudioLLM/SenseVoiceSmall",
       },
       aliyun: {
         apiKey: cfg.speech?.aliyun?.apiKey || "",
+        accessKeyId: cfg.speech?.aliyun?.accessKeyId || process.env.ALI_TTS_ACCESS_KEY_ID || "",
+        accessKeySecret: cfg.speech?.aliyun?.accessKeySecret || process.env.ALI_TTS_ACCESS_KEY_SECRET || "",
+        appKey: cfg.speech?.aliyun?.appKey || process.env.ALI_TTS_APP_KEY || "",
         ttsVoice: cfg.speech?.aliyun?.ttsVoice || "Cherry",
         speechRate: cfg.speech?.aliyun?.speechRate || 150,
       },
@@ -731,6 +734,9 @@ export async function getSpeechConfig() {
       // 对于阿里云，总是添加 apiKey 字段
       if (p.id === 'aliyun') {
         providerConfig.apiKey = p.config.apiKey || '';
+        providerConfig.accessKeyId = p.config.accessKeyId || '';
+        providerConfig.accessKeySecret = p.config.accessKeySecret || '';
+        providerConfig.appKey = p.config.appKey || '';
         if (p.config.baseURL) {
           providerConfig.baseURL = p.config.baseURL;
         }
@@ -794,6 +800,9 @@ export async function updateSpeechConfig(payload) {
           updatedSpeechConfig[provider.id] = {
             ...updatedSpeechConfig[provider.id],
             apiKey: provider.apiKey || '',
+            accessKeyId: provider.accessKeyId || '',
+            accessKeySecret: provider.accessKeySecret || '',
+            appKey: provider.appKey || '',
             ttsVoice: provider.ttsVoice || 'Cherry',
             speechRate: provider.speechRate || 150
           };
