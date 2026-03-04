@@ -148,7 +148,8 @@ export function checkPermission(permission) {
         return error(res, '未授权访问', 1004, 401);
       }
 
-      const hasPermission = await userHasPermission(req.user.id, permission);
+      const userId = req.user.userId || req.user.id;
+      const hasPermission = await userHasPermission(userId, permission);
       
       if (!hasPermission) {
         return error(res, '权限不足', 1003, 403);
@@ -179,8 +180,9 @@ export function checkPermissions(permissions, requireAll = false) {
         return error(res, '权限参数无效', 1001, 400);
       }
 
+      const userId = req.user.userId || req.user.id;
       const results = await Promise.all(
-        permissions.map(p => userHasPermission(req.user.id, p))
+        permissions.map(p => userHasPermission(userId, p))
       );
 
       const hasPermission = requireAll

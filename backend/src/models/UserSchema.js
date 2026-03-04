@@ -29,7 +29,8 @@ const userSchema = new mongoose.Schema(
       index: true
     },
     roles: [{
-      type: String
+      type: String,
+      ref: 'Role'
     }],
     permissions: [{
       type: String

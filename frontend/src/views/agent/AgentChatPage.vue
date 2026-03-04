@@ -415,18 +415,6 @@ function toggleTTS() {
 
 // 停止所有音频播放
 function stopAllAudio() {
-  // 停止消息播放音频
-  if (messageAudioElement) {
-    try {
-      messageAudioElement.pause()
-      messageAudioElement.currentTime = 0
-    } catch {}
-    messageAudioElement = null
-  }
-  playingMessageId.value = null
-  isPlayingLoading.value = false
-  
-  // 停止 TTS 流式播放音频
   if (currentAudio) {
     try {
       currentAudio.pause()
@@ -825,7 +813,7 @@ async function loadConversations() {
       id: c.id, title: c.title, messageCount: c.messageCount, updatedAt: c.updatedAt
     }))
   } catch (err) {
-    console.error('获取会话列表失败', err)
+    // 忽略会话列表加载失败
   }
 }
 
@@ -840,11 +828,10 @@ async function loadConversationMessages(conversationId) {
         content: msg.content
       }))
     } else {
-      // 如果消息列表为空，清空当前消息并不再手动显示文本欢迎语
       messages.value = []
     }
   } catch (err) {
-    console.error('获取会话消息失败', err)
+    // 忽略消息加载失败
   }
 }
 
@@ -866,10 +853,9 @@ async function handleNewConversation() {
     const created = await createAgentConversation(agentId, '新对话')
     conversations.value.unshift(created.conversation)
     activeConversationId.value = created.conversation.id
-    // 清空消息，McIntroduction 会自动显示
     messages.value = []
   } catch (err) {
-    console.error('新建会话失败', err)
+    // 忽略新建会话失败
   }
 }
 
@@ -901,8 +887,7 @@ async function handleDeleteConversation(id) {
       }
     }
   } catch (err) {
-    console.error('删除会话失败', err)
-    alert('删除会话失败: ' + (err.message || '未知错误'))
+    // 忽略删除会话失败
   }
 }
 
@@ -922,7 +907,6 @@ const renderMessageContent = (content) => {
     
     return html
   } catch (error) {
-    console.warn('Markdown conversion failed:', error)
     return content
   }
 }
@@ -944,12 +928,9 @@ onUnmounted(() => {
   stopAllAudio()
 })
 
-onBeforeRouteLeave((to, from) => {
+onBeforeRouteLeave((to, from, next) => {
   stopAllAudio()
-})
-
-onUnmounted(() => {
-  stopAllAudio()
+  next && next()
 })
 </script>
 

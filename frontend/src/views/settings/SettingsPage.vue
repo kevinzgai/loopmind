@@ -1,20 +1,24 @@
 <template>
-  <div class="w-full space-y-6">
+  <div class="w-full space-y-6 animate-fade-in">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100">系统设置</h1>
-        <p class="text-slate-500 dark:text-slate-400 mt-1">管理您的账户偏好和应用配置</p>
+        <h1 class="text-2xl font-bold font-heading">系统设置</h1>
+        <p class="text-muted-foreground mt-1">管理您的账户偏好和应用配置</p>
       </div>
     </div>
 
-    <div v-if="message" class="p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/50 rounded-lg flex items-center gap-3 text-emerald-700 dark:text-emerald-400">
-      <CheckCircle class="w-5 h-5" />
-      {{ message }}
-    </div>
-    <div v-if="error" class="p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-800/50 rounded-lg flex items-center gap-3 text-rose-700 dark:text-rose-400">
-      <XCircle class="w-5 h-5" />
-      {{ error }}
-    </div>
+    <Transition name="fade">
+      <div v-if="message" class="p-4 rounded-xl flex items-center gap-3 text-sm font-medium animate-slide-up"
+        :class="[
+          message.type === 'success' 
+            ? 'bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400' 
+            : 'bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400'
+        ]">
+        <CheckCircle v-if="message.type === 'success'" class="w-5 h-5" />
+        <XCircle v-else class="w-5 h-5" />
+        <span>{{ message.text }}</span>
+      </div>
+    </Transition>
 
     <router-view @save="handleSave" @error="handleError" />
   </div>
@@ -24,18 +28,28 @@
 import { ref } from 'vue'
 import { CheckCircle, XCircle } from 'lucide-vue-next'
 
-const message = ref('')
-const error = ref('')
+const message = ref(null)
 
 function handleSave(msg) {
-  message.value = msg || '配置已成功保存'
-  error.value = ''
-  setTimeout(() => message.value = '', 3000)
+  message.value = { type: 'success', text: msg || '配置已成功保存' }
+  setTimeout(() => message.value = null, 3000)
 }
 
 function handleError(err) {
-  error.value = err.message || '操作失败'
-  message.value = ''
-  setTimeout(() => error.value = '', 3000)
+  message.value = { type: 'error', text: err.message || '操作失败' }
+  setTimeout(() => message.value = null, 3000)
 }
 </script>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: all 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+</style>

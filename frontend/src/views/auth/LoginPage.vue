@@ -1,207 +1,289 @@
 <template>
-  <div class="login-container">
+  <div class="login-page">
     <div class="login-card">
       <div class="login-header">
-        <h1>登录</h1>
-        <p>欢迎回来</p>
+        <div class="logo">
+          <div class="logo-icon">
+            <Bot class="w-7 h-7 text-white" />
+          </div>
+          <span class="logo-text">AI Pilot</span>
+        </div>
+        <h1 class="login-title">欢迎回来</h1>
+        <p class="login-subtitle">登录您的账户继续使用</p>
       </div>
 
-      <form @submit.prevent="handleLogin" class="login-form">
-        <!-- 用户名输入 -->
-        <div class="form-group">
-          <label for="username">用户名</label>
-          <input id="username" v-model="form.username" type="text" placeholder="请输入用户名" required
-            :disabled="isLoading" />
-        </div>
-
-        <!-- 密码输入 -->
-        <div class="form-group">
-          <label for="password">密码</label>
-          <input id="password" v-model="form.password" type="password" placeholder="请输入密码" required
-            :disabled="isLoading" />
-        </div>
-
-        <!-- 错误提示 -->
+      <form @submit.prevent="handleSubmit" class="login-form">
         <div v-if="error" class="error-message">
-          {{ error }}
+          <AlertCircle class="w-4 h-4" />
+          <span>{{ error }}</span>
         </div>
 
-        <!-- 登录按钮 -->
-        <button type="submit" class="submit-btn" :disabled="isLoading">
-          {{ isLoading ? '登录中...' : '登录' }}
+        <div class="form-group">
+          <label class="form-label">用户名</label>
+          <div class="input-wrapper">
+            <User class="input-icon" />
+            <input
+              type="text"
+              v-model="username"
+              placeholder="请输入用户名"
+              required
+              class="input-base pl-10"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">密码</label>
+          <div class="input-wrapper">
+            <Lock class="input-icon" />
+            <input
+              :type="showPassword ? 'text' : 'password'"
+              v-model="password"
+              placeholder="请输入密码"
+              required
+              class="input-base pl-10"
+            />
+            <button 
+              type="button" 
+              @click="showPassword = !showPassword"
+              class="password-toggle"
+            >
+              <Eye v-if="showPassword" class="w-4 h-4" />
+              <EyeOff v-else class="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        <div class="form-options">
+          <label class="checkbox-wrapper">
+            <input type="checkbox" v-model="rememberMe" class="checkbox" />
+            <span class="checkbox-label">记住我</span>
+          </label>
+          <a href="#" class="forgot-link">忘记密码？</a>
+        </div>
+
+        <button type="submit" :disabled="isLoading" class="submit-btn">
+          <Loader v-if="isLoading" class="w-5 h-5 animate-spin" />
+          <span v-else>登录</span>
         </button>
       </form>
 
-      <!-- 注册链接 -->
       <div class="login-footer">
-        <p>还没有账户？<router-link to="/register">立即注册</router-link></p>
+        <span>还没有账户？</span>
+        <router-link to="/register">立即注册</router-link>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { login, isLoading, error, isAuthenticated } from '@/stores/authStore.js'
+import { login } from '@/stores/authStore.js'
+import { Bot, User, Lock, Eye, EyeOff, AlertCircle, Loader } from 'lucide-vue-next'
 
 const router = useRouter()
 
-const form = ref({
-  username: '',
-  password: ''
-})
+const username = ref('')
+const password = ref('')
+const showPassword = ref(false)
+const rememberMe = ref(false)
+const isLoading = ref(false)
+const error = ref('')
 
-// 如果已经登录，直接跳转到首页
-onMounted(() => {
-  if (isAuthenticated.value) {
-    console.log('User already authenticated, redirecting to home...')
-    router.push('/')
+const handleSubmit = async () => {
+  if (!username.value || !password.value) {
+    error.value = '请填写用户名和密码'
+    return
   }
-})
 
-// 监听登录状态，一旦成功立即跳转
-watch(isAuthenticated, (newVal) => {
-  if (newVal) {
-    console.log('Login state changed to authenticated, redirecting...')
-    router.push('/')
-  }
-})
+  isLoading.value = true
+  error.value = ''
 
-const handleLogin = async () => {
-  console.log('Attempting login for:', form.value.username)
   try {
-    const response = await login(form.value.username, form.value.password)
-    console.log('Login response received:', response)
-    // 登录成功，尝试跳转
-    console.log('Calling router.replace("/")')
-    await router.replace('/')
-    console.log('router.replace("/") called')
+    await login(username.value, password.value)
+    router.push('/')
   } catch (err) {
-    // 错误已在 authStore 中处理
-    console.error('登录失败:', err)
+    error.value = err.message || '登录失败，请检查用户名和密码'
+  } finally {
+    isLoading.value = false
   }
 }
 </script>
 
 <style scoped>
-.login-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+.login-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
-  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  @apply bg-background;
 }
 
 .login-card {
-  @apply bg-card text-card-foreground;
-  border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
   width: 100%;
-  max-width: 400px;
-  padding: 40px;
+  max-width: 420px;
+  @apply bg-card border border-border rounded-2xl p-8;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  border: 1px solid;
 }
 
 .login-header {
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 2rem;
 }
 
-.login-header h1 {
-  font-size: 28px;
+.logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.logo-icon {
+  width: 3rem;
+  height: 3rem;
+  @apply rounded-xl flex items-center justify-center;
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
+  box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
+}
+
+.logo-text {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
   @apply text-foreground;
-  margin-bottom: 8px;
 }
 
-.login-header p {
+.login-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  @apply text-foreground;
+  margin-bottom: 0.5rem;
+}
+
+.login-subtitle {
   @apply text-muted-foreground;
-  font-size: 14px;
 }
 
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 1.25rem;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0.5rem;
 }
 
-.form-group label {
-  font-size: 14px;
+.form-label {
+  font-size: 0.875rem;
   font-weight: 500;
   @apply text-foreground;
 }
 
-.form-group input {
-  padding: 12px;
-  @apply border-input bg-background text-foreground;
-  border-width: 1px;
-  border-radius: 6px;
-  font-size: 14px;
-  transition: border-color 0.3s;
+.input-wrapper {
+  position: relative;
 }
 
-.form-group input:focus {
-  outline: none;
-  @apply border-primary ring-offset-background;
-  box-shadow: 0 0 0 3px hsla(var(--primary) / 0.1);
+.input-icon {
+  position: absolute;
+  left: 0.875rem;
+  top: 50%;
+  transform: translateY(-50%);
+  @apply text-muted-foreground;
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
-.form-group input:disabled {
-  @apply bg-muted text-muted-foreground;
-  cursor: not-allowed;
+.password-toggle {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  @apply text-muted-foreground hover:text-foreground transition-colors;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
 }
 
 .error-message {
-  padding: 12px;
-  @apply bg-destructive/10 border-destructive text-destructive;
-  border-width: 1px;
-  border-radius: 6px;
-  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1rem;
+  @apply bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 rounded-xl text-sm;
+}
+
+.form-options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.checkbox-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.checkbox {
+  width: 1rem;
+  height: 1rem;
+  @apply accent-primary;
+}
+
+.checkbox-label {
+  font-size: 0.875rem;
+  @apply text-muted-foreground;
+}
+
+.forgot-link {
+  font-size: 0.875rem;
+  @apply text-primary hover:text-primary/80 transition-colors;
+  text-decoration: none;
 }
 
 .submit-btn {
-  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.5rem;
+  @apply text-white font-medium rounded-xl;
   background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
-  @apply text-primary-foreground;
   border: none;
-  border-radius: 6px;
-  font-size: 16px;
-  font-weight: 500;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: all 0.2s;
+  font-size: 1rem;
 }
 
 .submit-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 20px hsla(var(--primary) / 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px hsl(var(--primary) / 0.3);
 }
 
 .submit-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.7;
   cursor: not-allowed;
 }
 
 .login-footer {
   text-align: center;
-  margin-top: 20px;
-  font-size: 14px;
-  @apply text-muted-foreground;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid;
+  @apply border-border text-muted-foreground text-sm;
 }
 
 .login-footer a {
-  @apply text-primary;
-  text-decoration: none;
-  font-weight: 500;
-  transition: color 0.3s;
-}
-
-.login-footer a:hover {
-  @apply text-secondary;
+  @apply text-primary font-medium hover:text-primary/80 transition-colors ml-1;
 }
 </style>
