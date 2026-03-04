@@ -11,8 +11,10 @@ import agentRoutes from './modules/agent/routes/agentRoutes.js';
 import knowledgeRoutes from './modules/knowledge/routes/knowledgeRoutes.js';
 import adminConfigRoutes from './routes/adminConfigRoutes.js';
 import adminUserRoutes from './routes/adminUserRoutes.js';
+import adminPermissionRoutes from './routes/adminPermissionRoutes.js';
 import externalRoutes from './routes/externalRoutes.js';
 import apiKeyRoutes from './routes/apiKeyRoutes.js';
+import dashboardRoutes from './routes/dashboardRoutes.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import { errorHandler as authErrorHandler } from './middleware/auth.middleware.js';
 import { setupSecurityMiddleware } from './middleware/security.middleware.js';
@@ -46,12 +48,14 @@ app.use('/api/agent', agentRoutes);
 app.use('/api/knowledge', knowledgeRoutes);
 app.use('/api/admin', adminConfigRoutes);
 app.use('/api/admin/users', adminUserRoutes);
+app.use('/api/admin/permissions', adminPermissionRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/tts', ttsRoutes);
 app.use('/api/voice', voiceRoutes);
 app.use('/api/asr', asrRoutes);
 app.use('/api/external', externalRoutes);
 app.use('/api/api-key', apiKeyRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // 健康检查接口
 app.get('/api/health', (req, res) => {

@@ -24,22 +24,146 @@
             </button>
           </div>
         </nav>
-
-        <div
-          class="p-4 bg-violet-50 dark:bg-violet-900/20 rounded-xl border border-violet-100 dark:border-violet-800/50">
-          <h4 class="text-xs font-bold text-violet-700 dark:text-violet-300 mb-2 uppercase">需要 API Key?</h4>
-          <p class="text-xs text-violet-600/80 dark:text-violet-400/80 mb-3">所有接口调用均需在 Header 中携带 API Key。</p>
-          <router-link to="/profile"
-            class="text-xs font-bold text-violet-700 dark:text-violet-300 flex items-center hover:underline">
-            立即去获取
-            <ChevronRight class="w-3 h-3 ml-1" />
-          </router-link>
-        </div>
       </div>
     </aside>
 
     <!-- Main Content Area -->
     <main class="flex-1 space-y-12 pb-20">
+      <!-- API Keys Section -->
+      <section id="api-keys" class="scroll-mt-24 space-y-6">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="p-2 bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 rounded-lg">
+              <Key class="w-5 h-5" />
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100">API Keys</h2>
+              <p class="text-sm text-slate-500 dark:text-slate-400">管理您的 API 访问凭证</p>
+            </div>
+          </div>
+          <button 
+            @click="showCreateModal = true"
+            :disabled="apiKeys.length >= maxKeys"
+            class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-violet-600 hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+            <Plus class="w-4 h-4 mr-2" />
+            创建新 Key
+          </button>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+          <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-4">
+              <div class="text-sm text-slate-500 dark:text-slate-400">
+                已使用 <span class="font-bold text-slate-900 dark:text-slate-100">{{ apiKeys.length }}</span> / {{ maxKeys }} 个 Key
+              </div>
+              <div class="h-4 w-px bg-slate-200 dark:bg-slate-700"></div>
+              <div class="text-sm text-slate-500 dark:text-slate-400">
+                激活: <span class="font-bold text-emerald-600">{{ activeKeysCount }}</span>
+              </div>
+            </div>
+            <button @click="showStatsModal = true" class="text-sm text-violet-600 dark:text-violet-400 font-medium flex items-center hover:underline">
+              <BarChart3 class="w-4 h-4 mr-1" />
+              查看统计
+            </button>
+          </div>
+
+          <div v-if="isLoadingKeys" class="py-12 flex justify-center">
+            <div class="w-8 h-8 border-4 border-violet-200 dark:border-violet-800 border-t-violet-600 dark:border-t-violet-400 rounded-full animate-spin"></div>
+          </div>
+
+          <div v-else-if="apiKeys.length === 0" class="py-12 text-center">
+            <div class="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Key class="w-8 h-8 text-slate-400" />
+            </div>
+            <h3 class="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2">暂无 API Keys</h3>
+            <p class="text-slate-500 dark:text-slate-400 mb-4">创建您的第一个 API Key 以开始使用外部 API</p>
+            <button 
+              @click="showCreateModal = true"
+              class="inline-flex items-center px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-sm font-medium transition-colors">
+              <Plus class="w-4 h-4 mr-2" />
+              创建第一个 Key
+            </button>
+          </div>
+
+          <div v-else class="space-y-3">
+            <div 
+              v-for="apiKey in apiKeys" 
+              :key="apiKey._id"
+              class="group border border-slate-200 dark:border-slate-700 rounded-lg p-4 hover:border-violet-200 dark:hover:border-violet-700 transition-colors"
+            >
+              <div class="flex items-start justify-between gap-4">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-3 mb-2">
+                    <h3 class="font-bold text-slate-900 dark:text-slate-100">{{ apiKey.name }}</h3>
+                    <span 
+                      :class="[
+                        'px-2 py-0.5 rounded text-[10px] font-bold uppercase',
+                        apiKey.isActive 
+                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' 
+                          : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                      ]"
+                    >
+                      {{ apiKey.isActive ? 'Active' : 'Disabled' }}
+                    </span>
+                  </div>
+                  
+                  <div class="flex items-center gap-2 mb-3">
+                    <code class="flex-1 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded text-xs font-mono text-slate-600 dark:text-slate-400 select-all truncate">
+                      {{ apiKey.key }}
+                    </code>
+                    <button 
+                      @click="copyToClipboard(apiKey.key)"
+                      class="p-1.5 text-slate-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded transition-colors"
+                      title="复制 Key">
+                      <Copy class="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div class="flex flex-wrap gap-4 text-xs text-slate-500 dark:text-slate-400">
+                    <span class="flex items-center">
+                      <Activity class="w-3 h-3 mr-1" />
+                      {{ apiKey.requestCount }} 次请求
+                    </span>
+                    <span class="flex items-center">
+                      <Clock class="w-3 h-3 mr-1" />
+                      最后使用: {{ apiKey.lastUsedAt ? formatDate(apiKey.lastUsedAt, true) : '从未' }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                  <button 
+                    @click="handleToggleStatus(apiKey)"
+                    :class="[
+                      'p-2 rounded-lg transition-colors',
+                      apiKey.isActive 
+                        ? 'text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20' 
+                        : 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'
+                    ]"
+                    :title="apiKey.isActive ? '禁用' : '启用'">
+                    <Power v-if="apiKey.isActive" class="w-4 h-4" />
+                    <PowerOff v-else class="w-4 h-4" />
+                  </button>
+                  <button 
+                    @click="handleDeleteKey(apiKey)"
+                    class="p-2 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors"
+                    title="删除">
+                    <Trash2 class="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800/50 rounded-lg flex gap-3">
+          <AlertTriangle class="w-5 h-5 text-amber-600 dark:text-amber-500 shrink-0" />
+          <p class="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
+            <strong>安全提醒：</strong> API Key 拥有访问您账户下所有智能体的完整权限。请勿将 Key 泄露在公开的代码库中。
+          </p>
+        </div>
+      </section>
+
       <!-- Intro Section -->
       <section id="intro" class="scroll-mt-24">
         <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4">概览</h2>
@@ -171,20 +295,47 @@
   -F 'file=@audio.mp3'`" />
       </section>
     </main>
+
+    <CreateApiKeyModal 
+      v-if="showCreateModal" 
+      @close="showCreateModal = false"
+      @created="handleKeyCreated"
+    />
+
+    <ApiKeysStatsModal 
+      v-if="showStatsModal" 
+      @close="showStatsModal = false"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import {
-  MessageSquare, Box, Database, Mic,
-  ChevronRight, Copy, Check
+  MessageSquare, Box, Database, Mic, Key, Plus, Copy, Activity, Clock,
+  Power, PowerOff, Trash2, AlertTriangle, BarChart3
 } from 'lucide-vue-next'
 import ApiEndpoint from '@/components/developer/ApiEndpoint.vue'
+import CreateApiKeyModal from '@/components/apiKeys/CreateApiKeyModal.vue'
+import ApiKeysStatsModal from '@/components/apiKeys/ApiKeysStatsModal.vue'
+import { getMyApiKeys, deleteApiKey, toggleApiKeyStatus } from '@/services/apiKeyService.js'
 
-const activeSection = ref('intro')
+const activeSection = ref('api-keys')
+const apiKeys = ref([])
+const maxKeys = ref(20)
+const isLoadingKeys = ref(true)
+const showCreateModal = ref(false)
+const showStatsModal = ref(false)
+
+const activeKeysCount = computed(() => apiKeys.value.filter(k => k.isActive).length)
 
 const menuGroups = [
+  {
+    title: 'API 凭证',
+    items: [
+      { id: 'api-keys', label: 'API Keys', icon: Key }
+    ]
+  },
   {
     title: '基础信息',
     items: [
@@ -207,6 +358,56 @@ const menuGroups = [
   }
 ]
 
+const loadApiKeys = async () => {
+  try {
+    isLoadingKeys.value = true
+    const response = await getMyApiKeys()
+    apiKeys.value = response.apiKeys
+    maxKeys.value = response.maxKeys
+  } catch (err) {
+    console.error('加载 API Keys 失败:', err)
+  } finally {
+    isLoadingKeys.value = false
+  }
+}
+
+const handleKeyCreated = () => {
+  showCreateModal.value = false
+  loadApiKeys()
+}
+
+const handleToggleStatus = async (apiKey) => {
+  try {
+    await toggleApiKeyStatus(apiKey._id)
+    await loadApiKeys()
+  } catch (err) {
+    alert('操作失败: ' + err.message)
+  }
+}
+
+const handleDeleteKey = async (apiKey) => {
+  if (!confirm(`确定要删除 "${apiKey.name}" 吗？此操作不可恢复。`)) return
+  try {
+    await deleteApiKey(apiKey._id)
+    await loadApiKeys()
+  } catch (err) {
+    alert('删除失败: ' + err.message)
+  }
+}
+
+const copyToClipboard = (text) => {
+  navigator.clipboard.writeText(text)
+}
+
+const formatDate = (dateStr, time = false) => {
+  if (!dateStr) return '未知'
+  const date = new Date(dateStr)
+  if (time) {
+    return date.toLocaleString('zh-CN', { hour12: false })
+  }
+  return date.toLocaleDateString('zh-CN')
+}
+
 const scrollToSection = (id) => {
   const el = document.getElementById(id)
   if (el) {
@@ -215,9 +416,8 @@ const scrollToSection = (id) => {
   }
 }
 
-// 简单的滚动监听更新 activeSection
 const handleScroll = () => {
-  const sections = ['intro', 'agents', 'chat', 'knowledge', 'voice']
+  const sections = ['api-keys', 'intro', 'agents', 'chat', 'knowledge', 'voice']
   for (const id of sections) {
     const el = document.getElementById(id)
     if (el) {
@@ -232,6 +432,7 @@ const handleScroll = () => {
 
 onMounted(() => {
   window.addEventListener('scroll', handleScroll)
+  loadApiKeys()
 })
 
 onUnmounted(() => {

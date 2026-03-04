@@ -110,12 +110,31 @@ export async function generateEmbeddings(text) {
     
     console.log(`🚀 开始生成 Embedding (数量: ${texts.length})`);
 
-    // 使用 LangChain 的 embedDocuments 方法
-    const embeddings = await embeddingClient.embedDocuments(texts);
+    const BATCH_SIZE = 10;
     
-    console.log(`✅ Embedding 生成成功 (向量维度: ${embeddings[0]?.length || 0})`);
+    if (texts.length <= BATCH_SIZE) {
+      const embeddings = await embeddingClient.embedDocuments(texts);
+      console.log(`✅ Embedding 生成成功 (向量维度: ${embeddings[0]?.length || 0})`);
+      return embeddings;
+    }
+
+    console.log(`📦 文本数量超过 ${BATCH_SIZE}，分批处理中...`);
+    const allEmbeddings = [];
     
-    return embeddings;
+    for (let i = 0; i < texts.length; i += BATCH_SIZE) {
+      const batch = texts.slice(i, i + BATCH_SIZE);
+      const batchNum = Math.floor(i / BATCH_SIZE) + 1;
+      const totalBatches = Math.ceil(texts.length / BATCH_SIZE);
+      
+      console.log(`📦 处理第 ${batchNum}/${totalBatches} 批 (${batch.length} 个文本)`);
+      
+      const batchEmbeddings = await embeddingClient.embedDocuments(batch);
+      allEmbeddings.push(...batchEmbeddings);
+    }
+    
+    console.log(`✅ Embedding 生成成功 (总计: ${allEmbeddings.length}, 向量维度: ${allEmbeddings[0]?.length || 0})`);
+    
+    return allEmbeddings;
   } catch (error) {
     console.error('❌ Embedding 生成失败详情:', {
       message: error.message,

@@ -24,35 +24,60 @@ import {
  * 预览文档分段（不进行 Embedding）
  */
 export async function previewDocumentChunks(docId) {
+  console.log('🔍 开始预览文档分段，docId:', docId);
   const doc = await KnowledgeDocument.findById(docId);
   if (!doc) throw new Error('文档不存在');
+  
+  console.log('📄 文档信息:', {
+    name: doc.name,
+    type: doc.type,
+    size: doc.fileSize
+  });
 
   // 1. 解析文本
+  console.log('📖 开始解析文本...');
   let text = '';
   const filePath = doc.originalPath;
   const fileExt = path.extname(doc.name).toLowerCase();
   
   if (doc.type === 'application/pdf' || fileExt === '.pdf') {
+    console.log('📑 检测到 PDF 文件，开始解析...');
     const dataBuffer = await fs.readFile(filePath);
     const parser = new PDFParse({ data: dataBuffer });
     const data = await parser.getText();
     text = data.text;
+    console.log('✅ PDF 解析完成，文本长度:', text.length);
   } else if (doc.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || fileExt === '.docx') {
+    console.log('📝 检测到 DOCX 文件，开始解析...');
     const result = await mammoth.extractRawText({ path: filePath });
     text = result.value;
+    console.log('✅ DOCX 解析完成，文本长度:', text.length);
   } else {
-    // 默认为文本格式
+    console.log('📄 检测到文本文件，开始读取...');
     text = await fs.readFile(filePath, 'utf8');
+    console.log('✅ 文本文件读取完成，文本长度:', text.length);
+  }
+
+  if (!text || text.trim().length === 0) {
+    throw new Error('解析的文本为空');
   }
 
   // 2. 文本切分
-  // BGE-large-zh-v1.5 上限 512 token，为安全起见设置较小的 chunk size
+  console.log('✂️  开始文本切分...');
   const splitter = new RecursiveCharacterTextSplitter({
     chunkSize: 400,
     chunkOverlap: 50,
   });
   const chunks = await splitter.splitText(text);
+  console.log('✅ 文本切分完成，生成', chunks.length, '个片段');
+  
+  // 显示前几个片段的内容预览
+  console.log('📝 片段预览（前3个）:');
+  chunks.slice(0, 3).forEach((chunk, idx) => {
+    console.log(`   片段 ${idx + 1}:`, chunk.substring(0, 100) + (chunk.length > 100 ? '...' : ''));
+  });
 
+  console.log('✅ 预览完成，返回', chunks.length, '个片段');
   return chunks;
 }
 
@@ -60,47 +85,82 @@ export async function previewDocumentChunks(docId) {
  * 处理上传的文档
  */
 export async function processDocument(docId) {
+  console.log('🚀 开始处理文档，docId:', docId);
   const doc = await KnowledgeDocument.findById(docId);
   if (!doc) throw new Error('文档不存在');
-
+  
+  console.log('📄 文档信息:', {
+    name: doc.name,
+    type: doc.type,
+    size: doc.fileSize,
+    status: doc.status
+  });
+  
   try {
+    console.log('⏳ 更新文档状态为 processing...');
     doc.status = 'processing';
     await doc.save();
 
     // 1. 解析文本
+    console.log('📖 开始解析文本...');
     let text = '';
     const filePath = doc.originalPath;
     const fileExt = path.extname(doc.name).toLowerCase();
     
     if (doc.type === 'application/pdf' || fileExt === '.pdf') {
+      console.log('📑 检测到 PDF 文件，开始解析...');
       const dataBuffer = await fs.readFile(filePath);
       const parser = new PDFParse({ data: dataBuffer });
       const data = await parser.getText();
       text = data.text;
+      console.log('✅ PDF 解析完成，文本长度:', text.length);
     } else if (doc.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || fileExt === '.docx') {
+      console.log('📝 检测到 DOCX 文件，开始解析...');
       const result = await mammoth.extractRawText({ path: filePath });
       text = result.value;
+      console.log('✅ DOCX 解析完成，文本长度:', text.length);
     } else {
-      // 默认为文本格式
+      console.log('📄 检测到文本文件，开始读取...');
       text = await fs.readFile(filePath, 'utf8');
+      console.log('✅ 文本文件读取完成，文本长度:', text.length);
+    }
+
+    if (!text || text.trim().length === 0) {
+      throw new Error('解析的文本为空');
     }
 
     doc.charCount = text.length;
+    console.log('📊 文档字符数:', doc.charCount);
 
     // 2. 文本切分
+    console.log('✂️  开始文本切分...');
     const splitter = new RecursiveCharacterTextSplitter({
       chunkSize: 400,
       chunkOverlap: 50,
     });
     const chunks = await splitter.splitText(text);
     doc.chunkCount = chunks.length;
+    console.log('✅ 文本切分完成，生成', chunks.length, '个片段');
+    
+    // 显示前几个片段的内容预览
+    console.log('📝 片段预览（前3个）:');
+    chunks.slice(0, 3).forEach((chunk, idx) => {
+      console.log(`   片段 ${idx + 1}:`, chunk.substring(0, 100) + (chunk.length > 100 ? '...' : ''));
+    });
 
     // 3. 向量化并存储
-    // 批量处理 Embedding，避免请求过多
-    const batchSize = 20;
+    console.log('🧠 开始向量化处理...');
+    const batchSize = 10;
+    const totalBatches = Math.ceil(chunks.length / batchSize);
+    
     for (let i = 0; i < chunks.length; i += batchSize) {
+      const batchNum = Math.floor(i / batchSize) + 1;
       const batchChunks = chunks.slice(i, i + batchSize);
+      
+      console.log(`📦 处理批次 ${batchNum}/${totalBatches}，片段数量: ${batchChunks.length}`);
+      
       const embeddings = await generateEmbeddings(batchChunks);
+      console.log(`✅ 批次 ${batchNum} 向量化完成`);
 
       const chunkDocs = batchChunks.map((content, idx) => ({
         kbId: doc.kbId,
@@ -114,25 +174,37 @@ export async function processDocument(docId) {
       }));
 
       // 3.1 存入 MongoDB (作为元数据备份和管理)
+      console.log(`💾 批次 ${batchNum} 保存到 MongoDB...`);
       const savedChunks = await KnowledgeChunk.insertMany(chunkDocs);
+      console.log(`✅ 批次 ${batchNum} 已保存 ${savedChunks.length} 个片段到 MongoDB`);
       
       // 3.2 存入 LanceDB (用于向量搜索)
       // 使用 savedChunks 以获取 MongoDB 生成的 _id
+      console.log(`💾 批次 ${batchNum} 保存到 LanceDB...`);
       await upsertChunks(savedChunks);
+      console.log(`✅ 批次 ${batchNum} 已保存到 LanceDB`);
     }
 
     doc.status = 'completed';
     await doc.save();
 
     // 更新知识库统计
+    console.log('📊 更新知识库统计信息...');
     await updateKnowledgeBaseStats(doc.kbId);
 
     console.log(`✅ 文档处理完成: ${doc.name}`);
+    console.log('📊 处理结果:', {
+      status: 'completed',
+      charCount: doc.charCount,
+      chunkCount: doc.chunkCount
+    });
   } catch (error) {
     console.error(`❌ 文档处理失败 (${doc.name}):`, error.message);
+    console.error('❌ 错误堆栈:', error.stack);
     doc.status = 'failed';
     doc.error = error.message;
     await doc.save();
+    throw error;
   }
 }
 

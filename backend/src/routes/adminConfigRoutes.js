@@ -1,6 +1,5 @@
 import express from "express";
-import { authenticateToken } from "../middleware/auth.middleware.js";
-import { authorizeAdmin } from "../middleware/auth.middleware.js";
+import { authenticateToken, authorizeAdmin, checkPermission } from "../middleware/auth.middleware.js";
 import { getConfigUnmasked, updateConfig, getAIConfig, updateAIConfig, getEmbeddingConfig, updateEmbeddingConfig, getSpeechConfig, updateSpeechConfig } from "../services/database/configService.js";
 import { testConnectivity } from "../services/ai/aiService.js";
 import { textToSpeech as aliTextToSpeech } from "../services/voice/aliTtsService.js";
@@ -22,7 +21,7 @@ const router = express.Router();
  *
  * @apiSuccess {Array} logs 日志列表
  */
-router.get("/logs", authenticateToken, authorizeAdmin, async (req, res) => {
+router.get("/logs", authenticateToken, checkPermission('system:logs:view'), async (req, res) => {
   try {
     const logDir = "logs";
     if (!fs.existsSync(logDir)) {
@@ -96,7 +95,7 @@ router.get("/logs", authenticateToken, authorizeAdmin, async (req, res) => {
  * @apiSuccess {Object} config.minimax MiniMax配置
  * @apiSuccess {Object} config.seedAsr SeedASR 语音配置
  */
-router.get("/config", authenticateToken, authorizeAdmin, async (req, res) => {
+router.get("/config", authenticateToken, checkPermission('system:config:view'), async (req, res) => {
   try {
     const cfg = await getConfigUnmasked();
     res.json({ message: "获取系统配置成功", config: cfg });
@@ -115,7 +114,7 @@ router.get("/config", authenticateToken, authorizeAdmin, async (req, res) => {
 router.post(
   "/config/test-connection",
   authenticateToken,
-  authorizeAdmin,
+  checkPermission('system:config:edit'),
   async (req, res) => {
     try {
       const { provider, apiKey, baseURL, model } = req.body;
@@ -157,7 +156,7 @@ router.post(
  *
  * @apiSuccess {String} message 成功消息
  */
-router.put("/config", authenticateToken, authorizeAdmin, async (req, res) => {
+router.put("/config", authenticateToken, checkPermission('system:config:edit'), async (req, res) => {
   try {
     const payload = req.body || {};
     await updateConfig(payload);
@@ -175,7 +174,7 @@ router.put("/config", authenticateToken, authorizeAdmin, async (req, res) => {
  * @apiDescription 获取 AI 模型配置（新格式）
  * @apiHeader {String} Authorization Bearer Token
  */
-router.get("/config/ai", authenticateToken, authorizeAdmin, async (req, res) => {
+router.get("/config/ai", authenticateToken, checkPermission('system:config:ai'), async (req, res) => {
   try {
     const cfg = await getAIConfig();
     res.json(cfg);
@@ -192,7 +191,7 @@ router.get("/config/ai", authenticateToken, authorizeAdmin, async (req, res) => 
  * @apiDescription 更新 AI 模型配置（新格式）
  * @apiHeader {String} Authorization Bearer Token
  */
-router.put("/config/ai", authenticateToken, authorizeAdmin, async (req, res) => {
+router.put("/config/ai", authenticateToken, checkPermission('system:config:ai'), async (req, res) => {
   try {
     const payload = req.body || {};
     await updateAIConfig(payload);
@@ -210,7 +209,7 @@ router.put("/config/ai", authenticateToken, authorizeAdmin, async (req, res) => 
  * @apiDescription 获取 Embedding 模型配置（新格式）
  * @apiHeader {String} Authorization Bearer Token
  */
-router.get("/config/embedding", authenticateToken, authorizeAdmin, async (req, res) => {
+router.get("/config/embedding", authenticateToken, checkPermission('system:config:embedding'), async (req, res) => {
   try {
     const cfg = await getEmbeddingConfig();
     res.json(cfg);
@@ -227,7 +226,7 @@ router.get("/config/embedding", authenticateToken, authorizeAdmin, async (req, r
  * @apiDescription 更新 Embedding 模型配置（新格式）
  * @apiHeader {String} Authorization Bearer Token
  */
-router.put("/config/embedding", authenticateToken, authorizeAdmin, async (req, res) => {
+router.put("/config/embedding", authenticateToken, checkPermission('system:config:embedding'), async (req, res) => {
   try {
     const payload = req.body || {};
     await updateEmbeddingConfig(payload);
@@ -245,7 +244,7 @@ router.put("/config/embedding", authenticateToken, authorizeAdmin, async (req, r
  * @apiDescription 获取语音服务配置（新格式）
  * @apiHeader {String} Authorization Bearer Token
  */
-router.get("/config/speech", authenticateToken, authorizeAdmin, async (req, res) => {
+router.get("/config/speech", authenticateToken, checkPermission('system:config:speech'), async (req, res) => {
   try {
     const cfg = await getSpeechConfig();
     res.json(cfg);
@@ -262,7 +261,7 @@ router.get("/config/speech", authenticateToken, authorizeAdmin, async (req, res)
  * @apiDescription 更新语音服务配置（新格式）
  * @apiHeader {String} Authorization Bearer Token
  */
-router.put("/config/speech", authenticateToken, authorizeAdmin, async (req, res) => {
+router.put("/config/speech", authenticateToken, checkPermission('system:config:speech'), async (req, res) => {
   try {
     const payload = req.body || {};
     await updateSpeechConfig(payload);
@@ -289,7 +288,7 @@ router.put("/config/speech", authenticateToken, authorizeAdmin, async (req, res)
  * @apiSuccess {String} message 结果消息
  * @apiSuccess {String} [audioUrl] 音频URL (可选)
  */
-router.post("/config/test-tts", authenticateToken, authorizeAdmin, async (req, res) => {
+router.post("/config/test-tts", authenticateToken, checkPermission('system:config:speech'), async (req, res) => {
   try {
     const { provider, text = "你好，这是语音测试", voice, speechRate } = req.body;
 

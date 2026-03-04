@@ -96,19 +96,34 @@ export async function handleUploadDoc(req, res, next) {
 export async function handleProcessDoc(req, res, next) {
   try {
     const { docId } = req.params;
+    console.log('📥 收到文档解析请求，docId:', docId);
+    
     const doc = await KnowledgeDocument.findById(docId);
     
     if (!doc) {
+      console.error('❌ 文档不存在，docId:', docId);
       return res.status(404).json({ error: '文档不存在' });
     }
 
-    // 异步执行解析逻辑
-    processDocument(docId).catch(err => {
-      console.error('❌ 文档处理失败:', err);
+    console.log('📄 文档信息:', {
+      name: doc.name,
+      type: doc.type,
+      size: doc.fileSize,
+      status: doc.status
     });
 
-    res.status(202).json({ message: '解析任务已启动', status: 'processing' });
+    // 异步执行解析逻辑
+    console.log('⏳ 启动异步解析任务...');
+    processDocument(docId).catch(err => {
+      console.error('❌ 文档异步处理失败:', err);
+      console.error('❌ 错误堆栈:', err.stack);
+    });
+
+    console.log('✅ 解析任务已启动，返回响应给客户端');
+    res.status(202).json({ message: '解析任务已启动', status: 'processing', docId });
   } catch (error) {
+    console.error('❌ 处理解析请求失败:', error);
+    console.error('❌ 错误堆栈:', error.stack);
     next(error);
   }
 }

@@ -53,8 +53,13 @@
           对话记录
         </router-link>
 
-        <div class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mt-8 mb-4 px-2">
-          系统管理</div>
+        <router-link to="/developer/api" v-if="isAuthenticated"
+          active-class="bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300"
+          class="flex items-center px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200 font-medium group transition-colors"
+          @click="isMobileMenuOpen = false">
+          <Code class="w-5 h-5 mr-3" />
+          开发者中心
+        </router-link>
 
         <router-link to="/knowledge" v-if="isAuthenticated"
           active-class="bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300"
@@ -64,21 +69,9 @@
           知识库
         </router-link>
 
-        <router-link to="/developer/api"
-          active-class="bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300"
-          class="flex items-center px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200 font-medium group transition-colors"
-          @click="isMobileMenuOpen = false">
-          <Code class="w-5 h-5 mr-3" />
-          开发者中心
-        </router-link>
-
-        <router-link to="/api-keys"
-          active-class="bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300"
-          class="flex items-center px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200 font-medium group transition-colors"
-          @click="isMobileMenuOpen = false">
-          <Key class="w-5 h-5 mr-3" />
-          API Keys
-        </router-link>
+        <div v-permission="'admin'">
+        <div class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mt-8 mb-4 px-2">
+          系统管理</div>
 
         <router-link to="/settings"
           active-class="bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300"
@@ -87,6 +80,47 @@
           <Settings class="w-5 h-5 mr-3" />
           设置
         </router-link>
+
+        <router-link to="/settings/ai-config"
+          active-class="bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300"
+          class="flex items-center px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200 font-medium group transition-colors"
+          @click="isMobileMenuOpen = false">
+          <Cpu class="w-5 h-5 mr-3" />
+          AI 模型配置
+        </router-link>
+
+        <router-link to="/settings/embedding-config"
+          active-class="bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300"
+          class="flex items-center px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200 font-medium group transition-colors"
+          @click="isMobileMenuOpen = false">
+          <Brain class="w-5 h-5 mr-3" />
+          Embedding 配置
+        </router-link>
+
+        <router-link to="/settings/speech-config"
+          active-class="bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300"
+          class="flex items-center px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200 font-medium group transition-colors"
+          @click="isMobileMenuOpen = false">
+          <Mic class="w-5 h-5 mr-3" />
+          语音服务配置
+        </router-link>
+
+        <router-link to="/settings/logs"
+          active-class="bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300"
+          class="flex items-center px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200 font-medium group transition-colors"
+          @click="isMobileMenuOpen = false">
+          <FileText class="w-5 h-5 mr-3" />
+          系统日志
+        </router-link>
+
+        <router-link to="/settings/users"
+          active-class="bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300"
+          class="flex items-center px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200 font-medium group transition-colors"
+          @click="isMobileMenuOpen = false">
+          <Users class="w-5 h-5 mr-3" />
+          账号管理
+        </router-link>
+        </div>
       </nav>
 
       <!-- User Profile (Sidebar Bottom) -->
@@ -125,7 +159,7 @@
             <div class="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">{{
               currentUser?.username || 'User' }}</div>
             <div class="text-[10px] text-slate-500 dark:text-slate-400 truncate uppercase tracking-wider font-bold">{{
-              currentUser?.role === 'admin' ? 'Administrator' : 'Free Plan' }}</div>
+              currentUser?.isSuperAdmin ? 'Administrator' : 'Free Plan' }}</div>
           </div>
           <ChevronUp :class="['w-4 h-4 text-slate-400 transition-transform', isUserMenuOpen ? 'rotate-180' : '']" />
         </button>
@@ -203,7 +237,11 @@ import {
   LogOut,
   ChevronUp,
   ShieldCheck,
-  Key
+  Cpu,
+  Brain,
+  Mic,
+  FileText,
+  Users
 } from 'lucide-vue-next'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 

@@ -6,7 +6,8 @@ import {
   handleRefreshToken,
   handleGetCurrentUser,
   handleChangePassword,
-  handleUpdateProfile
+  handleUpdateProfile,
+  handleGetPermissions
 } from '../controllers/authController.js';
 import { authenticateToken } from '../middleware/auth.middleware.js';
 import { authLimiter } from '../middleware/security.middleware.js';
@@ -106,5 +107,16 @@ router.post('/change-password', authenticateToken, handleChangePassword);
  * @apiSuccess {Object} user 更新后的用户信息
  */
 router.put('/profile', authenticateToken, handleUpdateProfile);
+
+/**
+ * @api {get} /auth/permissions 获取用户权限
+ * @apiName GetUserPermissions
+ * @apiGroup Auth
+ * @apiDescription 获取当前用户的所有权限
+ * @apiHeader {String} Authorization Bearer Token
+ *
+ * @apiSuccess {Array} permissions 权限列表
+ */
+router.get('/permissions', authenticateToken, handleGetPermissions);
 
 export default router;

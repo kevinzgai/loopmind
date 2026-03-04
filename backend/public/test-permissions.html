@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>权限系统测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 4px;
+        }
+        .section h3 {
+            margin-top: 0;
+            color: #666;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button.danger {
+            background: #f44336;
+        }
+        button.danger:hover {
+            background: #da190b;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .success {
+            color: #4CAF50;
+        }
+        .error {
+            color: #f44336;
+        }
+        .permission-item {
+            display: inline-block;
+            background: #e3f2fd;
+            padding: 5px 10px;
+            margin: 3px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 权限系统测试页面</h1>
+        
+        <div class="section">
+            <h3>1. 用户登录</h3>
+            <input type="text" id="username" placeholder="用户名" value="admin">
+            <input type="password" id="password" placeholder="密码" value="admin@123">
+            <button onclick="login()">登录</button>
+            <button class="danger" onclick="logout()">登出</button>
+        </div>
+
+        <div class="section">
+            <h3>2. 用户信息</h3>
+            <div id="userInfo">未登录</div>
+        </div>
+
+        <div class="section">
+            <h3>3. 用户权限</h3>
+            <button onclick="getPermissions()">获取权限</button>
+            <div id="permissions"></div>
+        </div>
+
+        <div class="section">
+            <h3>4. 测试权限检查</h3>
+            <input type="text" id="testPermission" placeholder="权限代码，如: system:config:view" value="system:config:view">
+            <button onclick="testPermissionCheck()">测试权限</button>
+            <div id="testResult"></div>
+        </div>
+
+        <div class="section">
+            <h3>5. 访问受保护的 API</h3>
+            <button onclick="testProtectedAPI()">测试系统配置 API</button>
+            <button onclick="testUserManagementAPI()">测试用户管理 API</button>
+            <div id="apiResult"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3002/api';
+        let token = localStorage.getItem('token');
+        let user = JSON.parse(localStorage.getItem('user') || 'null');
+
+        // 初始化
+        function init() {
+            if (token && user) {
+                document.getElementById('userInfo').innerHTML = `
+                    <p><strong>用户名:</strong> ${user.username}</p>
+                    <p><strong>邮箱:</strong> ${user.email}</p>
+                    <p><strong>角色:</strong> ${user.role}</p>
+                    <p><strong>角色列表:</strong> ${JSON.stringify(user.roles)}</p>
+                    <p><strong>权限:</strong> ${user.permissions ? user.permissions.length : 0} 个</p>
+                `;
+            }
+        }
+
+        // 登录
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    token = data.token;
+                    user = data.user;
+                    localStorage.setItem('token', token);
+                    localStorage.setItem('user', JSON.stringify(user));
+
+                    document.getElementById('userInfo').innerHTML = `
+                        <p class="success">✅ 登录成功</p>
+                        <p><strong>用户名:</strong> ${user.username}</p>
+                        <p><strong>邮箱:</strong> ${user.email}</p>
+                        <p><strong>角色:</strong> ${user.role}</p>
+                        <p><strong>角色列表:</strong> ${JSON.stringify(user.roles)}</p>
+                        <p><strong>权限:</strong> ${user.permissions ? user.permissions.length : 0} 个</p>
+                    `;
+                } else {
+                    document.getElementById('userInfo').innerHTML = `
+                        <p class="error">❌ 登录失败: ${data.error.message}</p>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('userInfo').innerHTML = `
+                    <p class="error">❌ 请求失败: ${error.message}</p>
+                `;
+            }
+        }
+
+        // 登出
+        async function logout() {
+            try {
+                await fetch(`${API_BASE}/auth/logout`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                token = null;
+                user = null;
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+
+                document.getElementById('userInfo').innerHTML = '<p>已登出</p>';
+                document.getElementById('permissions').innerHTML = '';
+            } catch (error) {
+                console.error('登出失败:', error);
+            }
+        }
+
+        // 获取权限
+        async function getPermissions() {
+            if (!token) {
+                document.getElementById('permissions').innerHTML = '<p class="error">请先登录</p>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/permissions`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    const permissions = data.permissions || [];
+                    document.getElementById('permissions').innerHTML = `
+                        <p class="success">✅ 获取到 ${permissions.length} 个权限</p>
+                        <div>${permissions.map(p => `<span class="permission-item">${p}</span>`).join('')}</div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    document.getElementById('permissions').innerHTML = `
+                        <p class="error">❌ 获取权限失败: ${data.error.message}</p>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('permissions').innerHTML = `
+                    <p class="error">❌ 请求失败: ${error.message}</p>
+                `;
+            }
+        }
+
+        // 测试权限检查
+        async function testPermissionCheck() {
+            if (!token) {
+                document.getElementById('testResult').innerHTML = '<p class="error">请先登录</p>';
+                return;
+            }
+
+            const permission = document.getElementById('testPermission').value;
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/permissions`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                const data = await response.json();
+                const permissions = data.permissions || [];
+                const hasPermission = permissions.includes(permission);
+
+                document.getElementById('testResult').innerHTML = `
+                    <p class="${hasPermission ? 'success' : 'error'}">
+                        ${hasPermission ? '✅' : '❌'} 用户${hasPermission ? '有' : '没有'}权限: ${permission}
+                    </p>
+                `;
+            } catch (error) {
+                document.getElementById('testResult').innerHTML = `
+                    <p class="error">❌ 检查失败: ${error.message}</p>
+                `;
+            }
+        }
+
+        // 测试受保护的 API
+        async function testProtectedAPI() {
+            if (!token) {
+                document.getElementById('apiResult').innerHTML = '<p class="error">请先登录</p>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/config`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                const data = await response.json();
+
+                document.getElementById('apiResult').innerHTML = `
+                    <p class="${response.ok ? 'success' : 'error'}">
+                        ${response.ok ? '✅ 访问成功' : '❌ 访问失败'}
+                    </p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                document.getElementById('apiResult').innerHTML = `
+                    <p class="error">❌ 请求失败: ${error.message}</p>
+                `;
+            }
+        }
+
+        // 测试用户管理 API
+        async function testUserManagementAPI() {
+            if (!token) {
+                document.getElementById('apiResult').innerHTML = '<p class="error">请先登录</p>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/users/stats`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                const data = await response.json();
+
+                document.getElementById('apiResult').innerHTML = `
+                    <p class="${response.ok ? 'success' : 'error'}">
+                        ${response.ok ? '✅ 访问成功' : '❌ 访问失败'}
+                    </p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                document.getElementById('apiResult').innerHTML = `
+                    <p class="error">❌ 请求失败: ${error.message}</p>
+                `;
+            }
+        }
+
+        // 页面加载时初始化
+        init();
+    </script>
+</body>
+</html>

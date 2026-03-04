@@ -11,11 +11,19 @@ export const user = ref(null)
 export const token = ref(localStorage.getItem('token') || null)
 export const isLoading = ref(false)
 export const error = ref(null)
+export const permissions = ref([])
 
 // 计算属性
 export const isAuthenticated = computed(() => !!token.value && !!user.value)
 export const currentUser = computed(() => user.value)
-export const isAdmin = computed(() => !!token.value && !!user.value && user.value.role === 'admin')
+export const isAdmin = computed(() => {
+  if (!token.value || !user.value) return false
+  return user.value.role === 'admin' || user.value.role === 'super_admin'
+})
+export const isSuperAdmin = computed(() => {
+  if (!token.value || !user.value) return false
+  return user.value.isSuperAdmin === true
+})
 
 /**
  * 注册
@@ -56,12 +64,18 @@ export async function login(username, password) {
       password
     })
 
+    console.log('✅ Login response:', response)
+    console.log('👤 User from login:', response.user)
+
     // 保存 token 和用户信息
     token.value = response.token
     user.value = response.user
     console.log('Setting token and user in authStore:', { token: !!token.value, user: !!user.value })
     localStorage.setItem('token', response.token)
     localStorage.setItem('user', JSON.stringify(response.user))
+
+    // 加载用户权限
+    await loadUserPermissions()
 
     console.log('✅ 登录成功')
     return response
@@ -196,9 +210,11 @@ export async function changePassword(oldPassword, newPassword, confirmPassword) 
 /**
  * 初始化认证状态（从本地存储恢复）
  */
-export function initializeAuth() {
+export async function initializeAuth() {
   const savedToken = localStorage.getItem('token')
   const savedUser = localStorage.getItem('user')
+
+  console.log('🔄 Initializing auth:', { hasToken: !!savedToken, hasUser: !!savedUser })
 
   if (savedToken) {
     token.value = savedToken
@@ -206,10 +222,105 @@ export function initializeAuth() {
 
   if (savedUser) {
     try {
-      user.value = JSON.parse(savedUser)
+      const parsedUser = JSON.parse(savedUser)
+      console.log('📦 Parsed user from localStorage:', parsedUser)
+      user.value = parsedUser
+      
+      // 从服务器获取最新的用户信息（确保包含 isSuperAdmin 字段）
+      try {
+        const response = await apiService.get('/auth/me')
+        console.log('✅ Got latest user info from server:', response.user)
+        user.value = response.user
+        localStorage.setItem('user', JSON.stringify(response.user))
+      } catch (err) {
+        console.error('❌ 获取最新用户信息失败:', err)
+      }
+      
+      // 加载用户权限
+      await loadUserPermissions()
     } catch (err) {
       console.error('❌ 解析用户信息失败:', err)
       localStorage.removeItem('user')
     }
+  }
+}
+
+/**
+ * 加载用户权限
+ */
+export async function loadUserPermissions() {
+  if (!user.value) return []
+  
+  try {
+    const response = await apiService.get('/auth/permissions')
+    permissions.value = response.permissions || []
+    
+    // 如果权限接口返回了 isSuperAdmin 标识，更新用户对象
+    if (response.isSuperAdmin !== undefined && user.value) {
+      user.value = {
+        ...user.value,
+        isSuperAdmin: response.isSuperAdmin
+      }
+      localStorage.setItem('user', JSON.stringify(user.value))
+      console.log('✅ Updated isSuperAdmin from permissions API:', response.isSuperAdmin)
+    }
+    
+    return permissions.value
+  } catch (err) {
+    console.error('❌ 加载权限失败:', err.message)
+    return []
+  }
+}
+
+/**
+ * 检查用户是否有指定权限
+ */
+export function hasPermission(permission) {
+  if (!user.value) {
+    console.log('❌ hasPermission: No user')
+    return false
+  }
+  
+  console.log('🔐 hasPermission:', {
+    permission,
+    isSuperAdmin: user.value.isSuperAdmin,
+    role: user.value.role,
+    user: user.value
+  })
+  
+  // isSuperAdmin 拥有所有权限
+  if (user.value.isSuperAdmin === true) {
+    console.log('✅ hasPermission: isSuperAdmin, returning true')
+    return true
+  }
+  
+  // 检查权限列表
+  const result = permissions.value.includes(permission)
+  console.log('🔐 hasPermission: checking permissions list:', { 
+    hasPermission: result, 
+    permissions: permissions.value 
+  })
+  return result
+}
+
+/**
+ * 检查用户是否有多个权限
+ * @param {Array} permissionList - 权限列表
+ * @param {Boolean} requireAll - 是否需要全部权限
+ */
+export function hasPermissions(permissionList, requireAll = false) {
+  if (!user.value) return false
+  
+  // isSuperAdmin 拥有所有权限
+  if (user.value.isSuperAdmin === true) return true
+  
+  if (!Array.isArray(permissionList) || permissionList.length === 0) {
+    return false
+  }
+  
+  if (requireAll) {
+    return permissionList.every(p => permissions.value.includes(p))
+  } else {
+    return permissionList.some(p => permissions.value.includes(p))
   }
 }

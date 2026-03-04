@@ -28,8 +28,20 @@ apiClient.interceptors.request.use(
 // 响应拦截器
 apiClient.interceptors.response.use(
   response => {
-    // 直接返回响应数据
-    return response.data
+    const { code, data, message } = response.data
+    
+    // 如果响应中没有 code 字段，说明是旧格式，直接返回原始数据
+    if (typeof code === 'undefined') {
+      return response.data
+    }
+    
+    // 如果 code 为 0，表示成功，返回 data
+    if (code === 0) {
+      return data
+    }
+    
+    // 如果 code 不为 0，表示业务错误
+    return Promise.reject(new Error(message || '操作失败'))
   },
   error => {
     // 响应错误处理
@@ -37,9 +49,21 @@ apiClient.interceptors.response.use(
       // 服务器返回错误状态码
       const { status, data } = error.response
       
-      // 处理无效 token
+      // 处理新的响应格式 { code, data, message }
+      if (data && typeof data.code !== 'undefined') {
+        // 处理无效 token
+        if (data.code === 1004 || data.message?.includes('token') || data.message?.includes('Token')) {
+          localStorage.removeItem('token')
+          localStorage.removeItem('user')
+          window.location.href = '/login'
+          return Promise.reject(new Error('登录已失效，请重新登录'))
+        }
+        
+        return Promise.reject(new Error(data.message || '操作失败'))
+      }
+      
+      // 兼容旧的错误格式
       if (data.error?.code === 'INVALID_TOKEN') {
-        // 清除本地存储并跳转登录
         localStorage.removeItem('token')
         localStorage.removeItem('user')
         window.location.href = '/login'
@@ -49,17 +73,17 @@ apiClient.interceptors.response.use(
       // 根据状态码处理不同错误
       switch (status) {
         case 400:
-          return Promise.reject(new Error(data.error?.message || '请求参数错误'))
+          return Promise.reject(new Error(data.error?.message || data.message || '请求参数错误'))
         case 401:
-          return Promise.reject(new Error(data.error?.message || '未授权，请重新登录'))
+          return Promise.reject(new Error(data.error?.message || data.message || '未授权，请重新登录'))
         case 403:
-          return Promise.reject(new Error(data.error?.message || '拒绝访问'))
+          return Promise.reject(new Error(data.error?.message || data.message || '拒绝访问'))
         case 404:
-          return Promise.reject(new Error(data.error?.message || '请求资源不存在'))
+          return Promise.reject(new Error(data.error?.message || data.message || '请求资源不存在'))
         case 500:
-          return Promise.reject(new Error(data.error?.message || '服务器错误'))
+          return Promise.reject(new Error(data.error?.message || data.message || '服务器错误'))
         default:
-          return Promise.reject(new Error(data.error?.message || `请求错误 (${status})`))
+          return Promise.reject(new Error(data.error?.message || data.message || `请求错误 (${status})`))
       }
     } else if (error.request) {
       // 请求已发送但没有收到响应

@@ -415,6 +415,18 @@ function toggleTTS() {
 
 // 停止所有音频播放
 function stopAllAudio() {
+  // 停止消息播放音频
+  if (messageAudioElement) {
+    try {
+      messageAudioElement.pause()
+      messageAudioElement.currentTime = 0
+    } catch {}
+    messageAudioElement = null
+  }
+  playingMessageId.value = null
+  isPlayingLoading.value = false
+  
+  // 停止 TTS 流式播放音频
   if (currentAudio) {
     try {
       currentAudio.pause()
@@ -932,9 +944,12 @@ onUnmounted(() => {
   stopAllAudio()
 })
 
-onBeforeRouteLeave((to, from, next) => {
+onBeforeRouteLeave((to, from) => {
   stopAllAudio()
-  next && next()
+})
+
+onUnmounted(() => {
+  stopAllAudio()
 })
 </script>
 
