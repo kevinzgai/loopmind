@@ -962,7 +962,7 @@ async function loadAgent() {
 async function loadKnowledgeBases() {
   try {
     const res = await apiService.get('/knowledge')
-    knowledgeBases.value = res.bases || []
+    knowledgeBases.value = res.kbs || []
   } catch (err) {
     console.error('加载知识库失败:', err)
   }

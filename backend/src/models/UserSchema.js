@@ -24,10 +24,16 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['user', 'admin'],
+      enum: ['user', 'admin', 'super_admin', 'operator'],
       default: 'user',
       index: true
     },
+    roles: [{
+      type: String
+    }],
+    permissions: [{
+      type: String
+    }],
     passwordHash: {
       type: String,
       required: [true, '密码不能为空'],

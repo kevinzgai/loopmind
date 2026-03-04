@@ -7,7 +7,7 @@ import {
   resetUserPassword,
   getUserStats
 } from '../services/auth/authServiceDB.js';
-import { authenticateToken, authorizeAdmin } from '../middleware/auth.middleware.js';
+import { authenticateToken, authorizeAdmin, checkPermission } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
@@ -28,7 +28,7 @@ const router = express.Router();
  * @apiSuccess {Number} limit 每页数量
  * @apiSuccess {Number} totalPages 总页数
  */
-router.get('/', authenticateToken, authorizeAdmin, async (req, res) => {
+router.get('/', authenticateToken, checkPermission('system:user:view'), async (req, res) => {
   try {
     const { page = 1, limit = 20, search = '' } = req.query;
     const result = await getAllUsers({ 
@@ -50,7 +50,7 @@ router.get('/', authenticateToken, authorizeAdmin, async (req, res) => {
  * @apiDescription 获取用户统计信息（需要管理员权限）
  * @apiHeader {String} Authorization Bearer Token
  */
-router.get('/stats', authenticateToken, authorizeAdmin, async (req, res) => {
+router.get('/stats', authenticateToken, checkPermission('system:user:view'), async (req, res) => {
   try {
     const stats = await getUserStats();
     res.json(stats);
@@ -72,7 +72,7 @@ router.get('/stats', authenticateToken, authorizeAdmin, async (req, res) => {
  * @apiBody {String} password 密码
  * @apiBody {String} [role=user] 角色 (user/admin)
  */
-router.post('/', authenticateToken, authorizeAdmin, async (req, res) => {
+router.post('/', authenticateToken, checkPermission('system:user:create'), async (req, res) => {
   try {
     const user = await createUser(req.body);
     res.status(201).json({ 
@@ -98,7 +98,7 @@ router.post('/', authenticateToken, authorizeAdmin, async (req, res) => {
  * @apiBody {String} [role] 角色
  * @apiBody {Boolean} [isActive] 是否激活
  */
-router.put('/:userId', authenticateToken, authorizeAdmin, async (req, res) => {
+router.put('/:userId', authenticateToken, checkPermission('system:user:edit'), async (req, res) => {
   try {
     const user = await updateUser(req.params.userId, req.body);
     res.json({ 
@@ -120,7 +120,7 @@ router.put('/:userId', authenticateToken, authorizeAdmin, async (req, res) => {
  * 
  * @apiParam {String} userId 用户ID
  */
-router.delete('/:userId', authenticateToken, authorizeAdmin, async (req, res) => {
+router.delete('/:userId', authenticateToken, checkPermission('system:user:delete'), async (req, res) => {
   try {
     const result = await deleteUser(req.params.userId);
     res.json(result);
@@ -140,7 +140,7 @@ router.delete('/:userId', authenticateToken, authorizeAdmin, async (req, res) =>
  * @apiParam {String} userId 用户ID
  * @apiBody {String} password 新密码
  */
-router.post('/:userId/reset-password', authenticateToken, authorizeAdmin, async (req, res) => {
+router.post('/:userId/reset-password', authenticateToken, checkPermission('system:user:reset-password'), async (req, res) => {
   try {
     const { password } = req.body;
     if (!password) {
