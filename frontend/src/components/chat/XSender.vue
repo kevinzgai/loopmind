@@ -1,56 +1,105 @@
 <template>
-  <div class="x-sender">
-    <div class="sender-box">
-      <textarea
-        v-if="inputMode === 'text'"
-        v-model="text"
-        class="sender-input"
-        :placeholder="placeholder"
-        :disabled="disabled"
-        @keydown.enter.exact.prevent="emitSubmit"
-      ></textarea>
-
+  <div class="w-full">
+    <!-- Text Input Mode -->
+    <div v-if="inputMode === 'text'" class="flex items-end gap-3">
+      <div class="flex-1 relative">
+        <textarea
+          v-model="text"
+          class="w-full min-h-[52px] max-h-[160px] px-4 py-3 pr-12 bg-muted/50 border border-border rounded-2xl resize-none outline-none text-foreground placeholder:text-muted-foreground transition-all duration-200 focus:bg-background focus:border-primary/30 focus:ring-2 focus:ring-primary/10"
+          :placeholder="placeholder"
+          :disabled="disabled"
+          rows="1"
+          @keydown.enter.exact.prevent="emitSubmit"
+          @input="autoResize"
+          ref="textareaRef"
+        ></textarea>
+        <button
+          @click="toggleInputMode"
+          :disabled="disabled"
+          class="absolute right-3 bottom-3 p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          title="切换到语音输入">
+          <Mic class="w-5 h-5" />
+        </button>
+      </div>
       <button
-        v-else
-        class="voice-input-button"
-        :class="{ recording: isRecording, connecting: isConnecting }"
+        @click="emitSubmit"
+        :disabled="disabled || !text.trim()"
+        :class="[
+          'flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer',
+          text.trim() && !disabled
+            ? 'gradient-primary text-white shadow-glow hover:shadow-lg hover:-translate-y-0.5'
+            : 'bg-muted text-muted-foreground cursor-not-allowed'
+        ]">
+        <Send class="w-5 h-5" />
+      </button>
+    </div>
+
+    <!-- Voice Input Mode -->
+    <div v-else class="flex items-center gap-3">
+      <button
+        class="flex-1 min-h-[52px] px-4 py-3 rounded-2xl border-2 border-dashed transition-all duration-200 cursor-pointer flex items-center gap-3"
+        :class="[
+          isRecording 
+            ? 'border-red-400 bg-red-500/5 border-solid animate-pulse' 
+            : isConnecting 
+              ? 'border-yellow-400 bg-yellow-500/5' 
+              : 'border-border bg-muted/30 hover:border-primary/30 hover:bg-muted/50'
+        ]"
         :disabled="disabled || isConnecting"
         @mousedown.prevent="handleVoiceButtonDown"
         @mouseup.prevent="handleVoiceButtonUp"
         @mouseleave="isRecording ? stopRecording() : null"
         @touchstart.prevent="handleVoiceButtonDown"
-        @touchend.prevent="handleVoiceButtonUp"
-      >
-        <div class="voice-button-content">
-          <span class="mic-icon">🎙️</span>
-          <div v-if="isRecording" class="audio-visualizer">
-            <div
-              v-for="i in 20"
+        @touchend.prevent="handleVoiceButtonUp">
+        
+        <div 
+          :class="[
+            'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors',
+            isRecording ? 'bg-red-500 text-white' : 'bg-muted text-muted-foreground'
+          ]">
+          <Mic v-if="!isRecording" class="w-5 h-5" />
+          <MicOff v-else class="w-5 h-5" />
+        </div>
+
+        <div class="flex-1 min-w-0">
+          <div v-if="isRecording" class="flex items-center gap-1 h-6">
+            <span 
+              v-for="i in 20" 
               :key="i"
-              class="wave-bar"
-              :style="{ height: `${Math.random() * audioLevel + 10}%`, animationDelay: `${i * 0.05}s` }"
-            />
+              class="w-1 bg-red-400 rounded-full animate-pulse"
+              :style="{ 
+                height: `${Math.random() * audioLevel + 10}%`, 
+                animationDelay: `${i * 0.05}s`,
+                animationDuration: '0.5s'
+              }">
+            </span>
           </div>
-          <span v-else-if="isConnecting" class="status-text">连接中...</span>
-          <span v-else-if="displayText" class="status-text recognized">{{ displayText }}</span>
-          <span v-else class="status-text">按住说话</span>
+          <p v-else-if="isConnecting" class="text-sm text-yellow-600 dark:text-yellow-400 font-medium">
+            连接中...
+          </p>
+          <p v-else-if="displayText" class="text-sm text-foreground font-medium truncate">
+            {{ displayText }}
+          </p>
+          <p v-else class="text-sm text-muted-foreground">
+            按住说话，松开发送
+          </p>
         </div>
       </button>
 
-      <div class="sender-actions">
-        <button class="mode-btn" @click="toggleInputMode" :title="inputMode === 'text' ? '切换到语音输入' : '切换到文字输入'">
-          {{ inputMode === 'text' ? '语音' : '文字' }}
-        </button>
-        <button class="sender-btn" :disabled="disabled || !text.trim()" @click="emitSubmit">
-          发送
-        </button>
-      </div>
+      <button
+        @click="toggleInputMode"
+        :disabled="disabled"
+        class="flex-shrink-0 w-12 h-12 rounded-xl bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary flex items-center justify-center transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+        title="切换到文字输入">
+        <Keyboard class="w-5 h-5" />
+      </button>
     </div>
   </div>
- </template>
+</template>
 
 <script setup>
-import { ref, computed, watch, onUnmounted, nextTick, onMounted } from 'vue'
+import { ref, computed, watch, onUnmounted, onMounted } from 'vue'
+import { Mic, MicOff, Send, Keyboard } from 'lucide-vue-next'
 
 const props = defineProps({
   modelValue: { type: String, default: '' },
@@ -67,12 +116,13 @@ const isConnecting = ref(false)
 const recognizedText = ref('')
 const intermediateText = ref('')
 const audioLevel = ref(0)
+const textareaRef = ref(null)
 
 let ws = null
 let reconnectTimer = null
 let audioContext = null
 let analyser = null
-let processor = null  // Will be AudioWorkletNode
+let processor = null
 let mediaStream = null
 let animationId = null
 
@@ -87,6 +137,13 @@ const displayText = computed(() => {
 watch(() => props.modelValue, v => { text.value = v })
 watch(text, v => emit('update:modelValue', v))
 
+function autoResize() {
+  if (textareaRef.value) {
+    textareaRef.value.style.height = 'auto'
+    textareaRef.value.style.height = Math.min(textareaRef.value.scrollHeight, 160) + 'px'
+  }
+}
+
 function setupWebSocket() {
   if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return
 
@@ -96,7 +153,7 @@ function setupWebSocket() {
   ws = new WebSocket(wsUrl)
   
   ws.onopen = () => {
-    console.log('✅ ASR WebSocket Connected')
+    console.log('ASR WebSocket Connected')
     if (reconnectTimer) {
       clearTimeout(reconnectTimer)
       reconnectTimer = null
@@ -104,19 +161,17 @@ function setupWebSocket() {
   }
   
   ws.onclose = () => {
-    console.log('🔌 ASR WebSocket Closed')
+    console.log('ASR WebSocket Closed')
     ws = null
-    // Auto reconnect if in voice mode
     if (inputMode.value === 'voice') {
       reconnectTimer = setTimeout(() => {
-        console.log('🔄 Reconnecting ASR WebSocket...')
         setupWebSocket()
       }, 2000)
     }
   }
   
   ws.onerror = (err) => {
-    console.error('❌ ASR WebSocket Error', err)
+    console.error('ASR WebSocket Error', err)
     ws && ws.close()
   }
   
@@ -130,7 +185,6 @@ function toggleInputMode() {
   } else {
     inputMode.value = 'text'
     stopRecording()
-    // Optional: Close connection to save resources
   }
 }
 
@@ -152,61 +206,48 @@ function handleWebSocketMessage(event) {
         recognizedText.value += (recognizedText.value ? ' ' : '') + data.text
         intermediateText.value = ''
       }
-    } else if (data.type === 'completed') {
-       // Session ended
     } else if (data.type === 'error') {
-       console.error('ASR Error:', data.message)
-       stopRecording()
+      console.error('ASR Error:', data.message)
+      stopRecording()
     }
   } catch {}
 }
 
-function handleVoiceButtonDown(event) {
+function handleVoiceButtonDown() {
   if (props.disabled) return
   startRecording()
-  
-  // 添加全局事件监听器以确保在任何地方松开鼠标都能停止录音
-  document.addEventListener('mouseup', handleGlobalMouseUp);
-  document.addEventListener('touchend', handleGlobalTouchEnd);
+  document.addEventListener('mouseup', handleGlobalMouseUp)
+  document.addEventListener('touchend', handleGlobalTouchEnd)
 }
 
 function handleVoiceButtonUp() {
   if (props.disabled) return
   stopRecording()
-  
-  // 移除全局事件监听器
-  document.removeEventListener('mouseup', handleGlobalMouseUp);
-  document.removeEventListener('touchend', handleGlobalTouchEnd);
+  document.removeEventListener('mouseup', handleGlobalMouseUp)
+  document.removeEventListener('touchend', handleGlobalTouchEnd)
 }
 
-// 全局鼠标松开事件处理
 function handleGlobalMouseUp() {
   if (isRecording.value) {
-    stopRecording();
-    // 移除全局事件监听器
-    document.removeEventListener('mouseup', handleGlobalMouseUp);
-    document.removeEventListener('touchend', handleGlobalTouchEnd);
+    stopRecording()
+    document.removeEventListener('mouseup', handleGlobalMouseUp)
+    document.removeEventListener('touchend', handleGlobalTouchEnd)
   }
 }
 
-// 全局触摸结束事件处理
 function handleGlobalTouchEnd() {
   if (isRecording.value) {
-    stopRecording();
-    // 移除全局事件监听器
-    document.removeEventListener('mouseup', handleGlobalMouseUp);
-    document.removeEventListener('touchend', handleGlobalTouchEnd);
+    stopRecording()
+    document.removeEventListener('mouseup', handleGlobalMouseUp)
+    document.removeEventListener('touchend', handleGlobalTouchEnd)
   }
 }
 
 async function startRecording() {
   if (isRecording.value || isConnecting.value) return
   
-  // Ensure WS is connected
   if (!ws || ws.readyState !== WebSocket.OPEN) {
     setupWebSocket()
-    // If backend supports buffering/auto-start, we can proceed. 
-    // But safer to wait or rely on buffering.
   }
 
   try {
@@ -223,23 +264,19 @@ async function startRecording() {
     source.connect(analyser)
     visualizeAudio()
     
-    // Send Start Signal
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({ type: 'start' }))
     }
 
-    // 创建 AudioWorklet 处理器
     await audioContext.audioWorklet.addModule('/src/worklets/AudioProcessor.js')
     processor = new AudioWorkletNode(audioContext, 'audio-streaming-processor')
     
-    // 处理从 AudioWorklet 发送过来的数据
     processor.port.onmessage = (event) => {
       if (event.data.type === 'audioData' && ws && ws.readyState === WebSocket.OPEN) {
         ws.send(event.data.data)
       }
     }
     
-    // 连接音频节点
     source.connect(processor)
     processor.connect(audioContext.destination)
   } catch (error) {
@@ -248,24 +285,18 @@ async function startRecording() {
   }
 }
 
-// 可视化音频
 function visualizeAudio() {
   if (!analyser) return
-
   const bufferLength = analyser.frequencyBinCount
   const dataArray = new Uint8Array(bufferLength)
 
   const draw = () => {
     if (!analyser || !isRecording.value) return
-    
     animationId = requestAnimationFrame(draw)
     analyser.getByteFrequencyData(dataArray)
-    
-    // 计算平均音量
     const average = dataArray.reduce((a, b) => a + b) / bufferLength
     audioLevel.value = Math.min(100, (average / 255) * 100)
   }
-
   draw()
 }
 
@@ -275,13 +306,8 @@ function stopRecording() {
     animationId = null
   }
   
-  // Send Stop Signal
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({ type: 'stop' }))
-    
-    // Do NOT close WS here
-    
-    // Wait for final result logic
     setTimeout(() => {
       let finalText = recognizedText.value
       if (intermediateText.value) {
@@ -321,139 +347,11 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.x-sender {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.75rem;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(6px);
-  border-top: 1px solid #e2e8f0;
+.gradient-primary {
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
 }
-.sender-box {
-  display: flex;
-  align-items: flex-end;
-  gap: 0.75rem;
-  width: 100%;
-  max-width: 1000px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 0.75rem;
-}
-.sender-input {
-  flex: 1;
-  min-height: 48px;
-  max-height: 160px;
-  padding: 0.5rem 0.75rem;
-  border: none;
-  resize: vertical;
-  outline: none;
-  font-size: 0.95rem;
-}
-.voice-input-button {
-  flex: 1;
-  min-height: 44px;
-  padding: 12px;
-  border: 2px dashed #cbd5e0;
-  border-radius: 8px;
-  background: #f7fafc;
-  cursor: pointer;
-  transition: all 0.3s;
-  display: flex;
-  align-items: center;
-}
-.voice-input-button:hover:not(:disabled) {
-  border-color: #4299e1;
-  background: #edf2f7;
-}
-.voice-input-button.connecting {
-  border-color: #ed8936;
-  background: #feebc8;
-  cursor: wait;
-}
-.voice-input-button.recording {
-  border-color: #f56565;
-  border-style: solid;
-  background: #fff5f5;
-  animation: pulse-border 1.5s ease-in-out infinite;
-}
-.voice-input-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-@keyframes pulse-border {
-  0%, 100% { 
-    border-color: #f56565;
-    box-shadow: 0 0 0 0 rgba(245, 101, 101, 0.4);
-  }
-  50% { 
-    border-color: #fc8181;
-    box-shadow: 0 0 0 4px rgba(245, 101, 101, 0);
-  }
-}
-.voice-button-content {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  color: #4a5568;
-}
-.mic-icon {
-  font-size: 20px;
-}
-.audio-visualizer {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  height: 24px;
-  flex: 1;
-}
-.wave-bar {
-  width: 3px;
-  background: linear-gradient(to top, #f56565, #fc8181);
-  border-radius: 2px;
-  animation: wave 1s ease-in-out infinite;
-}
-@keyframes wave {
-  0%, 100% { transform: scaleY(0.3); }
-  50% { transform: scaleY(1); }
-}
-.status-text {
-  flex: 1;
-  font-size: 14px;
-  color: #718096;
-  text-align: left;
-}
-.status-text.recognized {
-  color: #2d3748;
-  font-weight: 500;
-}
-.sender-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-.mode-btn {
-  padding: 0.5rem 0.9rem;
-  border-radius: 10px;
-  border: 1px solid #cbd5e0;
-  background: #f7fafc;
-  color: #4a5568;
-  font-weight: 600;
-  cursor: pointer;
-}
-.sender-btn {
-  padding: 0.5rem 0.9rem;
-  border-radius: 10px;
-  border: 1px solid #cbd5e0;
-  background: #1a73e8;
-  color: #fff;
-  font-weight: 600;
-  cursor: pointer;
-}
-.sender-btn:disabled {
-  background: #e2e8f0;
-  color: #a0aec0;
-  cursor: not-allowed;
+
+.shadow-glow {
+  box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
 }
 </style>

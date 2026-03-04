@@ -40,11 +40,9 @@ export async function register(username, email, password, confirmPassword) {
       confirmPassword
     })
 
-    console.log('✅ 注册成功')
     return response.user
   } catch (err) {
     error.value = err.message
-    console.error('❌ 注册失败:', err.message)
     throw err
   } finally {
     isLoading.value = false
@@ -64,24 +62,16 @@ export async function login(username, password) {
       password
     })
 
-    console.log('✅ Login response:', response)
-    console.log('👤 User from login:', response.user)
-
-    // 保存 token 和用户信息
     token.value = response.token
     user.value = response.user
-    console.log('Setting token and user in authStore:', { token: !!token.value, user: !!user.value })
     localStorage.setItem('token', response.token)
     localStorage.setItem('user', JSON.stringify(response.user))
 
-    // 加载用户权限
     await loadUserPermissions()
 
-    console.log('✅ 登录成功')
     return response
   } catch (err) {
     error.value = err.message
-    console.error('❌ 登录失败:', err.message)
     throw err
   } finally {
     isLoading.value = false
@@ -99,15 +89,12 @@ export async function logout() {
       await apiService.post('/auth/logout')
     }
 
-    // 清除本地数据
     token.value = null
     user.value = null
     localStorage.removeItem('token')
     localStorage.removeItem('user')
-
-    console.log('✅ 登出成功')
   } catch (err) {
-    console.error('❌ 登出失败:', err.message)
+    // 忽略登出失败
   } finally {
     isLoading.value = false
   }
@@ -127,7 +114,6 @@ export async function getCurrentUser() {
     user.value = response.user
     return response.user
   } catch (err) {
-    console.error('❌ 获取用户信息失败:', err.message)
     return null
   }
 }
@@ -146,11 +132,8 @@ export async function refreshToken() {
     token.value = response.token
     localStorage.setItem('token', response.token)
 
-    console.log('✅ Token 刷新成功')
     return response.token
   } catch (err) {
-    console.error('❌ Token 刷新失败:', err.message)
-    // Token 刷新失败，清除本地数据
     token.value = null
     user.value = null
     localStorage.removeItem('token')
@@ -172,11 +155,9 @@ export async function updateProfile(profileData) {
     user.value = response.user
     localStorage.setItem('user', JSON.stringify(response.user))
 
-    console.log('✅ 个人资料更新成功')
     return response.user
   } catch (err) {
     error.value = err.message
-    console.error('❌ 个人资料更新失败:', err.message)
     throw err
   } finally {
     isLoading.value = false
@@ -196,11 +177,8 @@ export async function changePassword(oldPassword, newPassword, confirmPassword) 
       newPassword,
       confirmPassword
     })
-
-    console.log('✅ 密码修改成功')
   } catch (err) {
     error.value = err.message
-    console.error('❌ 密码修改失败:', err.message)
     throw err
   } finally {
     isLoading.value = false
@@ -214,32 +192,24 @@ export async function initializeAuth() {
   const savedToken = localStorage.getItem('token')
   const savedUser = localStorage.getItem('user')
 
-  console.log('🔄 Initializing auth:', { hasToken: !!savedToken, hasUser: !!savedUser })
-
   if (savedToken) {
     token.value = savedToken
   }
 
   if (savedUser) {
     try {
-      const parsedUser = JSON.parse(savedUser)
-      console.log('📦 Parsed user from localStorage:', parsedUser)
-      user.value = parsedUser
+      user.value = JSON.parse(savedUser)
       
-      // 从服务器获取最新的用户信息（确保包含 isSuperAdmin 字段）
       try {
         const response = await apiService.get('/auth/me')
-        console.log('✅ Got latest user info from server:', response.user)
         user.value = response.user
         localStorage.setItem('user', JSON.stringify(response.user))
       } catch (err) {
-        console.error('❌ 获取最新用户信息失败:', err)
+        // 忽略获取最新用户信息失败
       }
       
-      // 加载用户权限
       await loadUserPermissions()
     } catch (err) {
-      console.error('❌ 解析用户信息失败:', err)
       localStorage.removeItem('user')
     }
   }
@@ -254,20 +224,8 @@ export async function loadUserPermissions() {
   try {
     const response = await apiService.get('/auth/permissions')
     permissions.value = response.permissions || []
-    
-    // 如果权限接口返回了 isSuperAdmin 标识，更新用户对象
-    if (response.isSuperAdmin !== undefined && user.value) {
-      user.value = {
-        ...user.value,
-        isSuperAdmin: response.isSuperAdmin
-      }
-      localStorage.setItem('user', JSON.stringify(user.value))
-      console.log('✅ Updated isSuperAdmin from permissions API:', response.isSuperAdmin)
-    }
-    
     return permissions.value
   } catch (err) {
-    console.error('❌ 加载权限失败:', err.message)
     return []
   }
 }
@@ -276,31 +234,13 @@ export async function loadUserPermissions() {
  * 检查用户是否有指定权限
  */
 export function hasPermission(permission) {
-  if (!user.value) {
-    console.log('❌ hasPermission: No user')
-    return false
-  }
-  
-  console.log('🔐 hasPermission:', {
-    permission,
-    isSuperAdmin: user.value.isSuperAdmin,
-    role: user.value.role,
-    user: user.value
-  })
+  if (!user.value) return false
   
   // isSuperAdmin 拥有所有权限
-  if (user.value.isSuperAdmin === true) {
-    console.log('✅ hasPermission: isSuperAdmin, returning true')
-    return true
-  }
+  if (user.value.isSuperAdmin === true) return true
   
   // 检查权限列表
-  const result = permissions.value.includes(permission)
-  console.log('🔐 hasPermission: checking permissions list:', { 
-    hasPermission: result, 
-    permissions: permissions.value 
-  })
-  return result
+  return permissions.value.includes(permission)
 }
 
 /**

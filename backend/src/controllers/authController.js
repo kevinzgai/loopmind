@@ -7,8 +7,6 @@ import {
   getUserInfo,
   updateUserProfile
 } from '../services/auth/authServiceDB.js';
-import { getUserPermissions } from '../services/auth/permissionService.js';
-import { success, error } from '../utils/response.js';
 
 /**
  * 认证控制器
@@ -25,20 +23,32 @@ export async function handleRegister(req, res, next) {
 
     // 验证输入
     if (!username || !email || !password) {
-      return error(res, '用户名、邮箱和密码不能为空', 1001, 400);
+      return res.status(400).json({
+        error: {
+          message: '用户名、邮箱和密码不能为空',
+          code: 'MISSING_FIELDS'
+        }
+      });
     }
 
     // 验证密码一致性
     if (password !== confirmPassword) {
-      return error(res, '两次输入的密码不一致', 1002, 400);
+      return res.status(400).json({
+        error: {
+          message: '两次输入的密码不一致',
+          code: 'PASSWORD_MISMATCH'
+        }
+      });
     }
 
     // 注册用户
     const user = await register(username, email, password);
 
-    return success(res, { user }, '注册成功', 201);
+    res.status(201).json({
+      message: '注册成功',
+      user
+    });
   } catch (error) {
-    console.error('❌ 注册失败:', error.message);
     next(error);
   }
 }
@@ -53,32 +63,35 @@ export async function handleLogin(req, res, next) {
 
     // 验证输入
     if (!username || !password) {
-      return error(res, '用户名和密码不能为空', 1001, 400);
+      return res.status(400).json({
+        error: {
+          message: '用户名和密码不能为空',
+          code: 'MISSING_FIELDS'
+        }
+      });
     }
 
     // 登录用户
     const result = await login(username, password);
 
-    // 添加超级管理员标识
-    const userWithFlag = {
-      ...result.user,
-      isSuperAdmin: result.user.role === 'super_admin' || result.user.role === 'admin'
-    };
-
-    return success(res, {
-      user: userWithFlag,
+    res.status(200).json({
+      message: '登录成功',
+      user: result.user,
       token: result.token,
       expiryTime: result.expiryTime
-    }, '登录成功');
-  } catch (err) {
-    console.error('❌ 登录失败:', err.message);
-
+    });
+  } catch (error) {
     // 用户不存在或密码错误
-    if (err.message === '用户不存在' || err.message === '密码错误') {
-      return error(res, '用户名或密码错误', 1003, 401);
+    if (error.message === '用户不存在' || error.message === '密码错误') {
+      return res.status(401).json({
+        error: {
+          message: '用户名或密码错误',
+          code: 'INVALID_CREDENTIALS'
+        }
+      });
     }
 
-    next(err);
+    next(error);
   }
 }
 
@@ -94,10 +107,11 @@ export async function handleLogout(req, res, next) {
     // 登出用户
     await logout(userId, token);
 
-    return success(res, null, '登出成功');
-  } catch (err) {
-    console.error('❌ 登出失败:', err.message);
-    next(err);
+    res.status(200).json({
+      message: '登出成功'
+    });
+  } catch (error) {
+    next(error);
   }
 }
 
@@ -109,16 +123,15 @@ export async function handleRefreshToken(req, res, next) {
   try {
     const token = req.token;
 
-    // 刷新 Token
     const result = await refreshToken(token);
 
-    return success(res, {
+    res.status(200).json({
+      message: 'Token 刷新成功',
       token: result.token,
       expiryTime: result.expiryTime
-    }, 'Token 刷新成功');
-  } catch (err) {
-    console.error('❌ Token 刷新失败:', err.message);
-    next(err);
+    });
+  } catch (error) {
+    next(error);
   }
 }
 
@@ -130,19 +143,13 @@ export async function handleGetCurrentUser(req, res, next) {
   try {
     const userId = req.user.userId;
 
-    // 获取用户信息
     const user = await getUserInfo(userId);
 
-    // 添加超级管理员标识
-    const userWithFlag = {
-      ...user,
-      isSuperAdmin: user.role === 'super_admin' || user.role === 'admin'
-    };
-
-    return success(res, { user: userWithFlag }, '获取用户信息成功');
-  } catch (err) {
-    console.error('❌ 获取用户信息失败:', err.message);
-    next(err);
+    res.status(200).json({
+      user
+    });
+  } catch (error) {
+    next(error);
   }
 }
 
@@ -157,26 +164,41 @@ export async function handleChangePassword(req, res, next) {
 
     // 验证输入
     if (!oldPassword || !newPassword) {
-      return error(res, '旧密码和新密码不能为空', 1001, 400);
+      return res.status(400).json({
+        error: {
+          message: '旧密码和新密码不能为空',
+          code: 'MISSING_FIELDS'
+        }
+      });
     }
 
     // 验证新密码一致性
     if (newPassword !== confirmPassword) {
-      return error(res, '两次输入的新密码不一致', 1002, 400);
+      return res.status(400).json({
+        error: {
+          message: '两次输入的新密码不一致',
+          code: 'PASSWORD_MISMATCH'
+        }
+      });
     }
 
     // 修改密码
     await changePassword(userId, oldPassword, newPassword);
 
-    return success(res, null, '密码修改成功');
-  } catch (err) {
-    console.error('❌ 修改密码失败:', err.message);
-
-    if (err.message === '旧密码错误') {
-      return error(res, '旧密码错误', 1003, 401);
+    res.status(200).json({
+      message: '密码修改成功'
+    });
+  } catch (error) {
+    if (error.message === '旧密码错误') {
+      return res.status(401).json({
+        error: {
+          message: error.message,
+          code: 'INVALID_PASSWORD'
+        }
+      });
     }
 
-    next(err);
+    next(error);
   }
 }
 
@@ -189,37 +211,14 @@ export async function handleUpdateProfile(req, res, next) {
     const userId = req.user.userId;
     const { bio, avatar } = req.body;
 
-    // 更新用户资料
     const user = await updateUserProfile(userId, { bio, avatar });
 
-    return success(res, { user }, '个人资料更新成功');
-  } catch (err) {
-    console.error('❌ 更新个人资料失败:', err.message);
-    next(err);
-  }
-}
-
-/**
- * 获取用户权限
- * GET /api/auth/permissions
- */
-export async function handleGetPermissions(req, res, next) {
-  try {
-    const userId = req.user.userId;
-    
-    // 获取用户信息
-    const user = await getUserInfo(userId);
-    
-    // 获取用户权限
-    const permissions = await getUserPermissions(userId);
-    
-    return success(res, {
-      permissions,
-      isSuperAdmin: user.role === 'super_admin' || user.role === 'admin'
-    }, '获取权限成功');
-  } catch (err) {
-    console.error('❌ 获取用户权限失败:', err.message);
-    next(err);
+    res.status(200).json({
+      message: '个人资料更新成功',
+      user
+    });
+  } catch (error) {
+    next(error);
   }
 }
 
@@ -230,6 +229,5 @@ export default {
   handleRefreshToken,
   handleGetCurrentUser,
   handleChangePassword,
-  handleUpdateProfile,
-  handleGetPermissions
+  handleUpdateProfile
 };

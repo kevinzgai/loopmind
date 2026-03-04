@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
-import Permission from '../src/models/PermissionSchema.js';
-import Role from '../src/models/RoleSchema.js';
-import User from '../src/models/UserSchema.js';
-import 'dotenv/config';
+import Permission from '../models/PermissionSchema.js';
+import Role from '../models/RoleSchema.js';
+import User from '../models/UserSchema.js';
+import { config } from '../config/config.js';
 
 const SYSTEM_PERMISSIONS = [
   {
@@ -176,8 +176,7 @@ const SYSTEM_ROLES = [
 
 async function connectDB() {
   try {
-    const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/aichat';
-    await mongoose.connect(MONGODB_URI, {
+    await mongoose.connect(config.database.url, {
       useNewUrlParser: true,
       useUnifiedTopology: true
     });

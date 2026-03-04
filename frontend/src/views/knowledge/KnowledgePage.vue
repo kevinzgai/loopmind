@@ -195,40 +195,6 @@
         </div>
       </div>
     </div>
-
-    <!-- 确认删除知识库 Modal -->
-    <div v-if="showDeleteKBModal" class="modal-overlay" @click.self="showDeleteKBModal = false">
-      <div class="modal-content">
-        <h2>确认删除</h2>
-        <p class="confirm-text">确定要删除知识库 "{{ deletingKB?.name }}" 吗？这将删除该库下的所有文档及向量数据。</p>
-        <div class="modal-footer">
-          <button @click="showDeleteKBModal = false" class="btn-cancel">取消</button>
-          <button @click="confirmDeleteKB" class="btn-danger">确认删除</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 确认删除文档 Modal -->
-    <div v-if="showDeleteDocModal" class="modal-overlay" @click.self="showDeleteDocModal = false">
-      <div class="modal-content">
-        <h2>确认删除</h2>
-        <p class="confirm-text">确定要删除文档 "{{ deletingDoc?.name }}" 吗？</p>
-        <div class="modal-footer">
-          <button @click="showDeleteDocModal = false" class="btn-cancel">取消</button>
-          <button @click="confirmDeleteDoc" class="btn-danger">确认删除</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 消息提示 -->
-    <div v-if="successMessage" class="message-toast success">
-      <span class="message-icon">✓</span>
-      {{ successMessage }}
-    </div>
-    <div v-if="errorMessage" class="message-toast error">
-      <span class="message-icon">✕</span>
-      {{ errorMessage }}
-    </div>
   </div>
 </template>
 
@@ -254,37 +220,17 @@ const docsLoading = ref(false);
 const showCreateKBModal = ref(false);
 const uploading = ref(false);
 
-const showDeleteKBModal = ref(false);
-const deletingKB = ref(null);
-const showDeleteDocModal = ref(false);
-const deletingDoc = ref(null);
-const successMessage = ref('');
-const errorMessage = ref('');
-
+// 查看片段相关
 const showChunksModal = ref(false);
 const chunksLoading = ref(false);
 const chunks = ref([]);
 const viewingDoc = ref(null);
-const isPreviewMode = ref(false);
+const isPreviewMode = ref(false); // 区分是查看已解析片段还是预览未解析片段
 
 const newKB = reactive({
   name: '',
   description: ''
 });
-
-const showMessage = (msg, type = 'success') => {
-  if (type === 'success') {
-    successMessage.value = msg;
-    errorMessage.value = '';
-  } else {
-    errorMessage.value = msg;
-    successMessage.value = '';
-  }
-  setTimeout(() => {
-    successMessage.value = '';
-    errorMessage.value = '';
-  }, 3000);
-};
 
 const loadKBs = async () => {
   try {
@@ -325,28 +271,19 @@ const handleCreateKB = async () => {
     newKB.name = '';
     newKB.description = '';
     await loadKBs();
-    showMessage('知识库创建成功');
   } catch (error) {
-    showMessage('创建失败: ' + error.message, 'error');
+    alert('创建失败: ' + error.message);
   }
 };
 
-const handleDeleteKB = (kb) => {
-  deletingKB.value = kb;
-  showDeleteKBModal.value = true;
-};
-
-const confirmDeleteKB = async () => {
-  const kb = deletingKB.value;
+const handleDeleteKB = async (kb) => {
+  if (!confirm(`确定要删除知识库 "${kb.name}" 吗？这将删除该库下的所有文档及向量数据。`)) return;
   try {
     await deleteKnowledgeBase(kb.id);
     if (selectedKB.value?.id === kb.id) selectedKB.value = null;
     await loadKBs();
-    showDeleteKBModal.value = false;
-    deletingKB.value = null;
-    showMessage('知识库已删除');
   } catch (error) {
-    showMessage('删除失败: ' + error.message, 'error');
+    alert('删除失败: ' + error.message);
   }
 };
 
@@ -359,9 +296,8 @@ const handleFileUpload = async (event) => {
     await uploadDocument(selectedKB.value.id, file);
     await selectKB(selectedKB.value);
     await loadKBs();
-    showMessage('文档上传成功');
   } catch (error) {
-    showMessage('上传失败: ' + error.message, 'error');
+    alert('上传失败: ' + error.message);
   } finally {
     uploading.value = false;
     event.target.value = '';
@@ -372,10 +308,11 @@ const handleProcessDoc = async (doc) => {
   try {
     doc.status = 'processing';
     await processDocument(selectedKB.value.id, doc.id);
-    showMessage('解析任务已启动，请稍后刷新查看状态');
+    // 解析是异步的，我们可以通过轮询或简单的提示
+    alert('解析任务已启动，请稍后刷新查看状态');
     await selectKB(selectedKB.value);
   } catch (error) {
-    showMessage('启动解析失败: ' + error.message, 'error');
+    alert('启动解析失败: ' + error.message);
   }
 };
 
@@ -389,7 +326,7 @@ const handleViewChunks = async (doc) => {
     const res = await getDocumentChunks(selectedKB.value.id, doc.id);
     chunks.value = res.chunks;
   } catch (error) {
-    showMessage('获取片段失败: ' + error.message, 'error');
+    alert('获取片段失败: ' + error.message);
   } finally {
     chunksLoading.value = false;
   }
@@ -404,31 +341,24 @@ const handlePreviewChunks = async (doc) => {
   
   try {
     const res = await previewDocumentChunks(selectedKB.value.id, doc.id);
+    // 预览接口返回的是字符串数组，统一转为对象格式方便展示
     chunks.value = res.chunks.map(text => ({ content: text }));
   } catch (error) {
     console.error('预览分段失败:', error);
-    showMessage('预览分段失败: ' + (error.response?.data?.error || error.message), 'error');
+    alert('预览分段失败: ' + (error.response?.data?.error || error.message));
   } finally {
     chunksLoading.value = false;
   }
 };
 
-const handleDeleteDoc = (doc) => {
-  deletingDoc.value = doc;
-  showDeleteDocModal.value = true;
-};
-
-const confirmDeleteDoc = async () => {
-  const doc = deletingDoc.value;
+const handleDeleteDoc = async (doc) => {
+  if (!confirm(`确定要删除文档 "${doc.name}" 吗？`)) return;
   try {
     await deleteDocument(selectedKB.value.id, doc.id);
     await selectKB(selectedKB.value);
     await loadKBs();
-    showDeleteDocModal.value = false;
-    deletingDoc.value = null;
-    showMessage('文档已删除');
   } catch (error) {
-    showMessage('删除失败: ' + error.message, 'error');
+    alert('删除失败: ' + error.message);
   }
 };
 
@@ -893,93 +823,5 @@ onMounted(loadKBs);
 
 @keyframes spin {
   to { transform: rotate(360deg); }
-}
-
-.confirm-text {
-  @apply text-muted-foreground;
-  margin: 1rem 0;
-  line-height: 1.6;
-}
-
-.btn-cancel {
-  @apply bg-muted text-muted-foreground;
-  border: none;
-  padding: 0.6rem 1.2rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.btn-cancel:hover {
-  @apply bg-muted/80;
-}
-
-.btn-danger {
-  @apply bg-destructive text-destructive-foreground;
-  border: none;
-  padding: 0.6rem 1.2rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.btn-danger:hover {
-  @apply bg-destructive/90;
-}
-
-.btn-confirm {
-  @apply bg-primary text-primary-foreground;
-  border: none;
-  padding: 0.6rem 1.2rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.btn-confirm:hover {
-  @apply bg-primary/90;
-}
-
-.btn-confirm:disabled {
-  @apply opacity-50 cursor-not-allowed;
-}
-
-.message-toast {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  padding: 12px 20px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  z-index: 2000;
-  animation: slideIn 0.3s ease-out;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.message-toast.success {
-  @apply bg-emerald-500 text-white;
-}
-
-.message-toast.error {
-  @apply bg-destructive text-destructive-foreground;
-}
-
-.message-icon {
-  font-size: 16px;
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
 }
 </style>
