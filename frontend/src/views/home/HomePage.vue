@@ -2,7 +2,7 @@
   <div class="space-y-8 animate-fade-in">
     <div v-if="isLoadingStats" class="py-12 flex justify-center">
       <div class="flex flex-col items-center gap-3">
-        <div class="w-10 h-10 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+        <Loader2 class="w-8 h-8 animate-spin text-primary" />
         <span class="text-sm text-muted-foreground">加载中...</span>
       </div>
     </div>
@@ -81,7 +81,7 @@
 
         <div v-if="isLoadingAgents" class="py-16 flex justify-center">
           <div class="flex flex-col items-center gap-3">
-            <div class="w-10 h-10 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+            <Loader2 class="w-8 h-8 animate-spin text-primary" />
             <span class="text-sm text-muted-foreground">加载智能体...</span>
           </div>
         </div>
@@ -113,11 +113,9 @@
                 <User class="w-4 h-4" />
                 <span>{{ agent.userCount || 0 }}</span>
               </div>
-              <router-link 
-                :to="`/agent/${agent.id}/chat`"
-                class="btn-primary text-sm py-1.5 px-3">
-                开始对话
-              </router-link>
+              <Button as-child size="sm" class="text-xs">
+                <router-link :to="`/agent/${agent.id}/chat`" class="inline-flex items-center gap-1">开始对话</router-link>
+              </Button>
             </div>
           </div>
         </div>
@@ -207,7 +205,7 @@
                 <button 
                   @click="refreshSystemDetails" 
                   :disabled="isRefreshing"
-                  class="btn-ghost text-sm py-1.5 px-3">
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg hover:bg-muted transition-colors cursor-pointer disabled:opacity-50">
                   <RefreshCw :class="['w-4 h-4', isRefreshing ? 'animate-spin' : '']" />
                   <span>刷新</span>
                 </button>
@@ -382,8 +380,9 @@ import { AGENT_CATEGORIES } from '@/constants/agent.js'
 import {
   Box, MessageSquare, Bot,
   User, Plus, Download, ChevronRight, Activity, Users, ArrowUpRight, ArrowDownRight,
-  X, RefreshCw, Cpu, HardDrive, Database, Server, ExternalLink
+  X, RefreshCw, Cpu, HardDrive, Database, Server, ExternalLink, Loader2
 } from 'lucide-vue-next'
+import { Button } from '@/components/ui/button'
 
 const agents = ref([])
 const selectedCategory = ref('全部')
@@ -456,8 +455,8 @@ const loadAgents = async () => {
   try {
     isLoadingAgents.value = true
     const result = await getPublishedAgents(1, 9, selectedCategory.value)
-    // getPublishedAgents -> apiService -> { code, data: { agents, total, ... } }
-    agents.value = result?.agents ?? result?.data?.agents ?? []
+    // 后端 controller 用 ...result 展开，返回 { message, agents, total, pages }
+    agents.value = Array.isArray(result?.agents) ? result.agents : []
   } catch (error) {
     console.error('加载智能体失败:', error.message)
     agents.value = []

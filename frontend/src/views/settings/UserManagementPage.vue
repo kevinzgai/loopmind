@@ -1,277 +1,245 @@
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">账号管理</h2>
-      <button @click="showCreateModal = true" class="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
-        <Plus class="w-4 h-4" />
-        创建用户
-      </button>
+      <h2 class="text-lg font-bold font-heading">账号管理</h2>
+      <Button @click="showCreateModal = true" class="shadow-glow">
+        <Plus class="w-4 h-4" />创建用户
+      </Button>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div class="bg-white dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
-        <div class="flex items-center gap-3">
-          <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-            <Users class="w-5 h-5 text-blue-600 dark:text-blue-400" />
-          </div>
-          <div>
-            <div class="text-2xl font-bold text-slate-900 dark:text-slate-100">{{ stats.totalUsers }}</div>
-            <div class="text-sm text-slate-500 dark:text-slate-400">总用户数</div>
-          </div>
+    <!-- Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="stat-card group">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-muted-foreground">总用户数</span>
+          <div class="p-2 rounded-lg bg-blue-500/10 text-blue-500 group-hover:bg-blue-500/20 transition-colors"><Users class="w-4 h-4" /></div>
         </div>
+        <div class="text-2xl font-bold font-heading mt-2">{{ stats.totalUsers }}</div>
       </div>
-      <div class="bg-white dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
-        <div class="flex items-center gap-3">
-          <div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-            <UserCheck class="w-5 h-5 text-green-600 dark:text-green-400" />
-          </div>
-          <div>
-            <div class="text-2xl font-bold text-slate-900 dark:text-slate-100">{{ stats.activeUsers }}</div>
-            <div class="text-sm text-slate-500 dark:text-slate-400">活跃用户</div>
-          </div>
+      <div class="stat-card group">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-muted-foreground">活跃用户</span>
+          <div class="p-2 rounded-lg bg-green-500/10 text-green-500 group-hover:bg-green-500/20 transition-colors"><UserCheck class="w-4 h-4" /></div>
         </div>
+        <div class="text-2xl font-bold font-heading mt-2">{{ stats.activeUsers }}</div>
       </div>
-      <div class="bg-white dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
-        <div class="flex items-center gap-3">
-          <div class="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
-            <Shield class="w-5 h-5 text-amber-600 dark:text-amber-400" />
-          </div>
-          <div>
-            <div class="text-2xl font-bold text-slate-900 dark:text-slate-100">{{ stats.adminCount }}</div>
-            <div class="text-sm text-slate-500 dark:text-slate-400">管理员</div>
-          </div>
+      <div class="stat-card group">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-muted-foreground">管理员</span>
+          <div class="p-2 rounded-lg bg-orange-500/10 text-orange-500 group-hover:bg-orange-500/20 transition-colors"><Shield class="w-4 h-4" /></div>
         </div>
+        <div class="text-2xl font-bold font-heading mt-2">{{ stats.adminCount }}</div>
       </div>
-      <div class="bg-white dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
-        <div class="flex items-center gap-3">
-          <div class="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-            <Activity class="w-5 h-5 text-purple-600 dark:text-purple-400" />
-          </div>
-          <div>
-            <div class="text-2xl font-bold text-slate-900 dark:text-slate-100">{{ stats.todayLogins }}</div>
-            <div class="text-sm text-slate-500 dark:text-slate-400">今日登录</div>
-          </div>
+      <div class="stat-card group">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-muted-foreground">今日登录</span>
+          <div class="p-2 rounded-lg bg-purple-500/10 text-purple-500 group-hover:bg-purple-500/20 transition-colors"><Activity class="w-4 h-4" /></div>
         </div>
+        <div class="text-2xl font-bold font-heading mt-2">{{ stats.todayLogins }}</div>
       </div>
     </div>
 
-    <div class="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
-      <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <div class="relative">
-            <Search class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input v-model="searchQuery" type="text" placeholder="搜索用户名或邮箱..." class="pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-violet-500" @keyup.enter="loadUsers" />
-          </div>
+    <!-- Table -->
+    <div class="bg-card border border-border rounded-xl overflow-hidden">
+      <div class="flex items-center justify-between p-4 border-b border-border">
+        <div class="relative">
+          <Search class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input v-model="searchQuery" placeholder="搜索用户名或邮箱..." class="pl-9 w-64 h-9" @keyup.enter="loadUsers" />
         </div>
-        <button @click="loadUsers" class="px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+        <Button variant="ghost" size="icon-sm" @click="loadUsers">
           <RefreshCw :class="['w-4 h-4', { 'animate-spin': loading }]" />
-        </button>
+        </Button>
       </div>
 
-      <div v-if="loading" class="p-8 text-center text-slate-500 dark:text-slate-400">
-        <Loader2 class="w-6 h-6 animate-spin mx-auto mb-2" />
-        加载中...
+      <div v-if="loading" class="p-10 flex flex-col items-center gap-2 text-muted-foreground">
+        <Loader2 class="w-6 h-6 animate-spin text-primary" />
+        <span class="text-sm">加载中...</span>
       </div>
 
-      <div v-else-if="users.length === 0" class="p-8 text-center text-slate-500 dark:text-slate-400">
-        <Users class="w-12 h-12 mx-auto mb-2 opacity-50" />
-        暂无用户数据
+      <div v-else-if="users.length === 0" class="p-10 flex flex-col items-center gap-2 text-muted-foreground">
+        <Users class="w-10 h-10 opacity-30" />
+        <span class="text-sm">暂无用户数据</span>
       </div>
 
-      <table v-else class="w-full">
-        <thead class="bg-slate-50 dark:bg-slate-900/50">
+      <table v-else class="w-full text-sm">
+        <thead class="bg-muted/30">
           <tr>
-            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">用户</th>
-            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">邮箱</th>
-            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">角色</th>
-            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">状态</th>
-            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">最后登录</th>
-            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">操作</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">用户</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">邮箱</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">角色</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">状态</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">最后登录</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">操作</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
-          <tr v-for="user in users" :key="user.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+        <tbody class="divide-y divide-border">
+          <tr v-for="user in users" :key="user.id" class="hover:bg-muted/20 transition-colors">
             <td class="px-4 py-3">
               <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
-                  <span class="text-sm font-medium text-violet-600 dark:text-violet-400">{{ user.username.charAt(0).toUpperCase() }}</span>
+                <div class="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
+                  <span class="text-xs font-bold text-primary">{{ user.username.charAt(0).toUpperCase() }}</span>
                 </div>
-                <span class="font-medium text-slate-900 dark:text-slate-100">{{ user.username }}</span>
+                <span class="font-medium">{{ user.username }}</span>
               </div>
             </td>
-            <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">{{ user.email }}</td>
+            <td class="px-4 py-3 text-muted-foreground">{{ user.email }}</td>
             <td class="px-4 py-3">
-              <span :class="[
-                'px-2 py-1 text-xs font-medium rounded-full',
-                user.role === 'admin' 
-                  ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
-                  : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
-              ]">
+              <span :class="['text-xs px-2 py-0.5 rounded-full font-medium', user.role === 'admin' ? 'bg-orange-500/10 text-orange-500' : 'bg-muted text-muted-foreground']">
                 {{ user.role === 'admin' ? '管理员' : '普通用户' }}
               </span>
             </td>
             <td class="px-4 py-3">
-              <span :class="[
-                'px-2 py-1 text-xs font-medium rounded-full',
-                user.isActive 
-                  ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                  : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-              ]">
+              <span :class="['text-xs px-2 py-0.5 rounded-full font-medium', user.isActive ? 'bg-green-500/10 text-green-500' : 'bg-destructive/10 text-destructive']">
                 {{ user.isActive ? '正常' : '已禁用' }}
               </span>
             </td>
-            <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
-              {{ user.lastLoginAt ? formatDate(user.lastLoginAt) : '从未登录' }}
-            </td>
+            <td class="px-4 py-3 text-xs text-muted-foreground">{{ user.lastLoginAt ? formatDate(user.lastLoginAt) : '从未登录' }}</td>
             <td class="px-4 py-3">
-              <div class="flex items-center gap-2">
-                <button v-if="user.role !== 'admin'" @click="editUser(user)" class="p-1.5 text-slate-500 hover:text-violet-600 dark:text-slate-400 dark:hover:text-violet-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors" title="编辑">
-                  <Edit2 class="w-4 h-4" />
-                </button>
-                <button v-if="user.role !== 'admin'" @click="resetPassword(user)" class="p-1.5 text-slate-500 hover:text-amber-600 dark:text-slate-400 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors" title="重置密码">
-                  <Key class="w-4 h-4" />
-                </button>
-                <button v-if="user.role !== 'admin'" @click="toggleUserStatus(user)" class="p-1.5 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors" :title="user.isActive ? '禁用' : '启用'">
-                  <Ban v-if="user.isActive" class="w-4 h-4" />
-                  <CheckCircle v-else class="w-4 h-4" />
-                </button>
-                <button v-if="user.role !== 'admin'" @click="confirmDelete(user)" class="p-1.5 text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors" title="删除">
-                  <Trash2 class="w-4 h-4" />
-                </button>
+              <div class="flex items-center gap-1" v-if="user.role !== 'admin'">
+                <Button variant="ghost" size="icon-sm" @click="editUser(user)" title="编辑"><Edit2 class="w-3.5 h-3.5" /></Button>
+                <Button variant="ghost" size="icon-sm" @click="resetPassword(user)" title="重置密码"><Key class="w-3.5 h-3.5" /></Button>
+                <Button variant="ghost" size="icon-sm" @click="toggleUserStatus(user)" :title="user.isActive ? '禁用' : '启用'">
+                  <Ban v-if="user.isActive" class="w-3.5 h-3.5" />
+                  <CheckCircle v-else class="w-3.5 h-3.5 text-green-500" />
+                </Button>
+                <Button variant="ghost" size="icon-sm" @click="confirmDelete(user)" class="text-destructive hover:text-destructive" title="删除"><Trash2 class="w-3.5 h-3.5" /></Button>
               </div>
             </td>
           </tr>
         </tbody>
       </table>
 
-      <div v-if="totalPages > 1" class="p-4 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
-        <div class="text-sm text-slate-500 dark:text-slate-400">
-          共 {{ total }} 条记录
-        </div>
+      <div v-if="totalPages > 1" class="p-4 border-t border-border flex items-center justify-between">
+        <span class="text-sm text-muted-foreground">共 {{ total }} 条记录</span>
         <div class="flex items-center gap-2">
-          <button @click="page--" :disabled="page === 1" class="px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed">
-            上一页
-          </button>
-          <span class="text-sm text-slate-600 dark:text-slate-400">{{ page }} / {{ totalPages }}</span>
-          <button @click="page++" :disabled="page === totalPages" class="px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed">
-            下一页
-          </button>
+          <Button variant="outline" size="sm" @click="page--" :disabled="page === 1">上一页</Button>
+          <span class="text-sm text-muted-foreground">{{ page }} / {{ totalPages }}</span>
+          <Button variant="outline" size="sm" @click="page++" :disabled="page === totalPages">下一页</Button>
         </div>
       </div>
     </div>
 
-    <!-- 创建用户弹窗 -->
-    <div v-if="showCreateModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="showCreateModal = false">
-      <div class="bg-white dark:bg-slate-800 rounded-lg p-6 w-full max-w-md">
-        <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">创建新用户</h3>
-        <form @submit.prevent="createUser">
-          <div class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">用户名</label>
-              <input v-model="createForm.username" type="text" required class="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500" />
+    <!-- Create Modal -->
+    <Teleport to="body">
+      <Transition name="modal">
+        <div v-if="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="showCreateModal = false">
+          <div class="fixed inset-0 bg-black/70 backdrop-blur-sm"></div>
+          <div class="relative bg-card border border-border rounded-2xl w-full max-w-md p-6 animate-scale-in">
+            <div class="flex items-center justify-between mb-5">
+              <h3 class="font-bold font-heading text-base">创建新用户</h3>
+              <Button variant="ghost" size="icon-sm" @click="showCreateModal = false"><X class="w-4 h-4" /></Button>
             </div>
-            <div>
-              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">邮箱</label>
-              <input v-model="createForm.email" type="email" required class="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500" />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">密码</label>
-              <input v-model="createForm.password" type="password" required class="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500" />
-            </div>
+            <form @submit.prevent="createUser" class="space-y-4">
+              <div class="space-y-1.5">
+                <label class="text-sm font-medium">用户名</label>
+                <Input v-model="createForm.username" type="text" required />
+              </div>
+              <div class="space-y-1.5">
+                <label class="text-sm font-medium">邮箱</label>
+                <Input v-model="createForm.email" type="email" required />
+              </div>
+              <div class="space-y-1.5">
+                <label class="text-sm font-medium">密码</label>
+                <Input v-model="createForm.password" type="password" required />
+              </div>
+              <div class="flex justify-end gap-3 pt-2">
+                <Button type="button" variant="outline" @click="showCreateModal = false">取消</Button>
+                <Button type="submit" :disabled="submitting" class="shadow-glow">{{ submitting ? '创建中...' : '创建' }}</Button>
+              </div>
+            </form>
           </div>
-          <div class="flex justify-end gap-3 mt-6">
-            <button type="button" @click="showCreateModal = false" class="px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
-              取消
-            </button>
-            <button type="submit" :disabled="submitting" class="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors disabled:opacity-50">
-              {{ submitting ? '创建中...' : '创建' }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- 编辑用户弹窗 -->
-    <div v-if="showEditModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="showEditModal = false">
-      <div class="bg-white dark:bg-slate-800 rounded-lg p-6 w-full max-w-md">
-        <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">编辑用户</h3>
-        <form @submit.prevent="updateUser">
-          <div class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">用户名</label>
-              <input v-model="editForm.username" type="text" required class="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500" />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">邮箱</label>
-              <input v-model="editForm.email" type="email" required class="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500" />
-            </div>
-          </div>
-          <div class="flex justify-end gap-3 mt-6">
-            <button type="button" @click="showEditModal = false" class="px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
-              取消
-            </button>
-            <button type="submit" :disabled="submitting" class="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors disabled:opacity-50">
-              {{ submitting ? '保存中...' : '保存' }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- 重置密码弹窗 -->
-    <div v-if="showResetModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="showResetModal = false">
-      <div class="bg-white dark:bg-slate-800 rounded-lg p-6 w-full max-w-md">
-        <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">重置密码</h3>
-        <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">为用户 <strong>{{ resetTarget?.username }}</strong> 设置新密码</p>
-        <form @submit.prevent="submitResetPassword">
-          <div>
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">新密码</label>
-            <input v-model="resetForm.password" type="password" required class="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500" />
-          </div>
-          <div class="flex justify-end gap-3 mt-6">
-            <button type="button" @click="showResetModal = false" class="px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
-              取消
-            </button>
-            <button type="submit" :disabled="submitting" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors disabled:opacity-50">
-              {{ submitting ? '重置中...' : '重置密码' }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- 删除确认弹窗 -->
-    <div v-if="showDeleteConfirm" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="showDeleteConfirm = false">
-      <div class="bg-white dark:bg-slate-800 rounded-lg p-6 w-full max-w-md">
-        <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">确认删除</h3>
-        <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">确定要删除用户 <strong>{{ deleteTarget?.username }}</strong> 吗？此操作不可撤销。</p>
-        <div class="flex justify-end gap-3">
-          <button @click="showDeleteConfirm = false" class="px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
-            取消
-          </button>
-          <button @click="deleteUser" :disabled="submitting" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50">
-            {{ submitting ? '删除中...' : '删除' }}
-          </button>
         </div>
-      </div>
-    </div>
+      </Transition>
+    </Teleport>
+
+    <!-- Edit Modal -->
+    <Teleport to="body">
+      <Transition name="modal">
+        <div v-if="showEditModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="showEditModal = false">
+          <div class="fixed inset-0 bg-black/70 backdrop-blur-sm"></div>
+          <div class="relative bg-card border border-border rounded-2xl w-full max-w-md p-6 animate-scale-in">
+            <div class="flex items-center justify-between mb-5">
+              <h3 class="font-bold font-heading text-base">编辑用户</h3>
+              <Button variant="ghost" size="icon-sm" @click="showEditModal = false"><X class="w-4 h-4" /></Button>
+            </div>
+            <form @submit.prevent="updateUser" class="space-y-4">
+              <div class="space-y-1.5">
+                <label class="text-sm font-medium">用户名</label>
+                <Input v-model="editForm.username" type="text" required />
+              </div>
+              <div class="space-y-1.5">
+                <label class="text-sm font-medium">邮箱</label>
+                <Input v-model="editForm.email" type="email" required />
+              </div>
+              <div class="flex justify-end gap-3 pt-2">
+                <Button type="button" variant="outline" @click="showEditModal = false">取消</Button>
+                <Button type="submit" :disabled="submitting" class="shadow-glow">{{ submitting ? '保存中...' : '保存' }}</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- Reset Password Modal -->
+    <Teleport to="body">
+      <Transition name="modal">
+        <div v-if="showResetModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="showResetModal = false">
+          <div class="fixed inset-0 bg-black/70 backdrop-blur-sm"></div>
+          <div class="relative bg-card border border-border rounded-2xl w-full max-w-md p-6 animate-scale-in">
+            <div class="flex items-center justify-between mb-5">
+              <h3 class="font-bold font-heading text-base">重置密码</h3>
+              <Button variant="ghost" size="icon-sm" @click="showResetModal = false"><X class="w-4 h-4" /></Button>
+            </div>
+            <p class="text-sm text-muted-foreground mb-4">为用户 <strong class="text-foreground">{{ resetTarget?.username }}</strong> 设置新密码</p>
+            <form @submit.prevent="submitResetPassword" class="space-y-4">
+              <div class="space-y-1.5">
+                <label class="text-sm font-medium">新密码</label>
+                <Input v-model="resetForm.password" type="password" required />
+              </div>
+              <div class="flex justify-end gap-3 pt-2">
+                <Button type="button" variant="outline" @click="showResetModal = false">取消</Button>
+                <Button type="submit" :disabled="submitting">{{ submitting ? '重置中...' : '重置密码' }}</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- Delete Confirm -->
+    <Teleport to="body">
+      <Transition name="modal">
+        <div v-if="showDeleteConfirm" class="fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="showDeleteConfirm = false">
+          <div class="fixed inset-0 bg-black/70 backdrop-blur-sm"></div>
+          <div class="relative bg-card border border-border rounded-2xl w-full max-w-md p-6 animate-scale-in">
+            <div class="flex items-center justify-between mb-5">
+              <h3 class="font-bold font-heading text-base">确认删除</h3>
+              <Button variant="ghost" size="icon-sm" @click="showDeleteConfirm = false"><X class="w-4 h-4" /></Button>
+            </div>
+            <p class="text-sm text-muted-foreground mb-6">确定要删除用户 <strong class="text-foreground">{{ deleteTarget?.username }}</strong> 吗？此操作不可撤销。</p>
+            <div class="flex justify-end gap-3">
+              <Button variant="outline" @click="showDeleteConfirm = false">取消</Button>
+              <Button variant="destructive" @click="deleteUser" :disabled="submitting">{{ submitting ? '删除中...' : '删除' }}</Button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import { Plus, Search, RefreshCw, Loader2, Users, UserCheck, Shield, Activity, Edit2, Key, Ban, CheckCircle, Trash2 } from 'lucide-vue-next'
+import { Plus, Search, RefreshCw, Loader2, Users, UserCheck, Shield, Activity, Edit2, Key, Ban, CheckCircle, Trash2, X } from 'lucide-vue-next'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import apiService from '@/services/apiService.js'
 
 const loading = ref(false)
 const submitting = ref(false)
 const users = ref([])
-const stats = ref({
-  totalUsers: 0,
-  activeUsers: 0,
-  adminCount: 0,
-  todayLogins: 0
-})
+const stats = ref({ totalUsers: 0, activeUsers: 0, adminCount: 0, todayLogins: 0 })
 const page = ref(1)
 const limit = ref(20)
 const total = ref(0)
@@ -292,9 +260,7 @@ const deleteTarget = ref(null)
 async function loadStats() {
   try {
     const res = await apiService.request('/admin/users/stats')
-    if (res) {
-      stats.value = res
-    }
+    if (res) stats.value = res
   } catch (e) {
     console.error('加载统计失败:', e)
   }
@@ -321,10 +287,7 @@ async function loadUsers() {
 async function createUser() {
   submitting.value = true
   try {
-    await apiService.request('/admin/users', {
-      method: 'POST',
-      body: JSON.stringify(createForm.value)
-    })
+    await apiService.request('/admin/users', { method: 'POST', body: JSON.stringify(createForm.value) })
     showCreateModal.value = false
     createForm.value = { username: '', email: '', password: '' }
     loadUsers()
@@ -400,9 +363,7 @@ function confirmDelete(user) {
 async function deleteUser() {
   submitting.value = true
   try {
-    await apiService.request(`/admin/users/${deleteTarget.value.id}`, {
-      method: 'DELETE'
-    })
+    await apiService.request(`/admin/users/${deleteTarget.value.id}`, { method: 'DELETE' })
     showDeleteConfirm.value = false
     loadUsers()
     loadStats()
@@ -414,22 +375,19 @@ async function deleteUser() {
 }
 
 function formatDate(dateStr) {
-  const date = new Date(dateStr)
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
+  if (!dateStr) return ''
+  return new Date(dateStr).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
 }
 
-watch(page, () => {
-  loadUsers()
-})
+watch(page, loadUsers)
 
 onMounted(() => {
   loadStats()
   loadUsers()
 })
 </script>
+
+<style scoped>
+.modal-enter-active, .modal-leave-active { transition: opacity 0.2s ease; }
+.modal-enter-from, .modal-leave-to { opacity: 0; }
+</style>

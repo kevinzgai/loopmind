@@ -154,7 +154,7 @@
           </div>
           <div class="space-y-2">
             <label class="text-sm font-medium text-slate-700 dark:text-slate-300">确认新密码</label>
-            <input v-model="passwordForm.confirmPassword" type="password" required class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-violet-500 focus:border-violet-500 text-sm py-2" />
+            <input v-model="passwordForm.confirmPassword" type="password" required class="w-full bg-muted border border-input rounded-lg focus:ring-primary focus:border-primary text-sm py-2 px-3 text-foreground" />
           </div>
           <div class="pt-4">
             <button type="submit" class="px-6 py-2.5 bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 dark:hover:bg-slate-600 text-white rounded-lg text-sm font-bold transition-all disabled:opacity-50" :disabled="isChangingPassword">

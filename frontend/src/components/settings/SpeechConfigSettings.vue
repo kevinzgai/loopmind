@@ -1,10 +1,10 @@
 <template>
   <section
-    class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-6">
+    class="bg-card dark:bg-card rounded-xl border  p-6 shadow-sm space-y-6">
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">语音服务配置</h2>
-        <p class="text-sm text-slate-500 dark:text-slate-400">配置全系统通用的文字转语音 (TTS) 与语音识别 (ASR) 服务</p>
+        <h2 class="text-lg font-bold text-foreground">语音服务配置</h2>
+        <p class="text-sm text-muted-foreground">配置全系统通用的文字转语音 (TTS) 与语音识别 (ASR) 服务</p>
       </div>
       <div class="flex gap-2">
         <button @click="testAllConnections" :disabled="testing"
@@ -12,7 +12,7 @@
           {{ testing ? '测试中...' : '测试所有连接' }}
         </button>
         <button @click="saveConfig" :disabled="loading"
-          class="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50">
+          class="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50">
           {{ loading ? '保存中...' : '保存配置' }}
         </button>
       </div>
@@ -20,14 +20,14 @@
     
     <!-- 测试结果 -->
     <div v-if="testResults.length > 0" class="space-y-2">
-      <h3 class="font-bold text-slate-900 dark:text-slate-100">测试结果</h3>
+      <h3 class="font-bold text-foreground">测试结果</h3>
       <div class="space-y-2">
         <div v-for="result in testResults" :key="result.provider"
           class="p-3 rounded-lg border" :class="result.success ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800' : 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800'">
           <div class="flex items-start justify-between">
             <div class="flex-1">
-              <h4 class="font-medium text-slate-900 dark:text-slate-100">{{ result.provider }}</h4>
-              <p class="text-sm text-slate-600 dark:text-slate-400">{{ result.message }}</p>
+              <h4 class="font-medium text-foreground">{{ result.provider }}</h4>
+              <p class="text-sm text-muted-foreground">{{ result.message }}</p>
               <!-- 音频播放器 -->
               <div v-if="result.audioUrl" class="mt-2">
                 <audio controls :src="result.audioUrl" class="w-full h-8">
@@ -45,11 +45,11 @@
 
     <div class="space-y-6">
       <div class="space-y-4">
-        <h3 class="font-bold text-slate-900 dark:text-slate-100">文字转语音 (TTS)</h3>
+        <h3 class="font-bold text-foreground">文字转语音 (TTS)</h3>
         <div class="space-y-2">
-          <label class="text-sm font-medium text-slate-700 dark:text-slate-300">默认 TTS 服务提供商</label>
+          <label class="text-sm font-medium text-foreground">默认 TTS 服务提供商</label>
           <select v-model="form.ttsProvider"
-            class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-300">
+            class="w-full bg-muted dark:bg-card border  rounded-lg px-3 py-2 text-sm text-foreground">
             <option v-for="provider in availableProviders" :key="provider.id" :value="provider.id">
               {{ provider.name }}
             </option>
@@ -58,11 +58,11 @@
       </div>
 
       <div class="space-y-4">
-        <h3 class="font-bold text-slate-900 dark:text-slate-100">语音识别 (ASR)</h3>
+        <h3 class="font-bold text-foreground">语音识别 (ASR)</h3>
         <div class="space-y-2">
-          <label class="text-sm font-medium text-slate-700 dark:text-slate-300">默认 ASR 服务提供商</label>
+          <label class="text-sm font-medium text-foreground">默认 ASR 服务提供商</label>
           <select v-model="form.asrProvider"
-            class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-300">
+            class="w-full bg-muted dark:bg-card border  rounded-lg px-3 py-2 text-sm text-foreground">
             <option v-for="provider in availableProviders" :key="provider.id" :value="provider.id">
               {{ provider.name }}
             </option>
@@ -71,15 +71,15 @@
       </div>
 
       <div class="space-y-4">
-        <h3 class="font-bold text-slate-900 dark:text-slate-100">提供商配置</h3>
+        <h3 class="font-bold text-foreground">提供商配置</h3>
         
         <!-- 硅基流动配置 -->
-        <div class="space-y-4 border border-slate-200 dark:border-slate-800 rounded-lg p-4">
+        <div class="space-y-4 border  rounded-lg p-4">
           <div class="flex items-center justify-between">
-            <h4 class="font-medium text-slate-900 dark:text-slate-100">硅基流动 (SiliconFlow)</h4>
+            <h4 class="font-medium text-foreground">硅基流动 (SiliconFlow)</h4>
             <div class="flex gap-2">
               <button @click="testTTS('siliconflow')" :disabled="testingTTS.siliconflow"
-                class="px-3 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 dark:text-emerald-400 rounded-lg text-sm font-medium transition-colors disabled:opacity-50">
+                class="px-3 py-1 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-sm font-medium transition-colors disabled:opacity-50">
                 {{ testingTTS.siliconflow ? '测试中...' : '测试语音' }}
               </button>
               <a href="https://cloud.siliconflow.cn/console/keys" target="_blank" rel="noopener noreferrer"
@@ -90,32 +90,32 @@
           </div>
           <div class="space-y-3">
             <div class="space-y-2">
-              <label class="text-sm font-medium text-slate-700 dark:text-slate-300">API Key</label>
+              <label class="text-sm font-medium text-foreground">API Key</label>
               <div class="flex gap-2">
                 <input :type="showKeys.siliconflow ? 'text' : 'password'" v-model="providers.siliconflow.apiKey"
                   placeholder="请输入 SiliconFlow API Key"
-                  class="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-300" />
+                  class="flex-1 bg-muted dark:bg-card border  rounded-lg px-3 py-2 text-sm text-foreground" />
                 <button @click="showKeys.siliconflow = !showKeys.siliconflow"
-                  class="px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700">
+                  class="px-3 py-2 bg-muted dark:bg-card border  rounded-lg text-sm text-muted-foreground hover:bg-muted ">
                   {{ showKeys.siliconflow ? '隐藏' : '显示' }}
                 </button>
               </div>
             </div>
             <div class="space-y-2">
-              <label class="text-sm font-medium text-slate-700 dark:text-slate-300">Base URL</label>
+              <label class="text-sm font-medium text-foreground">Base URL</label>
               <input type="text" v-model="providers.siliconflow.baseURL" placeholder="https://api.siliconflow.cn/v1"
-                class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-300" />
+                class="w-full bg-muted dark:bg-card border  rounded-lg px-3 py-2 text-sm text-foreground" />
             </div>
           </div>
         </div>
 
         <!-- 阿里云配置 -->
-        <div class="space-y-4 border border-slate-200 dark:border-slate-800 rounded-lg p-4">
+        <div class="space-y-4 border  rounded-lg p-4">
           <div class="flex items-center justify-between">
-            <h4 class="font-medium text-slate-900 dark:text-slate-100">阿里云 (Aliyun)</h4>
+            <h4 class="font-medium text-foreground">阿里云 (Aliyun)</h4>
             <div class="flex gap-2">
               <button @click="testTTS('aliyun')" :disabled="testingTTS.aliyun"
-                class="px-3 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 dark:text-emerald-400 rounded-lg text-sm font-medium transition-colors disabled:opacity-50">
+                class="px-3 py-1 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-sm font-medium transition-colors disabled:opacity-50">
                 {{ testingTTS.aliyun ? '测试中...' : '测试语音' }}
               </button>
               <a href="https://nls-portal.console.aliyun.com/" target="_blank" rel="noopener noreferrer"
@@ -126,39 +126,39 @@
           </div>
           <div class="space-y-3">
             <div class="space-y-2">
-              <label class="text-sm font-medium text-slate-700 dark:text-slate-300">AccessKey ID</label>
+              <label class="text-sm font-medium text-foreground">AccessKey ID</label>
               <div class="flex gap-2">
                 <input :type="showKeys.aliyun ? 'text' : 'password'" v-model="providers.aliyun.accessKeyId"
                   placeholder="请输入阿里云 AccessKey ID"
-                  class="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-300" />
+                  class="flex-1 bg-muted dark:bg-card border  rounded-lg px-3 py-2 text-sm text-foreground" />
               </div>
             </div>
             <div class="space-y-2">
-              <label class="text-sm font-medium text-slate-700 dark:text-slate-300">AccessKey Secret</label>
+              <label class="text-sm font-medium text-foreground">AccessKey Secret</label>
               <div class="flex gap-2">
                 <input :type="showKeys.aliyun ? 'text' : 'password'" v-model="providers.aliyun.accessKeySecret"
                   placeholder="请输入阿里云 AccessKey Secret"
-                  class="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-300" />
+                  class="flex-1 bg-muted dark:bg-card border  rounded-lg px-3 py-2 text-sm text-foreground" />
               </div>
             </div>
             <div class="space-y-2">
-              <label class="text-sm font-medium text-slate-700 dark:text-slate-300">AppKey</label>
+              <label class="text-sm font-medium text-foreground">AppKey</label>
               <div class="flex gap-2">
                 <input :type="showKeys.aliyun ? 'text' : 'password'" v-model="providers.aliyun.appKey"
                   placeholder="请输入智能语音服务 AppKey"
-                  class="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-300" />
+                  class="flex-1 bg-muted dark:bg-card border  rounded-lg px-3 py-2 text-sm text-foreground" />
                 <button @click="showKeys.aliyun = !showKeys.aliyun"
-                  class="px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700">
+                  class="px-3 py-2 bg-muted dark:bg-card border  rounded-lg text-sm text-muted-foreground hover:bg-muted ">
                   {{ showKeys.aliyun ? '隐藏' : '显示' }}
                 </button>
               </div>
             </div>
             <div class="space-y-2">
-              <label class="text-sm font-medium text-slate-700 dark:text-slate-300">DashScope API Key (可选，用于百炼 TTS)</label>
+              <label class="text-sm font-medium text-foreground">DashScope API Key (可选，用于百炼 TTS)</label>
               <div class="flex gap-2">
                 <input :type="showKeys.aliyun ? 'text' : 'password'" v-model="providers.aliyun.apiKey"
                   placeholder="用于阿里百炼 TTS 服务"
-                  class="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-300" />
+                  class="flex-1 bg-muted dark:bg-card border  rounded-lg px-3 py-2 text-sm text-foreground" />
               </div>
             </div>
           </div>

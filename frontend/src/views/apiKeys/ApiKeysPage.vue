@@ -2,51 +2,49 @@
   <div class="max-w-6xl mx-auto space-y-6">
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100">API Keys 管理</h1>
-        <p class="text-slate-500 dark:text-slate-400 mt-1">创建和管理您的 API 访问凭证</p>
+        <h1 class="text-2xl font-bold font-heading">API Keys 管理</h1>
+        <p class="text-muted-foreground mt-1">创建和管理您的 API 访问凭证</p>
       </div>
-      <button 
+      <Button
         @click="showCreateModal = true"
         :disabled="apiKeys.length >= maxKeys"
-        class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-violet-600 hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
-        <Plus class="w-4 h-4 mr-2" />
+        class="shadow-glow">
+        <Plus class="w-4 h-4" />
         创建新 Key
-      </button>
+      </Button>
     </div>
 
-    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+    <div class="bg-card rounded-xl border border-border p-6">
       <div class="flex items-center justify-between mb-6">
         <div class="flex items-center gap-4">
-          <div class="text-sm text-slate-500 dark:text-slate-400">
-            已使用 <span class="font-bold text-slate-900 dark:text-slate-100">{{ apiKeys.length }}</span> / {{ maxKeys }} 个 Key
+          <div class="text-sm text-muted-foreground">
+            已使用 <span class="font-bold text-foreground">{{ apiKeys.length }}</span> / {{ maxKeys }} 个 Key
           </div>
-          <div class="h-4 w-px bg-slate-200 dark:bg-slate-700"></div>
-          <div class="text-sm text-slate-500 dark:text-slate-400">
-            激活: <span class="font-bold text-emerald-600">{{ activeKeysCount }}</span>
+          <div class="h-4 w-px bg-border"></div>
+          <div class="text-sm text-muted-foreground">
+            激活: <span class="font-bold text-green-500">{{ activeKeysCount }}</span>
           </div>
         </div>
-        <router-link to="/api-keys/stats" class="text-sm text-violet-600 dark:text-violet-400 font-medium flex items-center hover:underline">
-          <BarChart3 class="w-4 h-4 mr-1" />
-          查看统计
-        </router-link>
+        <Button as-child variant="ghost" size="sm">
+          <router-link to="/api-keys/stats" class="inline-flex items-center gap-1.5">
+            <BarChart3 class="w-4 h-4" />查看统计
+          </router-link>
+        </Button>
       </div>
 
       <div v-if="isLoading" class="py-12 flex justify-center">
-        <div class="w-8 h-8 border-4 border-violet-200 dark:border-violet-800 border-t-violet-600 dark:border-t-violet-400 rounded-full animate-spin"></div>
+        <Loader2 class="w-8 h-8 animate-spin text-primary" />
       </div>
 
       <div v-else-if="apiKeys.length === 0" class="py-12 text-center">
-        <div class="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Key class="w-8 h-8 text-slate-400" />
+        <div class="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+          <Key class="w-8 h-8 text-muted-foreground" />
         </div>
-        <h3 class="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2">暂无 API Keys</h3>
-        <p class="text-slate-500 dark:text-slate-400 mb-4">创建您的第一个 API Key 以开始使用外部 API</p>
-        <button 
-          @click="showCreateModal = true"
-          class="inline-flex items-center px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-sm font-medium transition-colors">
-          <Plus class="w-4 h-4 mr-2" />
-          创建第一个 Key
-        </button>
+        <h3 class="text-lg font-bold font-heading mb-2">暂无 API Keys</h3>
+        <p class="text-muted-foreground mb-4">创建您的第一个 API Key 以开始使用外部 API</p>
+        <Button @click="showCreateModal = true" class="shadow-glow">
+          <Plus class="w-4 h-4" />创建第一个 Key
+        </Button>
       </div>
 
       <div v-else class="space-y-3">
@@ -75,7 +73,7 @@
               </div>
               
               <div class="flex items-center gap-2 mb-3">
-                <code class="flex-1 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded text-xs font-mono text-slate-600 dark:text-slate-400 select-all truncate">
+                <code class="flex-1 bg-muted px-3 py-1.5 rounded text-xs font-mono text-muted-foreground select-all truncate">
                   {{ apiKey.key }}
                 </code>
                 <button 
@@ -149,6 +147,8 @@ import {
   Power, PowerOff, Trash2, AlertTriangle, BarChart3 
 } from 'lucide-vue-next'
 import { getMyApiKeys, deleteApiKey, toggleApiKeyStatus } from '@/services/apiKeyService.js'
+import { Button } from '@/components/ui/button'
+import { Loader2 } from 'lucide-vue-next'
 import CreateApiKeyModal from '@/components/apiKeys/CreateApiKeyModal.vue'
 
 const apiKeys = ref([])
