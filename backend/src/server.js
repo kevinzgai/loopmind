@@ -202,6 +202,10 @@ httpServer.listen(PORT, async () => {
         // 连接数据库
         await connectDatabase();
 
+        // 初始化内置工具
+        const { initBuiltinTools } = await import('./modules/tool/seeds/builtinTools.js');
+        await initBuiltinTools();
+
         const adminExists = await User.findOne({ role: 'admin' });
         if (!adminExists) {
             const username = process.env.ADMIN_USERNAME || 'admin';

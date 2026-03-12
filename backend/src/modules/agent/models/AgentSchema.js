@@ -62,6 +62,50 @@ const agentSchema = new mongoose.Schema(
       index: true
     },
 
+    // 多选知识库
+    knowledgeBaseIds: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'KnowledgeBase'
+    }],
+
+    // 知识库开关
+    enableKnowledgeBase: {
+      type: Boolean,
+      default: false
+    },
+
+    // 功能开关
+    features: {
+      conversationOperator: { type: Boolean, default: true },
+      nextQuestionSuggestion: { type: Boolean, default: false },
+      textToSpeech: { type: Boolean, default: false },
+      speechToText: { type: Boolean, default: false },
+      contentModeration: { type: Boolean, default: true }
+    },
+
+    // TTS 配置
+    ttsConfig: {
+      voice: { type: String, default: 'Cherry' },
+      speechRate: { type: Number, default: 150 },
+      autoPlay: { type: Boolean, default: false }
+    },
+
+    // 对话开启白自定义文本
+    conversationOperatorText: {
+      type: String,
+      default: '在对话中，您可以使用 {{variableName}} 来引用变量'
+    },
+
+    // 开场白配置
+    greeting: {
+      enabled: { type: Boolean, default: false },
+      text: { type: String, default: '你好！我是你的智能助手，有什么可以帮助你的吗？' },
+      quickQuestions: [{ type: String }]
+    },
+
+    // 内容审查敏感词
+    sensitiveWords: [{ type: String }],
+
     // 发布状态
     isPublished: {
       type: Boolean,

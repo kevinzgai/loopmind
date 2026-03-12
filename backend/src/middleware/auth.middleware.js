@@ -36,7 +36,7 @@ export async function authenticateToken(req, res, next) {
     const userInfo = await verifyToken(token);
 
     // 将用户信息附加到请求对象
-    req.user = userInfo;
+    req.user = { ...userInfo, id: userInfo.userId };
     req.token = token;
 
     next();

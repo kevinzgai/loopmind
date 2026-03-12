@@ -46,6 +46,11 @@
           <span>知识库</span>
         </router-link>
 
+        <router-link to="/analytics" v-if="isAuthenticated" class="sidebar-item" active-class="active">
+          <BarChart2 class="w-5 h-5" />
+          <span>数据分析</span>
+        </router-link>
+
         <div v-permission="'admin'">
           <div class="text-xs font-semibold text-muted-foreground uppercase tracking-wider mt-6 mb-3 px-3">系统管理</div>
 
@@ -167,7 +172,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { isAuthenticated, currentUser, logout } from '@/stores/authStore.js'
 import {
-  Code, LayoutDashboard, Compass, Box, MessageSquare, Database, Settings, User, Search, Bell, LogOut, ChevronUp, ShieldCheck, Cpu, Brain, Mic, FileText, Users, Tag
+  Code, LayoutDashboard, Compass, Box, MessageSquare, Database, Settings, User, Search, Bell, LogOut, ChevronUp, ShieldCheck, Cpu, Brain, Mic, FileText, Users, Tag, BarChart2
 } from 'lucide-vue-next'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 
@@ -211,6 +216,7 @@ const currentRouteName = computed(() => {
     'MyAgents': '我的智能体',
     'Chat': '对话记录',
     'Knowledge': '知识库',
+    'Analytics': '数据分析',
     'Profile': '个人设置',
     'Settings': '系统设置',
     'ApiKeys': 'API Keys',

@@ -1,1065 +1,791 @@
 <template>
-  <div class="min-h-screen bg-slate-50 dark:bg-slate-950">
-    <!-- 顶部导航 -->
-    <header class="sticky top-0 z-50 w-full border-b border-slate-200/80 dark:border-slate-800/80 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl">
-      <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <button @click="handleCancel" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
-            <ArrowLeft class="w-5 h-5 text-slate-600 dark:text-slate-400" />
-          </button>
-          <div>
-            <h1 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
-              {{ isEditMode ? '编辑智能体' : '创建智能体' }}
-            </h1>
-            <p class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">
-              {{ currentStep === 0 ? '选择模板开始' : currentStep === 1 ? '设置基本信息' : '配置 AI 能力' }}
-            </p>
+  <div class="flex h-screen bg-slate-50 dark:bg-slate-950 overflow-hidden">
+    <div class="w-[500px] flex flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+      <div class="h-12 border-b border-slate-200 dark:border-slate-800 px-4 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <Button variant="ghost" size="icon-sm" @click="$router.back()">
+            <ArrowLeft class="w-4 h-4" />
+          </Button>
+          <h1 class="font-bold text-sm">{{ isEditMode ? '编辑' : '创建' }}智能体</h1>
+        </div>
+        <Button size="sm" @click="handleSubmit" :disabled="isSubmitting || !form.name">
+          <Loader2 v-if="isSubmitting" class="w-3.5 h-3.5 animate-spin" />
+          <span>{{ isSubmitting ? '保存中...' : '保存' }}</span>
+        </Button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-6 space-y-4">
+        <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-4">
+          <h3 class="font-bold text-sm mb-3">基本信息</h3>
+          <Input v-model="form.name" placeholder="名称" class="mb-2" />
+          <Textarea v-model="form.description" placeholder="描述" :rows="2" class="resize-none" />
+        </div>
+
+        <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-4">
+          <div class="flex justify-between items-center mb-3">
+            <h3 class="font-bold text-sm">系统提示词</h3>
+            <Button variant="ghost" size="sm" @click="optimizePrompt" :disabled="!form.personality || isOptimizing">
+              <Loader2 v-if="isOptimizing" class="w-3.5 h-3.5 animate-spin" />
+              <Sparkles v-else class="w-3.5 h-3.5" />
+              <span>{{ isOptimizing ? 'AI 优化中...' : '优化' }}</span>
+            </Button>
+          </div>
+          <Textarea
+            v-model="form.personality"
+            :disabled="isOptimizing"
+            placeholder="定义智能体的性格和行为..."
+            :rows="10"
+            class="resize-none font-mono transition-all"
+          />
+        </div>
+
+        <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-4">
+          <label class="flex items-center gap-2 mb-3 cursor-pointer">
+            <input v-model="form.greeting.enabled" type="checkbox" class="w-4 h-4 rounded border-slate-300 text-blue-600" />
+            <span class="font-bold text-sm">开场白</span>
+          </label>
+          <div v-if="form.greeting.enabled" class="space-y-2">
+            <Textarea v-model="form.greeting.text" placeholder="开场白文本" :rows="2" class="resize-none" />
+            <div class="space-y-1">
+              <div v-for="(q, i) in form.greeting.quickQuestions" :key="i" class="flex gap-2">
+                <Input v-model="form.greeting.quickQuestions[i]" placeholder="快捷问题" class="h-7 text-xs" />
+                <Button variant="ghost" size="icon-sm" @click="form.greeting.quickQuestions.splice(i, 1)">
+                  <Trash2 class="w-3 h-3 text-destructive" />
+                </Button>
+              </div>
+            </div>
+            <Button v-if="form.greeting.quickQuestions.length < 10" variant="ghost" size="sm" @click="form.greeting.quickQuestions.push('')">
+              <Plus class="w-3.5 h-3.5" /> 添加问题
+            </Button>
           </div>
         </div>
-        
-        <!-- 步骤指示器 -->
-        <div class="hidden md:flex items-center gap-2">
-          <template v-for="(step, index) in steps" :key="index">
-            <div :class="[
-              'flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all',
-              currentStep === index 
-                ? 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300' 
-                : currentStep > index
-                  ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
-            ]">
-              <Check v-if="currentStep > index" class="w-4 h-4" />
-              <span v-else>{{ index + 1 }}</span>
-              <span class="hidden lg:inline">{{ step.title }}</span>
+
+        <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-4">
+          <label class="flex items-center gap-2 mb-3 cursor-pointer">
+            <input v-model="form.enableKnowledgeBase" type="checkbox" class="w-4 h-4 rounded border-slate-300 text-blue-600" />
+            <span class="font-bold text-sm">启用知识库</span>
+          </label>
+          <div v-if="form.enableKnowledgeBase" class="space-y-2">
+            <div class="grid grid-cols-2 gap-2">
+              <label v-for="kb in knowledgeBases" :key="kb.id " class="flex items-center gap-2 p-2 bg-white dark:bg-slate-900 rounded cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20">
+                <input :checked="form.knowledgeBaseIds.includes(kb.id)" @change="toggleKnowledgeBase(kb.id)" type="checkbox" class="w-3 h-3 rounded border-slate-300 text-blue-600" />
+                <span class="text-xs font-medium">{{ kb.name }} <span class="text-xs font-medium text-slate-500 dark:text-slate-400"> (文档数: {{ kb.documentCount }} 条)</span> </span>
+                
+              </label>
             </div>
-            <ChevronRight v-if="index < steps.length - 1" class="w-4 h-4 text-slate-400" />
-          </template>
+          </div>
         </div>
 
-        <div class="flex items-center gap-3">
-          <button
-            v-if="currentStep > 0"
-            @click="prevStep"
-            class="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-          >
-            上一步
-          </button>
-          <button
-            v-if="currentStep < 2"
-            @click="nextStep"
-            :disabled="!canProceed"
-            class="px-6 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            下一步
-          </button>
-          <button
-            v-else
-            @click="handleSubmit"
-            :disabled="isSubmitting || !isFormValid"
-            class="px-6 py-2 text-sm font-medium text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 rounded-lg shadow-md shadow-violet-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            <Loader2 v-if="isSubmitting" class="w-4 h-4 animate-spin" />
-            {{ isSubmitting ? '保存中...' : (isEditMode ? '保存修改' : '创建智能体') }}
-          </button>
+        <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-4">
+          <h3 class="font-bold text-sm mb-3">功能</h3>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center gap-2 p-2 bg-white dark:bg-slate-900 rounded cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20">
+              <input v-model="form.features.conversationOperator" type="checkbox" class="w-3 h-3 rounded border-slate-300 text-blue-600" />
+              <span class="text-xs font-medium">对话开启白</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 bg-white dark:bg-slate-900 rounded cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20">
+              <input v-model="form.features.nextQuestionSuggestion" type="checkbox" class="w-3 h-3 rounded border-slate-300 text-blue-600" />
+              <span class="text-xs font-medium">下一步建议</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 bg-white dark:bg-slate-900 rounded cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20">
+              <input v-model="form.features.textToSpeech" type="checkbox" class="w-3 h-3 rounded border-slate-300 text-blue-600" />
+              <span class="text-xs font-medium">文字转语音</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 bg-white dark:bg-slate-900 rounded cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20">
+              <input v-model="form.features.speechToText" type="checkbox" class="w-3 h-3 rounded border-slate-300 text-blue-600" />
+              <span class="text-xs font-medium">语音转文字</span>
+            </label>
+          </div>
         </div>
-      </div>
-    </header>
 
-    <!-- 移动端步骤指示器 -->
-    <div class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-4 py-3">
-      <div class="flex items-center justify-between mb-2">
-        <span class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ steps[currentStep].title }}</span>
-        <span class="text-xs text-slate-500">{{ currentStep + 1 }} / {{ steps.length }}</span>
-      </div>
-      <div class="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-        <div 
-          class="h-full bg-gradient-to-r from-violet-600 to-indigo-600 transition-all duration-300"
-          :style="{ width: `${((currentStep + 1) / steps.length) * 100}%` }"
-        />
+        <div v-if="form.features.textToSpeech" class="bg-slate-50 dark:bg-slate-800 rounded-lg p-4">
+          <h3 class="font-bold text-sm mb-3">文字转语音配置</h3>
+          <div class="space-y-3">
+            <div>
+              <label class="text-xs font-medium text-slate-700 dark:text-slate-300 block mb-1">音色</label>
+              <Select v-model="form.ttsConfig.voice">
+                <SelectTrigger class="h-8 text-xs">
+                  <SelectValue placeholder="选择音色" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem v-for="v in availableVoices" :key="v.id" :value="v.id" class="text-xs">
+                    {{ v.name }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label class="text-xs font-medium text-slate-700 dark:text-slate-300 block mb-1">语速 ({{ form.ttsConfig.speechRate }})</label>
+              <input v-model.number="form.ttsConfig.speechRate" type="range" min="50" max="200" step="10" class="w-full" />
+              <div class="flex justify-between text-xs text-slate-400 mt-1">
+                <span>慢 (50)</span>
+                <span>正常 (150)</span>
+                <span>快 (200)</span>
+              </div>
+              <div class="text-xs text-amber-500 dark:text-amber-400 mt-1">⚠ 当前 TTS 模型 (qwen3-tts-flash) 暂不支持语速调整</div>
+            </div>
+            <Button
+              v-if="form.ttsConfig.voice"
+              variant="outline"
+              size="sm"
+              class="w-full"
+              @click="previewVoice"
+              :disabled="isPreviewPlaying">
+              <Pause v-if="isPreviewPlaying" class="w-3.5 h-3.5" />
+              <Play v-else class="w-3.5 h-3.5" />
+              <span>{{ isPreviewPlaying ? '播放中...' : '预览音色' }}</span>
+            </Button>
+            <label class="flex items-center gap-2 p-2 bg-white dark:bg-slate-900 rounded cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20">
+              <input v-model="form.ttsConfig.autoPlay" type="checkbox" class="w-3 h-3 rounded border-slate-300 text-blue-600" />
+              <span class="text-xs font-medium">自动播放</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-4">
+          <label class="flex items-center gap-2 mb-3 cursor-pointer">
+            <input v-model="form.features.contentModeration" type="checkbox" class="w-4 h-4 rounded border-slate-300 text-blue-600" />
+            <span class="font-bold text-sm">内容审查</span>
+          </label>
+          <div v-if="form.features.contentModeration" class="space-y-2">
+            <textarea v-model="sensitiveWordsText" placeholder="每行一个敏感词" rows="3" class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded text-xs resize-none font-mono" />
+            <button @click="importSensitiveWords" class="w-full px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700">导入敏感词</button>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- 主内容区 -->
-    <main class="max-w-6xl mx-auto px-4 sm:px-6 py-8 pb-24 md:pb-8">
-      <!-- 加载状态 -->
-      <div v-if="isLoading" class="flex flex-col items-center justify-center py-20">
-        <div class="w-12 h-12 border-4 border-violet-200 dark:border-violet-900 border-t-violet-600 rounded-full animate-spin mb-4" />
-        <p class="text-slate-500 dark:text-slate-400">加载中...</p>
-      </div>
-
-      <!-- 错误状态 -->
-      <div v-else-if="error" class="flex flex-col items-center justify-center py-20">
-        <div class="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-4">
-          <AlertCircle class="w-8 h-8 text-red-600 dark:text-red-400" />
+    <div class="flex-1 flex flex-col border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+      <div class="h-12 border-b border-slate-200 dark:border-slate-800 px-4 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <Bot class="w-4 h-4 text-blue-500" />
+          <h2 class="font-bold text-sm">预览 &amp; 测试</h2>
         </div>
-        <p class="text-slate-900 dark:text-slate-100 font-medium mb-2">加载失败</p>
-        <p class="text-slate-500 dark:text-slate-400 text-sm mb-4">{{ error }}</p>
-        <button @click="loadAgent" class="px-4 py-2 text-sm font-medium text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors">
-          重试
-        </button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button variant="ghost" size="icon-sm" @click="messages = []">
+                <RotateCcw class="w-3.5 h-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>清空对话</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
-      <!-- 步骤内容 -->
-      <template v-else>
-        <!-- 步骤 0: 选择模板 -->
-        <div v-if="currentStep === 0" class="space-y-6">
-          <div class="text-center mb-8">
-            <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">选择创建方式</h2>
-            <p class="text-slate-500 dark:text-slate-400">从模板快速开始，或从头创建专属智能体</p>
+      <div class="flex-1 flex flex-col overflow-hidden">
+        <div class="overflow-y-auto p-3 space-y-2 border-b border-slate-200 dark:border-slate-800 max-h-44">
+          <div class="bg-slate-50 dark:bg-slate-800/60 rounded-lg p-3">
+            <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mb-0.5">名称</p>
+            <p class="text-sm font-semibold truncate">{{ form.name || '未设置' }}</p>
           </div>
-
-          <!-- 模板网格 -->
-          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <!-- 空白模板 -->
-            <button
-              @click="selectTemplate(null)"
-              :class="[
-                'group relative p-6 rounded-2xl border-2 text-left transition-all hover:shadow-lg',
-                selectedTemplate === null 
-                  ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/20' 
-                  : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-violet-300 dark:hover:border-violet-700'
-              ]"
-            >
-              <div class="flex items-start gap-4">
-                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center shrink-0">
-                  <Plus class="w-6 h-6 text-slate-600 dark:text-slate-400" />
-                </div>
-                <div class="flex-1 min-w-0">
-                  <h3 class="font-semibold text-slate-900 dark:text-slate-100 mb-1">从头创建</h3>
-                  <p class="text-sm text-slate-500 dark:text-slate-400">完全自定义你的智能体</p>
-                </div>
-              </div>
-              <div v-if="selectedTemplate === null" class="absolute top-4 right-4 w-6 h-6 rounded-full bg-violet-600 flex items-center justify-center">
-                <Check class="w-4 h-4 text-white" />
-              </div>
-            </button>
-
-            <!-- 预设模板 -->
-            <button
-              v-for="template in templates"
-              :key="template.id"
-              @click="selectTemplate(template.id)"
-              :class="[
-                'group relative p-6 rounded-2xl border-2 text-left transition-all hover:shadow-lg',
-                selectedTemplate === template.id 
-                  ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/20' 
-                  : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-violet-300 dark:hover:border-violet-700'
-              ]"
-            >
-              <div class="flex items-start gap-4">
-                <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-2xl" :style="{ background: template.gradient }">
-                  {{ template.emoji }}
-                </div>
-                <div class="flex-1 min-w-0">
-                  <h3 class="font-semibold text-slate-900 dark:text-slate-100 mb-1">{{ template.name }}</h3>
-                  <p class="text-sm text-slate-500 dark:text-slate-400 line-clamp-2">{{ template.description }}</p>
-                </div>
-              </div>
-              <div class="mt-4 flex flex-wrap gap-1.5">
-                <span v-for="tag in template.tags" :key="tag" class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded text-xs">
-                  {{ tag }}
-                </span>
-              </div>
-              <div v-if="selectedTemplate === template.id" class="absolute top-4 right-4 w-6 h-6 rounded-full bg-violet-600 flex items-center justify-center">
-                <Check class="w-4 h-4 text-white" />
-              </div>
-            </button>
+          <div class="bg-slate-50 dark:bg-slate-800/60 rounded-lg p-3">
+            <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mb-0.5">描述</p>
+            <p class="text-xs text-slate-600 dark:text-slate-300 line-clamp-2">{{ form.description || '未设置' }}</p>
+          </div>
+          <div class="bg-slate-50 dark:bg-slate-800/60 rounded-lg p-3">
+            <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">启用功能</p>
+            <div class="flex flex-wrap gap-1">
+              <span v-if="form.features.conversationOperator" class="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 px-2 py-0.5 rounded-full border border-blue-100 dark:border-blue-800">对话引导</span>
+              <span v-if="form.features.nextQuestionSuggestion" class="text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 px-2 py-0.5 rounded-full border border-purple-100 dark:border-purple-800">下一步建议</span>
+              <span v-if="form.features.textToSpeech" class="text-xs bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-300 px-2 py-0.5 rounded-full border border-green-100 dark:border-green-800">文字转语音</span>
+              <span v-if="form.features.speechToText" class="text-xs bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-300 px-2 py-0.5 rounded-full border border-orange-100 dark:border-orange-800">语音转文字</span>
+              <span v-if="!form.features.conversationOperator && !form.features.nextQuestionSuggestion && !form.features.textToSpeech && !form.features.speechToText" class="text-xs text-slate-400">无</span>
+            </div>
           </div>
         </div>
 
-        <!-- 步骤 1: 基本信息 -->
-        <div v-if="currentStep === 1" class="grid gap-8 lg:grid-cols-5">
-          <div class="lg:col-span-3 space-y-6">
-            <!-- 头像和名称 -->
-            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-              <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-                <span class="w-6 h-6 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-violet-600 dark:text-violet-400 text-xs">1</span>
-                基础信息
-              </h3>
-              
-              <div class="flex flex-col sm:flex-row gap-6">
-                <!-- 头像选择 -->
-                <div class="flex flex-col items-center gap-3">
-                  <div class="w-24 h-24 rounded-2xl bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-violet-900/30 dark:to-indigo-900/30 border-2 border-dashed border-violet-300 dark:border-violet-700 flex items-center justify-center overflow-hidden cursor-pointer hover:border-violet-500 transition-colors" @click="showEmojiPicker = !showEmojiPicker">
-                    <span class="text-4xl">{{ form.avatar || '🤖' }}</span>
-                  </div>
-                  <button type="button" @click="showEmojiPicker = !showEmojiPicker" class="text-xs text-violet-600 dark:text-violet-400 hover:underline">
-                    更换头像
-                  </button>
-                  
-                  <!-- Emoji 选择器 -->
-                  <div v-if="showEmojiPicker" class="absolute top-full left-0 mt-2 p-3 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-10">
-                    <div class="grid grid-cols-6 gap-1.5">
-                      <button
-                        v-for="emoji in emojiOptions"
-                        :key="emoji"
-                        type="button"
-                        @click="form.avatar = emoji; showEmojiPicker = false"
+        <div class="flex-1 flex flex-col overflow-hidden">
+          <div class="flex-1 overflow-y-auto p-3 space-y-2">
+            <div v-if="!messages.length" class="flex flex-col items-center justify-center h-full text-center py-8">
+              <div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3">
+                <MessageSquare class="w-6 h-6 text-slate-400 dark:text-slate-500" />
+              </div>
+              <p class="text-xs font-medium text-slate-500 dark:text-slate-400">开始对话测试</p>
+              <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">在下方输入消息</p>
+            </div>
+            <div v-for="(msg, i) in messages" :key="i" :class="['flex items-end gap-2', msg.role === 'user' ? 'justify-end' : 'justify-start']">
+              <div v-if="msg.role === 'assistant'" class="flex-shrink-0 mb-1">
+                <Avatar size="sm" class="w-[25px] h-[25px]"  >
+                  <AvatarFallback class="bg-gradient-to-br from-blue-500 to-violet-600">
+                    <Bot class="w-3 h-3 text-white" />
+                  </AvatarFallback>
+                </Avatar>
+              </div>
+              <div :class="['relative max-w-[85%] group', msg.role === 'user' ? 'order-1' : 'order-2']">
+                <div :class="[
+                  'px-3 py-2 rounded-2xl text-xs leading-relaxed shadow-sm',
+                  msg.role === 'user'
+                    ? 'bg-blue-600 text-white rounded-br-sm'
+                    : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-bl-sm border border-slate-100 dark:border-slate-700'
+                ]">
+                  <div v-if="msg.role === 'assistant'" class="prose prose-xs dark:prose-invert max-w-none" v-html="markdownToHtml(msg.content)"></div>
+                  <div v-else>{{ msg.content }}</div>
+                </div>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger as-child>
+                      <Button
+                        v-if="msg.role === 'assistant' && form.features.textToSpeech && msg.content"
+                        @click.stop="playTTS(msg.content, msg.id)"
+                        :variant="playingMessageId === msg.id ? 'default' : 'outline'"
+                        size="icon-sm"
                         :class="[
-                          'w-10 h-10 rounded-lg text-xl flex items-center justify-center transition-all',
-                          form.avatar === emoji 
-                            ? 'bg-violet-100 dark:bg-violet-900/30 ring-2 ring-violet-500' 
-                            : 'hover:bg-slate-100 dark:hover:bg-slate-700'
+                          'absolute -bottom-2 -right-2 w-6 h-6 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-all',
+                          playingMessageId === msg.id ? 'scale-110' : 'hover:scale-110'
                         ]"
                       >
-                        {{ emoji }}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 名称和描述 -->
-                <div class="flex-1 space-y-4">
-                  <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                      智能体名称 <span class="text-red-500">*</span>
-                    </label>
-                    <input
-                      v-model="form.name"
-                      type="text"
-                      placeholder="给你的智能体起个名字"
-                      maxlength="20"
-                      class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all"
-                    />
-                    <div class="flex justify-end mt-1">
-                      <span class="text-xs text-slate-400">{{ form.name.length }}/20</span>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                      简短描述
-                    </label>
-                    <textarea
-                      v-model="form.description"
-                      placeholder="用一句话介绍你的智能体"
-                      maxlength="100"
-                      rows="2"
-                      class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all resize-none"
-                    />
-                  </div>
-                </div>
+                        <VolumeX v-if="playingMessageId === msg.id" class="w-3 h-3 animate-pulse" />
+                        <Volume2 v-else class="w-3 h-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{{ playingMessageId === msg.id ? '播放中' : '朗读' }}</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <div v-if="msg.role === 'user'" class="flex-shrink-0 mb-1 order-2">
+                <Avatar size="sm" class="w-[25px] h-[25px]">
+                  <AvatarFallback>
+                    <User class="w-[15px] h-[15px] text-white" />
+                  </AvatarFallback>
+                </Avatar>
               </div>
             </div>
-
-            <!-- 分类和知识库 -->
-            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-              <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-                <span class="w-6 h-6 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-violet-600 dark:text-violet-400 text-xs">2</span>
-                分类与知识
-              </h3>
-              
-              <div class="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">分类</label>
-                  <select
-                    v-model="form.category"
-                    class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all appearance-none cursor-pointer"
-                  >
-                    <option value="">选择分类</option>
-                    <option v-for="cat in AGENT_CATEGORIES" :key="cat.value" :value="cat.value">
-                      {{ cat.icon }} {{ cat.label }}
-                    </option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">关联知识库</label>
-                  <select
-                    v-model="form.knowledgeBaseId"
-                    class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all appearance-none cursor-pointer"
-                  >
-                    <option :value="null">不关联知识库</option>
-                    <option v-for="kb in knowledgeBases" :key="kb.id" :value="kb.id">
-                      {{ kb.name }} ({{ kb.documentCount }} 篇文档)
-                    </option>
-                  </select>
+            <div v-if="isLoading" class="flex items-end gap-2 justify-start">
+              <div class="flex-shrink-0">
+                <Avatar size="sm" class="w-[25px] h-[25px]">
+                  <AvatarFallback class="bg-gradient-to-br from-blue-500 to-violet-600">
+                    <Bot class="w-3 h-3 text-white" />
+                  </AvatarFallback>
+                </Avatar>
+              </div>
+              <div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-3 py-2.5 rounded-2xl rounded-bl-sm shadow-sm">
+                <div class="flex gap-1 items-center">
+                  <div class="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" />
+                  <div class="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style="animation-delay: 150ms" />
+                  <div class="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style="animation-delay: 300ms" />
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- 右侧预览 -->
-          <div class="lg:col-span-2">
-            <div class="sticky top-24">
-              <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
-                <div class="px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                  <span class="text-xs font-medium text-slate-500 dark:text-slate-400">预览效果</span>
-                  <span class="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
-                    <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                    实时更新
-                  </span>
-                </div>
-                <div class="p-6">
-                  <div class="flex items-center gap-4 mb-4">
-                    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-violet-900/30 dark:to-indigo-900/30 flex items-center justify-center text-2xl">
-                      {{ form.avatar || '🤖' }}
-                    </div>
-                    <div class="flex-1 min-w-0">
-                      <h4 class="font-semibold text-slate-900 dark:text-slate-100 truncate">
-                        {{ form.name || '未命名智能体' }}
-                      </h4>
-                      <p class="text-sm text-slate-500 dark:text-slate-400 truncate">
-                        {{ form.description || '暂无描述' }}
-                      </p>
-                    </div>
-                  </div>
-                  <div class="flex flex-wrap gap-2">
-                    <span v-if="form.category" class="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg text-xs font-medium">
-                      {{ getCategoryLabel(form.category) }}
-                    </span>
-                    <span v-if="form.knowledgeBaseId" class="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg text-xs font-medium">
-                      已关联知识库
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 步骤 2: AI 配置 -->
-        <div v-if="currentStep === 2" class="grid gap-8 lg:grid-cols-5">
-          <div class="lg:col-span-3 space-y-6">
-            <!-- AI 模型选择 -->
-            <div v-if="!isPublished" class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-              <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-                <BrainCircuit class="w-4 h-4 text-violet-600 dark:text-violet-400" />
-                AI 模型
-              </h3>
-              
-              <div class="grid gap-3 sm:grid-cols-2">
-                <button
-                  v-for="model in modelOptions"
-                  :key="model.value"
-                  type="button"
-                  @click="form.model = model.value"
-                  :class="[
-                    'p-4 rounded-xl border-2 text-left transition-all',
-                    form.model === model.value 
-                      ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/20' 
-                      : 'border-slate-200 dark:border-slate-700 hover:border-violet-300 dark:hover:border-violet-700'
-                  ]"
-                >
-                  <div class="flex items-center gap-3">
-                    <div :class="['w-10 h-10 rounded-lg flex items-center justify-center', model.bgColor]">
-                      <component :is="model.icon" class="w-5 h-5" :class="model.iconColor" />
-                    </div>
-                    <div>
-                      <div class="font-medium text-slate-900 dark:text-slate-100 text-sm">{{ model.label }}</div>
-                      <div class="text-xs text-slate-500 dark:text-slate-400">{{ model.desc }}</div>
-                    </div>
-                  </div>
-                </button>
-              </div>
-            </div>
-
-            <!-- 人设与指令 -->
-            <div v-if="!isPublished" class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-              <div class="flex items-center justify-between mb-4">
-                <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                  <Sparkles class="w-4 h-4 text-amber-500" />
-                  人设与指令
-                </h3>
-                <button
-                  type="button"
-                  @click="generatePersonality"
-                  :disabled="isGenerating"
-                  class="text-xs text-violet-600 dark:text-violet-400 hover:underline flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Loader2 v-if="isGenerating" class="w-3 h-3 animate-spin" />
-                  <Wand2 v-else class="w-3 h-3" />
-                  {{ isGenerating ? '生成中...' : 'AI 辅助生成' }}
-                </button>
-              </div>
-              
-              <textarea
-                v-model="form.personality"
-                placeholder="描述智能体的性格、说话风格、专业领域等。例如：你是一位严厉但幽默的数学老师，擅长用生动的比喻解释复杂概念..."
-                maxlength="2000"
-                rows="6"
-                :disabled="isGenerating"
-                class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all resize-none disabled:opacity-50"
-              />
-              <div class="flex justify-between mt-2">
-                <span class="text-xs text-slate-400">支持 Markdown 格式</span>
-                <span class="text-xs text-slate-400">{{ form.personality.length }}/2000</span>
-              </div>
-            </div>
-
-            <!-- 长期记忆 -->
-            <div v-if="!isPublished" class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-              <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-                <BookOpen class="w-4 h-4 text-emerald-500" />
-                长期记忆
-              </h3>
-              
-              <textarea
-                v-model="form.initialMemory"
-                placeholder="预设的背景信息或记忆，智能体会在对话中记住这些内容"
-                maxlength="1000"
-                rows="3"
-                class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all resize-none"
-              />
-            </div>
-
-            <!-- 语音配置 -->
-            <div v-if="!isPublished" class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-              <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-                <Volume2 class="w-4 h-4 text-blue-500" />
-                语音设置
-              </h3>
-              
-              <div class="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">音色</label>
-                  <select
-                    v-model="form.voice"
-                    class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all appearance-none cursor-pointer"
-                  >
-                    <option value="">跟随系统设置</option>
-                    <optgroup label="普通话女声">
-                      <option value="Cherry">Cherry - 标准女声</option>
-                      <option value="Serena">Serena - 温柔女声</option>
-                      <option value="Chelsie">Chelsie - 活力女声</option>
-                      <option value="Momo">Momo - 可爱女声</option>
-                      <option value="Vivian">Vivian - 知性女声</option>
-                      <option value="Moon">Moon - 成熟女声</option>
-                      <option value="Maia">Maia - 甜美女声</option>
-                      <option value="Bella">Bella - 活泼女声</option>
-                    </optgroup>
-                    <optgroup label="普通话男声">
-                      <option value="Kai">Kai - 标准男声</option>
-                      <option value="Nofish">Nofish - 磁性男声</option>
-                    </optgroup>
-                    <optgroup label="方言音色">
-                      <option value="Jada">Jada - 粤语女声</option>
-                      <option value="Dylan">Dylan - 粤语男声</option>
-                      <option value="Li">Li - 台湾话女声</option>
-                      <option value="Marcus">Marcus - 台湾话男声</option>
-                      <option value="Roy">Roy - 东北话男声</option>
-                      <option value="Peter">Peter - 东北话男声</option>
-                      <option value="Sunny">Sunny - 东北话女声</option>
-                      <option value="Eric">Eric - 四川话男声</option>
-                      <option value="Rocky">Rocky - 四川话男声</option>
-                      <option value="Kiki">Kiki - 四川话女声</option>
-                    </optgroup>
-                  </select>
-                </div>
-                
-                <div>
-                  <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                    语速: {{ form.speechRate }}
-                  </label>
-                  <input
-                    type="range"
-                    v-model.number="form.speechRate"
-                    min="50"
-                    max="400"
-                    step="10"
-                    class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-violet-600"
-                  />
-                  <div class="flex justify-between text-xs text-slate-400 mt-1">
-                    <span>慢</span>
-                    <span>正常</span>
-                    <span>快</span>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- 音色预览 -->
-              <div class="mt-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-                <div class="flex items-center justify-between mb-3">
-                  <span class="text-sm font-medium text-slate-700 dark:text-slate-300">音色预览</span>
-                  <span class="text-xs text-slate-500 dark:text-slate-400">{{ getVoiceName(form.voice) }}</span>
-                </div>
-                <div class="flex items-center gap-3">
-                  <input
-                    v-model="previewText"
-                    type="text"
-                    placeholder="输入要试听的文本..."
-                    class="flex-1 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
-                  />
-                  <button
-                    type="button"
-                    @click="playVoicePreview"
-                    :disabled="isPlayingPreview || !previewText.trim()"
-                    class="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                  >
-                    <Loader2 v-if="isPlayingPreview" class="w-4 h-4 animate-spin" />
-                    <Play v-else class="w-4 h-4" />
-                    {{ isPlayingPreview ? '播放中' : '试听' }}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- 发布状态（编辑模式） -->
-            <div v-if="isEditMode && initialAgentData" class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-              <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-                <Activity class="w-4 h-4 text-orange-500" />
-                发布状态
-              </h3>
-              
-              <div :class="[
-                'p-4 rounded-xl flex items-center gap-3',
-                isPublished 
-                  ? 'bg-green-50 dark:bg-green-900/20' 
-                  : 'bg-amber-50 dark:bg-amber-900/20'
-              ]">
-                <CheckCircle2 v-if="isPublished" class="w-5 h-5 text-green-600 dark:text-green-400" />
-                <AlertCircle v-else class="w-5 h-5 text-amber-600 dark:text-amber-400" />
-                <div>
-                  <div :class="['font-medium text-sm', isPublished ? 'text-green-700 dark:text-green-400' : 'text-amber-700 dark:text-amber-400']">
-                    {{ isPublished ? '已发布到广场' : '草稿状态' }}
-                  </div>
-                  <div :class="['text-xs', isPublished ? 'text-green-600 dark:text-green-500' : 'text-amber-600 dark:text-amber-500']">
-                    {{ isPublished ? '核心配置已锁定，修改需先下架' : '仅自己可见，可随时修改' }}
-                  </div>
-                </div>
-              </div>
-              
-              <button
-                v-if="isPublished"
-                type="button"
-                @click="$emit('unpublish')"
-                class="mt-4 w-full px-4 py-2.5 border border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-xl font-medium transition-all text-sm"
+          <div class="border-t border-slate-200 dark:border-slate-700 p-3 bg-slate-50/50 dark:bg-slate-900/50">
+            <!-- 语音模式 -->
+            <div v-if="form.features.speechToText && isVoiceMode" class="flex gap-2 items-center">
+              <Button
+                @mousedown="startVoiceInput"
+                @mouseup="stopVoiceInput"
+                @touchstart.prevent="startVoiceInput"
+                @touchend.prevent="stopVoiceInput"
+                :variant="isVoiceInputting ? 'destructive' : 'outline'"
+                class="flex-1 select-none"
+                size="sm"
               >
-                下架智能体
-              </button>
+                <Mic :class="['w-3.5 h-3.5', isVoiceInputting && 'animate-pulse']" />
+                <span>{{ isVoiceInputting ? '松开发送' : '按住说话' }}</span>
+              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger as-child>
+                    <Button variant="outline" size="icon-sm" @click="isVoiceMode = false">
+                      <Keyboard class="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>切换文字输入</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <!-- 文字输入模式 -->
+            <div v-else class="flex gap-2 items-center">
+              <Input
+                v-model="inputMessage"
+                @keyup.enter="sendMessage"
+                placeholder="输入消息..."
+                class="flex-1 h-8 text-xs"
+              />
+              <TooltipProvider v-if="form.features.speechToText">
+                <Tooltip>
+                  <TooltipTrigger as-child>
+                    <Button variant="outline" size="icon-sm" @click="isVoiceMode = true">
+                      <Mic class="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>切换语音输入</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <Button
+                size="icon-sm"
+                @click="sendMessage"
+                :disabled="!inputMessage.trim() || isLoading"
+              >
+                <Send class="w-4 h-4" />
+              </Button>
             </div>
           </div>
-
-          <!-- 右侧配置摘要 -->
-          <div class="lg:col-span-2">
-            <div class="sticky top-24 space-y-4">
-              <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-                <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-4">配置摘要</h3>
-                
-                <div class="space-y-3">
-                  <div class="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800">
-                    <span class="text-sm text-slate-500 dark:text-slate-400">模型</span>
-                    <span class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ getModelLabel(form.model) }}</span>
-                  </div>
-                  <div class="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800">
-                    <span class="text-sm text-slate-500 dark:text-slate-400">人设</span>
-                    <span class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ form.personality ? '已配置' : '未配置' }}</span>
-                  </div>
-                  <div class="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800">
-                    <span class="text-sm text-slate-500 dark:text-slate-400">记忆</span>
-                    <span class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ form.initialMemory ? '已设置' : '未设置' }}</span>
-                  </div>
-                  <div class="flex items-center justify-between py-2">
-                    <span class="text-sm text-slate-500 dark:text-slate-400">语音</span>
-                    <span class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ form.voice || '跟随系统' }}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-900/20 dark:to-indigo-900/20 rounded-2xl border border-violet-200 dark:border-violet-800 p-6">
-                <div class="flex items-start gap-3">
-                  <Lightbulb class="w-5 h-5 text-violet-600 dark:text-violet-400 shrink-0 mt-0.5" />
-                  <div>
-                    <h4 class="font-medium text-slate-900 dark:text-slate-100 text-sm mb-1">优化建议</h4>
-                    <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                      详细的人设描述能让 AI 更准确地扮演角色。建议包含性格特点、说话风格、专业领域和回答偏好。
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </template>
-    </main>
-
-    <!-- AI 生成人设弹窗 -->
-    <div v-if="showGenerateModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="showGenerateModal = false">
-      <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-md shadow-2xl">
-        <div class="flex items-center gap-3 mb-4">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-violet-900/30 dark:to-indigo-900/30 flex items-center justify-center">
-            <Wand2 class="w-5 h-5 text-violet-600 dark:text-violet-400" />
-          </div>
-          <div>
-            <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">AI 辅助生成人设</h3>
-            <p class="text-sm text-slate-500 dark:text-slate-400">描述你想要的智能体，AI 将为你生成专业的人设</p>
-          </div>
-        </div>
-        
-        <div class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">智能体描述</label>
-            <textarea
-              v-model="generatePrompt"
-              placeholder="例如：一个擅长讲解物理知识的老师，说话幽默风趣，善于用生活中的例子解释复杂的物理概念..."
-              rows="4"
-              class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all resize-none"
-            />
-          </div>
-          
-          <div class="flex flex-wrap gap-2">
-            <span class="text-xs text-slate-500 dark:text-slate-400">快速选择：</span>
-            <button
-              v-for="example in generateExamples"
-              :key="example"
-              type="button"
-              @click="generatePrompt = example"
-              class="px-2 py-1 text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-lg hover:bg-violet-100 dark:hover:bg-violet-900/30 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
-            >
-              {{ example }}
-            </button>
-          </div>
-        </div>
-        
-        <div class="flex justify-end gap-3 mt-6">
-          <button
-            type="button"
-            @click="showGenerateModal = false; generatePrompt = ''"
-            class="px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors text-sm font-medium"
-          >
-            取消
-          </button>
-          <button
-            type="button"
-            @click="submitGenerate"
-            :disabled="isGenerating || !generatePrompt.trim()"
-            class="px-6 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-lg shadow-md shadow-violet-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm font-medium"
-          >
-            <Loader2 v-if="isGenerating" class="w-4 h-4 animate-spin" />
-            {{ isGenerating ? '生成中...' : '开始生成' }}
-          </button>
         </div>
       </div>
     </div>
   </div>
 </template>
 
-<script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import {
-  ArrowLeft, Check, ChevronRight, Loader2, AlertCircle, Plus,
-  BrainCircuit, Sparkles, BookOpen, Volume2, Activity, Lightbulb,
-  CheckCircle2, Wand2, Bot, Cpu, Zap, Play
-} from 'lucide-vue-next'
-import { token } from '@/stores/authStore.js'
-import { getAgent, createAgent, updateAgent, unpublishAgent } from '@/services/agentService.js'
-import apiService from '@/services/apiService.js'
-import { AGENT_CATEGORIES } from '@/constants/agent.js'
+import { ArrowLeft, Trash2, MessageSquare, Send, Mic, Volume2, VolumeX, Bot, User, Keyboard, RotateCcw, Loader2, Sparkles, Play, Pause, Plus } from 'lucide-vue-next'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { CheckboxRoot as Checkbox } from 'reka-ui'
+
+// Markdown 渲染
+const markdownToHtml = (markdown: string): string => {
+  if (!markdown) return ''
+  let html = markdown
+  
+  // 代码块
+  html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre class="bg-slate-900 text-slate-100 p-3 rounded overflow-x-auto"><code>$2</code></pre>')
+  
+  // 行内代码
+  html = html.replace(/`([^`]+)`/g, '<code class="bg-slate-200 dark:bg-slate-700 px-1 rounded">$1</code>')
+  
+  // 标题
+  html = html.replace(/^### (.*?)$/gm, '<h3 class="font-bold text-sm mt-2 mb-1">$1</h3>')
+  html = html.replace(/^## (.*?)$/gm, '<h2 class="font-bold text-base mt-2 mb-1">$1</h2>')
+  html = html.replace(/^# (.*?)$/gm, '<h1 class="font-bold text-lg mt-2 mb-1">$1</h1>')
+  
+  // 粗体
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold">$1</strong>')
+  html = html.replace(/__(.+?)__/g, '<strong class="font-bold">$1</strong>')
+  
+  // 斜体
+  html = html.replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
+  html = html.replace(/_(.+?)_/g, '<em class="italic">$1</em>')
+  
+  // 列表
+  html = html.replace(/^\* (.*?)$/gm, '<li class="ml-4">$1</li>')
+  html = html.replace(/^- (.*?)$/gm, '<li class="ml-4">$1</li>')
+  html = html.replace(/(<li.*?<\/li>)/s, '<ul class="list-disc">$1</ul>')
+  
+  // 链接
+  html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" class="text-blue-600 dark:text-blue-400 underline" target="_blank">$1</a>')
+  
+  // 换行
+  html = html.replace(/\n/g, '<br />')
+  
+  return html
+}
+
+interface Voice {
+  id: string
+  name: string
+}
+
+interface Message {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+}
+
+interface KnowledgeBase {
+  id: string
+  name: string
+  documentCount?: number
+}
+
+interface AgentForm {
+  name: string
+  description: string
+  avatar: string
+  category: string
+  model: string
+  personality: string
+  knowledgeBaseIds: string[]
+  enableKnowledgeBase: boolean
+  greeting: {
+    enabled: boolean
+    text: string
+    quickQuestions: string[]
+  }
+  features: {
+    conversationOperator: boolean
+    nextQuestionSuggestion: boolean
+    textToSpeech: boolean
+    speechToText: boolean
+    contentModeration: boolean
+  }
+  ttsConfig: {
+    voice: string
+    speechRate: number
+    autoPlay: boolean
+  }
+  sensitiveWords?: string[]
+}
 
 const route = useRoute()
 const router = useRouter()
-const agentId = route.params.agentId
 
-const isEditMode = computed(() => !!agentId)
-const isLoading = ref(false)
-const isSubmitting = ref(false)
-const isGenerating = ref(false)
-const error = ref(null)
-const initialAgentData = ref(null)
-const knowledgeBases = ref([])
-const showEmojiPicker = ref(false)
-const showGenerateModal = ref(false)
-const generatePrompt = ref('')
-const previewText = ref('你好，我是你的智能助手，很高兴为你服务。')
-const isPlayingPreview = ref(false)
-const audioElement = ref(null)
+const isEditMode = computed(() => !!route.params.agentId)
+const agentId = route.params.agentId as string
 
-const currentStep = ref(0)
-const selectedTemplate = ref(null)
-
-const steps = [
-  { title: '选择模板' },
-  { title: '基本信息' },
-  { title: 'AI 配置' }
-]
-
-const form = reactive({
+const form = ref<AgentForm>({
   name: '',
   description: '',
-  category: '',
   avatar: '🤖',
-  model: 'deepseek-chat',
+  category: '',
+  model: 'deepseek',
   personality: '',
-  initialMemory: '',
-  voice: '',
-  speechRate: 150,
-  knowledgeBaseId: null,
+  knowledgeBaseIds: [],
+  enableKnowledgeBase: false,
+  greeting: {
+    enabled: false,
+    text: '你好！我是你的智能助手，有什么可以帮助你的吗？',
+    quickQuestions: []
+  },
+  features: {
+    conversationOperator: true,
+    nextQuestionSuggestion: false,
+    textToSpeech: false,
+    speechToText: false,
+    contentModeration: true
+  },
+  ttsConfig: {
+    voice: 'Cherry',
+    speechRate: 150,
+    autoPlay: false
+  }
 })
 
-const templates = [
-  {
-    id: 'teacher',
-    name: '知识导师',
-    emoji: '👨‍🏫',
-    description: '专业的知识讲解助手，擅长深入浅出地解释概念',
-    tags: ['教育', '讲解', '耐心'],
-    gradient: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
-    config: { 
-      category: 'education', 
-      avatar: '👨‍🏫',
-      personality: '你是一位耐心、专业的知识导师，擅长用通俗易懂的语言解释复杂的概念。你的教学风格亲切友好，善于使用生动的比喻和实际案例来帮助学生理解知识。你会根据学生的提问调整讲解的深度和方式，确保他们真正理解而不是死记硬背。在回答问题时，你会先确认学生的理解程度，然后逐步引导他们掌握知识点。'
-    }
-  },
-  {
-    id: 'coder',
-    name: '编程助手',
-    emoji: '👨‍💻',
-    description: '精通多种编程语言，提供代码建议和调试帮助',
-    tags: ['编程', '代码', '技术'],
-    gradient: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
-    config: { 
-      category: 'technology', 
-      avatar: '👨‍💻',
-      personality: '你是一位经验丰富的编程专家，精通 Python、JavaScript、TypeScript、Java、Go 等多种编程语言。你擅长代码审查、调试问题、性能优化和架构设计。在回答问题时，你会提供清晰、可运行的代码示例，并解释代码的工作原理。你会主动指出潜在的 bug 和安全隐患，并给出最佳实践建议。你的回答简洁明了，注重实用性。'
-    }
-  },
-  {
-    id: 'writer',
-    name: '写作助手',
-    emoji: '✍️',
-    description: '帮助润色文章、提供写作建议和创意灵感',
-    tags: ['写作', '创意', '润色'],
-    gradient: 'linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)',
-    config: { 
-      category: 'creative', 
-      avatar: '✍️',
-      personality: '你是一位富有创意的写作顾问，擅长各类文体的写作指导。你可以帮助用户润色文章、优化表达、提供创意灵感和结构建议。你的语言优美流畅，善于发现文字中的亮点和不足。在提供建议时，你会尊重作者的原意和风格，同时给出具体的修改方案。你熟悉各种写作技巧，包括叙事结构、修辞手法、情感表达等。'
-    }
-  },
-  {
-    id: 'translator',
-    name: '翻译专家',
-    emoji: '🌐',
-    description: '多语言翻译，保持原文风格和语境',
-    tags: ['翻译', '多语言', '专业'],
-    gradient: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
-    config: { 
-      category: 'tools', 
-      avatar: '🌐',
-      personality: '你是一位专业的翻译专家，精通中文、英文、日文、韩文、法文、德文等多种语言。你在翻译时会准确传达原文的含义，同时保持原文的风格、语气和文化背景。你了解不同语言的文化差异和表达习惯，能够进行地道的本地化翻译。对于专业术语，你会提供准确的翻译并在必要时添加注释。'
-    }
-  },
-  {
-    id: 'assistant',
-    name: '私人助理',
-    emoji: '🎯',
-    description: '日程管理、任务提醒、信息整理的好帮手',
-    tags: ['效率', '管理', '提醒'],
-    gradient: 'linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)',
-    config: { 
-      category: 'efficiency', 
-      avatar: '🎯',
-      personality: '你是一位高效的私人助理，擅长日程管理、任务规划、信息整理和提醒服务。你做事有条理、注重效率，能够帮助用户合理安排时间、设置优先级。你会主动询问用户的需求，并提供个性化的建议。在处理任务时，你会确保信息准确、回复及时，并用简洁清晰的方式呈现结果。'
-    }
-  },
-]
+const knowledgeBases = ref<KnowledgeBase[]>([])
+const availableVoices = ref<Voice[]>([])
+const messages = ref<Message[]>([])
+const inputMessage = ref('')
+const sensitiveWordsText = ref('')
+const isSubmitting = ref(false)
+const isLoading = ref(false)
+const isOptimizing = ref(false)
+const isPreviewPlaying = ref(false)
+const isVoiceInputting = ref(false)
+const isVoiceMode = ref(false)
+const mediaRecorder = ref<MediaRecorder | null>(null)
+const audioChunks = ref<Blob[]>([])
+const currentConversationId = ref<string | null>(null)
 
-const modelOptions = [
-  { value: 'deepseek-chat', label: 'DeepSeek Chat', desc: '综合能力强', icon: Bot, bgColor: 'bg-blue-100 dark:bg-blue-900/30', iconColor: 'text-blue-600 dark:text-blue-400' },
-  { value: 'qwen-turbo', label: '通义千问', desc: '响应速度快', icon: Zap, bgColor: 'bg-amber-100 dark:bg-amber-900/30', iconColor: 'text-amber-600 dark:text-amber-400' },
-  { value: 'doubao-pro-32k', label: '豆包 Pro', desc: '长文本支持', icon: Cpu, bgColor: 'bg-emerald-100 dark:bg-emerald-900/30', iconColor: 'text-emerald-600 dark:text-emerald-400' },
-]
-
-const emojiOptions = ['🤖', '👨‍🏫', '👩‍💼', '🧙‍♂️', '🤵', '🦸', '🦹', '👽', '🐱', '🦊', '🐼', '🦁', '🐯', '🦄', '🐲', '🧛', '👻', '🤠', '😎', '🥷']
-
-const generateExamples = [
-  '幽默风趣的物理老师',
-  '严谨专业的法律顾问',
-  '温柔耐心的心理咨询师',
-  '犀利毒舌的影评人',
-  '充满创意的广告文案',
-]
-
-const isPublished = computed(() => initialAgentData.value?.isPublished || false)
-
-const canProceed = computed(() => {
-  if (currentStep.value === 0) return true
-  if (currentStep.value === 1) return form.name.trim().length > 0
-  return true
-})
-
-const isFormValid = computed(() => {
-  return form.name.trim().length > 0
-})
-
-function selectTemplate(templateId) {
-  selectedTemplate.value = templateId
-  if (templateId) {
-    const template = templates.find(t => t.id === templateId)
-    if (template) {
-      form.avatar = template.config.avatar || template.emoji
-      form.name = template.name
-      form.category = template.config.category
-      form.personality = template.config.personality
-    }
+const toggleKnowledgeBase = (kbId: string) => {
+  const index = form.value.knowledgeBaseIds.indexOf(kbId)
+  if (index > -1) {
+    form.value.knowledgeBaseIds.splice(index, 1)
+  } else {
+    form.value.knowledgeBaseIds.push(kbId)
   }
 }
 
-function nextStep() {
-  if (currentStep.value < steps.length - 1 && canProceed.value) {
-    currentStep.value++
-  }
-}
-
-function prevStep() {
-  if (currentStep.value > 0) {
-    currentStep.value--
-  }
-}
-
-function getCategoryLabel(category) {
-  const cat = AGENT_CATEGORIES.find(c => c.value === category)
-  return cat?.label || null
-}
-
-function getModelLabel(model) {
-  const m = modelOptions.find(opt => opt.value === model)
-  return m?.label || model
-}
-
-function getVoiceName(voice) {
-  const voiceMap = {
-    '': '跟随系统设置',
-    // 普通话女声
-    'Cherry': 'Cherry - 标准女声',
-    'Serena': 'Serena - 温柔女声',
-    'Chelsie': 'Chelsie - 活力女声',
-    'Momo': 'Momo - 可爱女声',
-    'Vivian': 'Vivian - 知性女声',
-    'Moon': 'Moon - 成熟女声',
-    'Maia': 'Maia - 甜美女声',
-    'Bella': 'Bella - 活泼女声',
-    // 普通话男声
-    'Kai': 'Kai - 标准男声',
-    'Nofish': 'Nofish - 磁性男声',
-    // 方言音色
-    'Jada': 'Jada - 粤语女声',
-    'Dylan': 'Dylan - 粤语男声',
-    'Li': 'Li - 台湾话女声',
-    'Marcus': 'Marcus - 台湾话男声',
-    'Roy': 'Roy - 东北话男声',
-    'Peter': 'Peter - 东北话男声',
-    'Sunny': 'Sunny - 东北话女声',
-    'Eric': 'Eric - 四川话男声',
-    'Rocky': 'Rocky - 四川话男声',
-    'Kiki': 'Kiki - 四川话女声'
-  }
-  return voiceMap[voice] || voice || '跟随系统设置'
-}
-
-async function playVoicePreview() {
-  if (!previewText.value.trim() || isPlayingPreview.value) return
-  
-  isPlayingPreview.value = true
-  
+const optimizePrompt = async () => {
+  if (!form.value.personality) return
+  isOptimizing.value = true
   try {
-    const response = await fetch('/api/tts', {
+    const res = await fetch('/api/agent/generate-config', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      body: JSON.stringify({ prompt: form.value.personality, type: 'personality' })
+    })
+    const data = await res.json()
+    form.value.personality = data.personality || form.value.personality
+  } catch (e) {
+    console.error('优化失败:', e)
+  } finally {
+    isOptimizing.value = false
+  }
+}
+
+const importSensitiveWords = () => {
+  form.value.sensitiveWords = sensitiveWordsText.value.split('\n').filter(w => w.trim())
+}
+
+const toggleVoiceInput = () => {
+  isVoiceMode.value = !isVoiceMode.value
+}
+
+const startVoiceInput = async () => {
+  if (isVoiceInputting.value) return
+  try {
+    isVoiceInputting.value = true
+    audioChunks.value = []
+    
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ? 'audio/webm;codecs=opus'
+      : MediaRecorder.isTypeSupported('audio/webm')
+        ? 'audio/webm'
+        : ''
+    
+    mediaRecorder.value = mimeType
+      ? new MediaRecorder(stream, { mimeType })
+      : new MediaRecorder(stream)
+    
+    mediaRecorder.value.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        audioChunks.value.push(event.data)
+      }
+    }
+    
+    mediaRecorder.value.onstop = async () => {
+      const mimeType = mediaRecorder.value?.mimeType || 'audio/webm'
+      const audioBlob = new Blob(audioChunks.value, { type: mimeType })
+      stream.getTracks().forEach(track => track.stop())
+      console.log(`🎙️ 录音完成: size=${audioBlob.size} bytes, type=${mimeType}`)
+      await sendAudioToASR(audioBlob, true) // true = 识别后直接发送
+    }
+    
+    mediaRecorder.value.start()
+  } catch (e) {
+    console.error('启动语音输入失败:', e)
+    isVoiceInputting.value = false
+    alert('无法访问麦克风，请检查权限')
+  }
+}
+
+const stopVoiceInput = () => {
+  if (mediaRecorder.value && isVoiceInputting.value) {
+    mediaRecorder.value.stop()
+    isVoiceInputting.value = false
+  }
+}
+
+const sendAudioToASR = async (audioBlob: Blob, autoSend = false) => {
+  try {
+    const formData = new FormData()
+    const ext = audioBlob.type.includes('webm') ? 'webm' : audioBlob.type.includes('mp4') ? 'mp4' : 'wav'
+    formData.append('audio', audioBlob, `audio.${ext}`)
+    
+    const res = await fetch('/api/asr', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      body: formData
+    })
+    
+    const data = await res.json()
+    const text = data.text || data.data?.text
+    if (text) {
+      if (autoSend) {
+        // 语音模式：直接发送识别结果
+        inputMessage.value = text
+        await sendMessage()
+      } else {
+        inputMessage.value += (inputMessage.value ? ' ' : '') + text
+      }
+    } else {
+      console.warn('ASR 未返回文字:', data)
+      if (autoSend) alert('未识别到内容，请重试')
+    }
+  } catch (e) {
+    console.error('语音转文字失败:', e)
+    alert('语音转文字失败，请重试')
+  }
+}
+
+const previewVoice = async () => {
+  if (!form.value.ttsConfig.voice || isPreviewPlaying.value) return
+  isPreviewPlaying.value = true
+  try {
+    const res = await fetch('/api/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
       body: JSON.stringify({
-        text: previewText.value.trim(),
-        voice: form.voice || undefined,
-        speed: form.speechRate
+        text: '这是音色预览，请听一下这个声音是否满意。',
+        voice: form.value.ttsConfig.voice,
+        speechRate: form.value.ttsConfig.speechRate
       })
     })
-    
-    if (!response.ok) {
-      throw new Error('语音合成失败')
+    const audioBlob = await res.blob()
+    const audioUrl = URL.createObjectURL(audioBlob)
+    const audio = new Audio(audioUrl)
+    audio.onended = () => {
+      isPreviewPlaying.value = false
     }
-    
-    const blob = await response.blob()
-    const url = URL.createObjectURL(blob)
-    
-    if (audioElement.value) {
-      audioElement.value.pause()
-      audioElement.value = null
-    }
-    
-    audioElement.value = new Audio(url)
-    audioElement.value.onended = () => {
-      isPlayingPreview.value = false
-      URL.revokeObjectURL(url)
-    }
-    audioElement.value.onerror = () => {
-      isPlayingPreview.value = false
-      URL.revokeObjectURL(url)
-    }
-    
-    await audioElement.value.play()
-  } catch (err) {
-    console.error('语音预览失败:', err)
-    alert('语音预览失败: ' + (err.message || '请稍后重试'))
-    isPlayingPreview.value = false
+    audio.play()
+  } catch (e) {
+    console.error('音色预览失败:', e)
+    isPreviewPlaying.value = false
+    alert('音色预览失败，请检查网络连接')
   }
 }
 
-async function generatePersonality() {
-  showGenerateModal.value = true
-}
+const sendMessage = async () => {
+  if (!inputMessage.value.trim()) return
+  messages.value.push({
+    role: 'user', content: inputMessage.value,
+    id: ''
+  })
+  const msg = inputMessage.value
+  inputMessage.value = ''
+  isLoading.value = true
 
-async function submitGenerate() {
-  if (!generatePrompt.value.trim()) return
-  
-  isGenerating.value = true
   try {
-    const res = await apiService.post('/agent/generate-config', {
-      prompt: generatePrompt.value.trim(),
-      type: 'personality'
+    // 构建预览配置：始终传递当前表单最新配置（未保存的修改也能生效）
+    const previewConfig = {
+      personality: form.value.personality,
+      model: form.value.model,
+      knowledgeBaseIds: form.value.knowledgeBaseIds,
+      knowledgeBaseId: form.value.knowledgeBaseIds,
+      enableKnowledgeBase: form.value.enableKnowledgeBase,
+    }
+
+    const res = await fetch(`/api/agent/${agentId || 'preview'}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      body: JSON.stringify({
+        message: msg,
+        conversationId: currentConversationId.value,
+        userId: `preview_${agentId}`,
+        previewConfig
+      })
     })
-    
-    if (res.personality) {
-      form.personality = res.personality
-      showGenerateModal.value = false
-      generatePrompt.value = ''
-    }
-  } catch (err) {
-    console.error('生成人设失败:', err)
-    alert('生成失败: ' + (err.message || '请稍后重试'))
-  } finally {
-    isGenerating.value = false
-  }
-}
 
-async function loadAgent() {
-  if (!isEditMode.value) return
+    if (!res.ok) throw new Error('Request failed')
 
-  try {
-    isLoading.value = true
-    error.value = null
+    // 从响应头获取 conversationId
+    const convId = res.headers.get('X-Conversation-Id')
+    if (convId) currentConversationId.value = convId
 
-    const data = await getAgent(agentId)
-    const result = data.agent || data
-    initialAgentData.value = result
+    // 添加助手消息占位符
+    const assistantMsgObj: Message = { id: Date.now().toString(), role: 'assistant', content: '' }
+    messages.value.push(assistantMsgObj)
 
-    form.name = result.name
-    form.description = result.description || ''
-    form.avatar = result.avatar || '🤖'
-    form.category = result.category || ''
-    form.model = result.model || 'deepseek-chat'
-    form.personality = result.personality || ''
-    form.initialMemory = result.initialMemory || ''
-    form.voice = result.voice || ''
-    form.speechRate = result.speechRate || 150
-    
-    if (result.knowledgeBaseId && typeof result.knowledgeBaseId === 'object') {
-      form.knowledgeBaseId = result.knowledgeBaseId.id || result.knowledgeBaseId._id?.toString() || null
-    } else {
-      form.knowledgeBaseId = result.knowledgeBaseId || null
+    // 处理流式响应
+    const reader = res.body!.getReader()
+    const decoder = new TextDecoder()
+    let fullResponse = ''
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      const chunk = decoder.decode(value, { stream: true })
+      fullResponse += chunk
+      
+      // 更新最后一条消息
+      const lastMessage = messages.value[messages.value.length - 1]
+      if (lastMessage && lastMessage.role === 'assistant') {
+        lastMessage.content = fullResponse
+      }
     }
 
-    currentStep.value = 1
-  } catch (err) {
-    error.value = err.message
-    console.error('加载智能体失败:', err.message)
+    // TTS 自动播放
+    if (form.value.features.textToSpeech && form.value.ttsConfig.autoPlay && fullResponse) {
+      playTTS(fullResponse)
+    }
+  } catch (e) {
+    console.error('聊天错误:', e)
+    messages.value.push({
+      role: 'assistant', content: '出错了: ' + (e as Error).message,
+      id: ''
+    })
   } finally {
     isLoading.value = false
   }
 }
 
-async function loadKnowledgeBases() {
+const playingMessageId = ref<string | null>(null)
+
+const playTTS = async (text: string, messageId?: string) => {
+  if (!text.trim()) return
+  if (messageId) playingMessageId.value = messageId
   try {
-    const res = await apiService.get('/knowledge')
-    // apiService 拦截器返回 { code, data, message }，数据在 data 字段
-    knowledgeBases.value = res?.data?.kbs ?? res?.kbs ?? []
-  } catch (err) {
-    console.error('加载知识库失败:', err)
-    knowledgeBases.value = []
+    const res = await fetch('/api/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      body: JSON.stringify({
+        text,
+        voice: form.value.ttsConfig.voice,
+        speechRate: form.value.ttsConfig.speechRate
+      })
+    })
+    const audioBlob = await res.blob()
+    const audioUrl = URL.createObjectURL(audioBlob)
+    const audio = new Audio(audioUrl)
+    audio.onended = () => { playingMessageId.value = null }
+    audio.play()
+  } catch (e) {
+    console.error('TTS 播放失败:', e)
+    playingMessageId.value = null
   }
 }
 
-async function handleSubmit() {
+const handleSubmit = async () => {
+  if (!form.value.name) return
+  isSubmitting.value = true
   try {
-    isSubmitting.value = true
-    error.value = null
-
-    if (isEditMode.value) {
-      const updateData = {
-        name: form.name,
-        description: form.description,
-        avatar: form.avatar,
-        category: form.category,
-        knowledgeBaseId: form.knowledgeBaseId
-      }
-
-      if (!isPublished.value) {
-        Object.assign(updateData, {
-          model: form.model,
-          personality: form.personality,
-          initialMemory: form.initialMemory,
-          voice: form.voice,
-          speechRate: form.speechRate
-        })
-      }
-
-      await updateAgent(agentId, updateData, token.value)
-    } else {
-      await createAgent({
-        name: form.name,
-        description: form.description,
-        avatar: form.avatar,
-        category: form.category,
-        model: form.model,
-        personality: form.personality,
-        initialMemory: form.initialMemory,
-        voice: form.voice,
-        speechRate: form.speechRate,
-        knowledgeBaseId: form.knowledgeBaseId
-      }, token.value)
-    }
-
-    router.push('/agent/my-agents')
-  } catch (err) {
-    error.value = err.message
-    console.error('保存失败:', err.message)
+    const url = isEditMode ? `/api/agent/${agentId}` : '/api/agent/create'
+    const res = await fetch(url, {
+      method: isEditMode ? 'PUT' : 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      body: JSON.stringify(form.value)
+    })
+    if (res.ok) router.push('/agent/my-agents')
   } finally {
     isSubmitting.value = false
   }
 }
 
-function handleCancel() {
-  router.push('/agent/my-agents')
+const loadAgent = async () => {
+  if (!isEditMode) return
+  try {
+    const res = await fetch(`/api/agent/${agentId}`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } })
+    const data = await res.json()
+    form.value = {
+      ...data.agent,
+      knowledgeBaseIds: Array.isArray(data.agent.knowledgeBaseIds) ? data.agent.knowledgeBaseIds : [],
+      enableKnowledgeBase: data.agent.enableKnowledgeBase ?? false,
+      ttsConfig: data.agent.ttsConfig || { voice: 'Cherry', speechRate: 150, autoPlay: false }
+    }
+    sensitiveWordsText.value = (data.agent.sensitiveWords || []).join('\n')
+  } catch (e) {
+    console.error('加载失败:', e)
+  }
 }
+
+const loadKnowledgeBases = async () => {
+  try {
+    const res = await fetch('/api/knowledge', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } })
+    const data = await res.json()
+    knowledgeBases.value = Array.isArray(data.data) ? data.data : []
+  } catch (e) {
+    console.error('加载知识库失败:', e)
+  }
+}
+
+const loadVoices = async () => {
+  try {
+    const res = await fetch('/api/tts/voices', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    })
+    const data = await res.json()
+    availableVoices.value = data.data?.voices || getDefaultVoices()
+  } catch (e) {
+    console.error('加载音色列表失败:', e)
+    availableVoices.value = getDefaultVoices()
+  }
+}
+
+const getDefaultVoices = (): Voice[] => [
+  { id: 'Cherry', name: 'Cherry - 标准女声' },
+  { id: 'Serena', name: 'Serena - 温柔女声' },
+  { id: 'Chelsie', name: 'Chelsie - 活力女声' },
+  { id: 'Momo', name: 'Momo - 可爱女声' },
+  { id: 'Vivian', name: 'Vivian - 知性女声' },
+  { id: 'Moon', name: 'Moon - 成熟女声' },
+  { id: 'Maia', name: 'Maia - 甜美女声' },
+  { id: 'Kai', name: 'Kai - 标准男声' },
+  { id: 'Nofish', name: 'Nofish - 磁性男声' },
+  { id: 'Bella', name: 'Bella - 活泼女声' }
+]
 
 onMounted(() => {
   loadKnowledgeBases()
-  loadAgent()
+  loadVoices()
+  if (isEditMode) loadAgent()
 })
 </script>
-
-<style scoped>
-input[type="range"]::-webkit-slider-thumb {
-  appearance: none;
-  width: 16px;
-  height: 16px;
-  background: #7c3aed;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-input[type="range"]::-webkit-slider-thumb:hover {
-  transform: scale(1.1);
-  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.2);
-}
-
-select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.75rem center;
-  padding-right: 2.5rem;
-}
-
-.dark select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-}
-
-.line-clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-</style>
