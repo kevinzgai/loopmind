@@ -1,8 +1,15 @@
 import mongoose from 'mongoose';
-import Permission from '../models/PermissionSchema.js';
-import Role from '../models/RoleSchema.js';
-import User from '../models/UserSchema.js';
-import { config } from '../config/config.js';
+import { config as dotenvConfig } from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenvConfig({ path: path.resolve(__dirname, '..', '.env') });
+
+import Permission from '../src/models/PermissionSchema.js';
+import Role from '../src/models/RoleSchema.js';
+import User from '../src/models/UserSchema.js';
 
 const SYSTEM_PERMISSIONS = [
   {
@@ -176,10 +183,9 @@ const SYSTEM_ROLES = [
 
 async function connectDB() {
   try {
-    await mongoose.connect(config.database.url, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true
-    });
+    const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/aichat';
+    const dbName = process.env.MONGODB_DB_NAME || 'aichat';
+    await mongoose.connect(uri, { dbName });
     console.log('✅ 数据库连接成功');
   } catch (error) {
     console.error('❌ 数据库连接失败:', error);

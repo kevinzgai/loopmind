@@ -83,6 +83,7 @@ export async function handleTextToSpeech(req, res) {
         {
           voice: effectiveVoice,
           format: format || "mp3",
+          speechRate: effectiveSpeechRate,
           volume: volume ?? speechConfig.aliyun?.volume,
           pitchRate: pitchRate ?? speechConfig.aliyun?.pitchRate,
         },
@@ -178,6 +179,7 @@ export async function handleTextToSpeechStream(req, res) {
         {
           voice: effectiveVoice,
           format: format || "mp3",
+          speechRate: effectiveSpeechRate,
           volume: volume ?? speechConfig.aliyun?.volume,
           pitchRate: pitchRate ?? speechConfig.aliyun?.pitchRate,
         },

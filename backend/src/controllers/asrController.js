@@ -2,6 +2,17 @@ import { recognizeFile as aliRecognizeFile } from "../services/voice/aliAsrServi
 import { recognizeFile as siliconRecognizeFile } from "../services/voice/siliconFlowAsrService.js";
 import { convertToPcm } from "../utils/audioConverter.js";
 import { getConfigUnmasked } from "../services/database/configService.js";
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const DEBUG_AUDIO_DIR = path.join(__dirname, '../../../../tmp/asr-debug');
+
+// 确保调试目录存在
+if (!fs.existsSync(DEBUG_AUDIO_DIR)) {
+  fs.mkdirSync(DEBUG_AUDIO_DIR, { recursive: true });
+}
 
 /**
  * @api {post} /external/asr 语音识别
@@ -42,13 +53,23 @@ export async function handleRecognition(req, res) {
 
     if (req.file) {
       audioBuffer = req.file.buffer;
+      console.log(`🎙️ ASR 收到文件: size=${audioBuffer.length} bytes, mimetype=${req.file.mimetype}, originalname=${req.file.originalname}`);
+      
+      // 临时保存用于调试
+      const debugFile = path.join(DEBUG_AUDIO_DIR, `audio_${Date.now()}_${req.file.originalname}`);
+      fs.writeFileSync(debugFile, audioBuffer);
+      console.log(`💾 ASR 调试文件已保存: ${debugFile}`);
+
       if (req.file.mimetype.includes("wav") || req.file.originalname.endsWith(".wav")) {
         format = "wav";
       } else if (req.file.mimetype.includes("webm") || req.file.originalname.endsWith(".webm")) {
         format = "webm";
       } else if (req.file.mimetype.includes("mp3") || req.file.originalname.endsWith(".mp3")) {
         format = "mp3";
+      } else if (req.file.mimetype.includes("ogg") || req.file.originalname.endsWith(".ogg")) {
+        format = "ogg";
       }
+      console.log(`🎙️ 检测到格式: ${format}`);
     } else if (req.body.audio) {
       const base64Data = req.body.audio.replace(/^data:audio\/\w+;base64,/, "");
       audioBuffer = Buffer.from(base64Data, "base64");

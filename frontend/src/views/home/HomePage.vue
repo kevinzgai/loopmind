@@ -441,7 +441,10 @@ const loadStats = async () => {
   try {
     isLoadingStats.value = true
     const response = await getDashboardStats()
-    stats.value = response
+    // 后端返回扁平结构 { agents, conversations, users, system, apiKeys }
+    if (response && response.agents) {
+      stats.value = response
+    }
   } catch (error) {
     console.error('加载统计数据失败:', error.message)
   } finally {
@@ -453,9 +456,11 @@ const loadAgents = async () => {
   try {
     isLoadingAgents.value = true
     const result = await getPublishedAgents(1, 9, selectedCategory.value)
-    agents.value = result.agents
+    // getPublishedAgents -> apiService -> { code, data: { agents, total, ... } }
+    agents.value = result?.agents ?? result?.data?.agents ?? []
   } catch (error) {
     console.error('加载智能体失败:', error.message)
+    agents.value = []
   } finally {
     isLoadingAgents.value = false
   }

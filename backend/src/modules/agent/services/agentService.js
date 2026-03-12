@@ -134,14 +134,8 @@ export async function updateAgent(agentId, creatorId, updateData) {
       throw new Error('无权限修改此智能体');
     }
 
-    // 不允许修改已发布的智能体的核心配置
-    if (agent.isPublished) {
-      const { model, personality, initialMemory, voice, speechRate } = updateData;
-      if (model || personality || initialMemory || voice || speechRate) {
-        throw new Error('已发布的智能体不能修改核心配置');
-      }
-    }
-
+    // 不允许修改已发布的智能体的名称
+    // 其他配置均允许修改
     Object.assign(agent, updateData);
     agent.updatedAt = new Date();
 

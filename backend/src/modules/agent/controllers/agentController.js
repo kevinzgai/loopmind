@@ -115,15 +115,19 @@ export async function handleCreateAgent(req, res, next) {
       voice,
       speechRate,
       knowledgeBaseId,
+      knowledgeBaseIds,
+      enableKnowledgeBase,
+      ttsConfig,
+      greeting,
+      sensitiveWords,
+      variables,
+      tools,
+      features
     } = req.body;
 
-    // 验证必填字段
     if (!name) {
       return res.status(400).json({
-        error: {
-          message: "智能体名称不能为空",
-          code: "MISSING_NAME",
-        },
+        error: { message: "智能体名称不能为空", code: "MISSING_NAME" }
       });
     }
 
@@ -138,11 +142,25 @@ export async function handleCreateAgent(req, res, next) {
       voice,
       speechRate,
       knowledgeBaseId,
+      knowledgeBaseIds: knowledgeBaseIds || [],
+      enableKnowledgeBase: enableKnowledgeBase || false,
+      ttsConfig: ttsConfig || { voice: 'Cherry', speechRate: 150, autoPlay: false },
+      greeting: greeting || { enabled: false, text: '', quickQuestions: [] },
+      sensitiveWords: sensitiveWords || [],
+      variables: variables || [],
+      tools: tools || [],
+      features: features || {
+        conversationOperator: true,
+        nextQuestionSuggestion: false,
+        textToSpeech: false,
+        speechToText: false,
+        contentModeration: true
+      }
     });
 
     res.status(201).json({
       message: "智能体创建成功",
-      agent,
+      agent
     });
   } catch (error) {
     console.error("❌ 创建智能体失败:", error.message);

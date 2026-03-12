@@ -102,13 +102,26 @@ async function handleAgentChatLangChain(req, res, agent, conversationHistory, me
     
     const model = await getModel(agent.model);
     const kbId = agent.knowledgeBaseId;
+    // 支持多知识库 knowledgeBaseIds 数组
+    const kbIds = agent.knowledgeBaseIds && agent.knowledgeBaseIds.length > 0
+        ? agent.knowledgeBaseIds
+        : (kbId ? [kbId] : []);
     
     // 1. 准备检索器 (如果有关联知识库)
     let retriever = null;
-    if (kbId && !isGreeting(message)) {
-        const id = (typeof kbId === 'object') ? (kbId.id || kbId._id) : kbId;
-        console.log(`[2/6] 🔍 知识库检索准备中, ID: ${id}`);
-        retriever = createRetriever(id.toString());
+    const enableKB = agent.enableKnowledgeBase !== false && kbIds.length > 0;
+    if (enableKB && !isGreeting(message)) {
+        const id = kbIds[0];
+        let idStr;
+        if (typeof id === 'string') {
+            idStr = id;
+        } else if (typeof id === 'object' && id !== null) {
+            idStr = (id.id || id._id || id).toString();
+        } else {
+            idStr = String(id);
+        }
+        console.log(`[2/6] 🔍 知识库检索准备中, ID: ${idStr}`);
+        retriever = createRetriever(idStr);
     } else {
         console.log(`[2/6] ⏭️ 跳过知识库检索 (未关联或为问候语)`);
     }
@@ -157,6 +170,9 @@ async function handleAgentChatLangChain(req, res, agent, conversationHistory, me
     // 5. 流式输出
     console.log(`[6/6] 🚀 发起模型请求并开始流式响应...`);
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    if (conversationId) {
+        res.setHeader('X-Conversation-Id', conversationId.toString());
+    }
     const stream = await chain.stream(message);
     let fullResponse = "";
     
@@ -183,7 +199,7 @@ async function handleAgentChatLangChain(req, res, agent, conversationHistory, me
 
     // 更新智能体使用次数
     try {
-        await incrementUsageCount(agent._id);
+        await incrementUsageCount(agent.id || agent._id);
     } catch (error) {}
 
     res.end();
@@ -196,7 +212,7 @@ async function handleAgentChatLangChain(req, res, agent, conversationHistory, me
 export async function handleAgentChat(req, res) {
     try {
         const { agentId } = req.params;
-        const { message, userId } = req.body;
+        let { message, userId, conversationId, previewConfig } = req.body;
         
         const dbUserId = req.user ? req.user.userId : null;
         const effectiveUserId = dbUserId || userId;
@@ -205,27 +221,66 @@ export async function handleAgentChat(req, res) {
             return res.status(400).json({ error: 'Missing message or userId' });
         }
         
-        console.log('🤖 智能体对话请求:', { agentId, userId: effectiveUserId, message: message.substring(0, 50) + '...', isAuth: !!dbUserId });
-        
-        // 获取智能体信息
-        const agent = await getAgent(agentId);
-        if (!agent) {
-            return res.status(404).json({ error: '智能体不存在' });
+        // 获取智能体信息（preview 模式只用 previewConfig）
+        let agent;
+        if (agentId === 'preview') {
+            // 纯预览模式：没有保存到数据库，用 previewConfig 构造虚拟 agent
+            if (!previewConfig) {
+                return res.status(400).json({ error: '预览模式需要提供 previewConfig' });
+            }
+            agent = {
+                id: 'preview',
+                name: '预览智能体',
+                model: previewConfig.model || 'deepseek',
+                personality: previewConfig.personality || '你是一个专业的 AI 助手。',
+                knowledgeBaseId: previewConfig.knowledgeBaseId || null,
+                knowledgeBaseIds: previewConfig.knowledgeBaseIds || [],
+                enableKnowledgeBase: previewConfig.enableKnowledgeBase || false,
+                features: { contentModeration: false },
+            };
+        } else {
+            agent = await getAgent(agentId);
+            if (!agent) {
+                return res.status(404).json({ error: '智能体不存在' });
+            }
+            // 用 previewConfig 覆盖（未保存的最新修改实时生效）
+            if (previewConfig) {
+                if (previewConfig.personality !== undefined) agent = { ...agent, personality: previewConfig.personality };
+                if (previewConfig.model !== undefined) agent = { ...agent, model: previewConfig.model };
+                if (previewConfig.knowledgeBaseIds !== undefined) agent = { ...agent, knowledgeBaseIds: previewConfig.knowledgeBaseIds };
+                if (previewConfig.knowledgeBaseId !== undefined) agent = { ...agent, knowledgeBaseId: previewConfig.knowledgeBaseId };
+                if (previewConfig.enableKnowledgeBase !== undefined) agent = { ...agent, enableKnowledgeBase: previewConfig.enableKnowledgeBase };
+            }
         }
 
+        // 内容审查
+        if (agent.features?.contentModeration) {
+            const { filterContent, hasSensitiveContent } = await import('../services/agentFeaturesService.js');
+            if (hasSensitiveContent(message)) {
+                console.warn('⚠️ 检测到敏感内容:', message);
+                message = filterContent(message);
+            }
+        }
+
+        console.log('🤖 智能体对话请求:', { agentId, userId: effectiveUserId, conversationId, message: message.substring(0, 50) + '...', isAuth: !!dbUserId, hasPreviewConfig: !!previewConfig });
+        
         let conversationHistory;
-        if (dbUserId) {
-            // 已登录：从数据库加载历史
-            const dbHistory = await getAgentConversationMessages(dbUserId, agentId);
-            conversationHistory = [...dbHistory];
+        if (dbUserId && agentId !== 'preview') {
+            // 如果没有 conversationId，自动创建新会话
+            if (!conversationId) {
+                const newConv = await createAgentConversation(dbUserId, agentId, '新对话');
+                conversationId = newConv.id;
+                console.log(`📝 自动创建新会话: ${conversationId}`);
+            }
+            const dbHistory = await getAgentConversationMessagesById(dbUserId, conversationId);
+            conversationHistory = dbHistory || [];
         } else {
-            // 未登录：从内存加载历史
+            // 匿名/预览模式：使用内存临时记忆
             conversationHistory = getConversationHistory(effectiveUserId, `agent_${agentId}`);
         }
 
-        // 全部切换到 LangChain 处理
         console.log(`🦜 LangChain Flow triggered for model: ${agent.model}`);
-        return await handleAgentChatLangChain(req, res, agent, conversationHistory, message, dbUserId, null);
+        return await handleAgentChatLangChain(req, res, agent, conversationHistory, message, dbUserId && agentId !== 'preview' ? dbUserId : null, conversationId);
     } catch (error) {
         console.error('❌ 智能体对话错误:', error);
         if (!res.headersSent) {

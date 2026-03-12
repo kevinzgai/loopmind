@@ -51,7 +51,7 @@ export async function handleGetKBs(req, res, next) {
   try {
     const userId = req.user.userId;
     const kbs = await KnowledgeBase.find({ creatorId: userId }).sort({ createdAt: -1 });
-    return success(res, { kbs }, '获取知识库列表成功');
+    return success(res, kbs, '获取知识库列表成功');
   } catch (err) {
     console.error('❌ 获取知识库列表失败:', err);
     next(err);

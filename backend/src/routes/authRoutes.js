@@ -8,8 +8,9 @@ import {
   handleChangePassword,
   handleUpdateProfile
 } from '../controllers/authController.js';
-import { authenticateToken } from '../middleware/auth.middleware.js';
+import { authenticateToken, optionalAuthenticateToken } from '../middleware/auth.middleware.js';
 import { authLimiter } from '../middleware/security.middleware.js';
+import { getUserPermissions } from '../services/auth/permissionService.js';
 
 const router = express.Router();
 
@@ -106,5 +107,38 @@ router.post('/change-password', authenticateToken, handleChangePassword);
  * @apiSuccess {Object} user 更新后的用户信息
  */
 router.put('/profile', authenticateToken, handleUpdateProfile);
+
+/**
+ * @api {get} /auth/permissions 获取当前用户权限
+ * @apiName GetMyPermissions
+ * @apiGroup Auth
+ * @apiDescription 获取当前登录用户的所有权限列表
+ * @apiHeader {String} Authorization Bearer Token
+ *
+ * @apiSuccess {Array} permissions 权限代码列表
+ */
+router.get('/permissions', optionalAuthenticateToken, async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(200).json({ permissions: [] });
+    }
+
+    const userId = req.user.userId;
+    const userRole = req.user.role;
+
+    // admin / super_admin 直接返回所有权限标记，无需查库
+    if (userRole === 'admin' || userRole === 'super_admin') {
+      const { getAllPermissions } = await import('../services/auth/permissionService.js');
+      const allPerms = await getAllPermissions();
+      const codes = allPerms.map(p => p.code);
+      return res.status(200).json({ permissions: codes, isAdmin: true });
+    }
+
+    const permissions = await getUserPermissions(userId);
+    return res.status(200).json({ permissions, isAdmin: false });
+  } catch (error) {
+    next(error);
+  }
+});
 
 export default router;

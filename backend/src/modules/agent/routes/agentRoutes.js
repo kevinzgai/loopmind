@@ -20,11 +20,22 @@ import {
   handleAgentChatInConversation,
   handleDeleteAgentConversation
 } from '../controllers/agentChatController.js';
+import {
+  handleGetFeatures,
+  handleUpdateFeatures,
+  handleGetVariables,
+  handleAddVariable,
+  handleRemoveVariable,
+  handleGetTools,
+  handleAddTool,
+  handleRemoveTool
+} from '../controllers/agentFeaturesController.js';
 import { authenticateToken, optionalAuthenticateToken } from '../../../middleware/auth.middleware.js';
+import agentVersionRoutes from './agentVersionRoutes.js';
 
 const router = express.Router();
 
-// 公开路由
+// 公开路由 - 必须在参数化路由之前
 
 /**
  * @api {get} /agent/published 获取已发布的智能体
@@ -35,6 +46,9 @@ const router = express.Router();
  * @apiSuccess {Array} agents 智能体列表
  */
 router.get('/published', handleGetPublishedAgents);
+
+// preview 专用路由（纯前端预览，不需要真实 agentId）
+router.post('/preview/chat', optionalAuthenticateToken, handleAgentChat);
 
 // 受保护路由
 
@@ -255,5 +269,117 @@ router.post('/:agentId/conversations/:conversationId/chat', authenticateToken, h
  * @apiSuccess {String} message 删除成功消息
  */
 router.delete('/:agentId/conversations/:conversationId', authenticateToken, handleDeleteAgentConversation);
+
+/**
+ * @api {get} /agent/:agentId/features 获取功能配置
+ * @apiName GetAgentFeatures
+ * @apiGroup Agent
+ * @apiDescription 获取智能体的功能配置
+ * @apiHeader {String} Authorization Bearer Token
+ *
+ * @apiParam {String} agentId 智能体ID
+ *
+ * @apiSuccess {Object} features 功能配置
+ */
+router.get('/:agentId/features', authenticateToken, handleGetFeatures);
+
+/**
+ * @api {put} /agent/:agentId/features 更新功能配置
+ * @apiName UpdateAgentFeatures
+ * @apiGroup Agent
+ * @apiDescription 更新智能体的功能配置
+ * @apiHeader {String} Authorization Bearer Token
+ *
+ * @apiParam {String} agentId 智能体ID
+ * @apiBody {Object} features 功能配置
+ *
+ * @apiSuccess {Object} features 更新后的功能配置
+ */
+router.put('/:agentId/features', authenticateToken, handleUpdateFeatures);
+
+/**
+ * @api {get} /agent/:agentId/variables 获取变量列表
+ * @apiName GetAgentVariables
+ * @apiGroup Agent
+ * @apiDescription 获取智能体的变量列表
+ * @apiHeader {String} Authorization Bearer Token
+ *
+ * @apiParam {String} agentId 智能体ID
+ *
+ * @apiSuccess {Array} variables 变量列表
+ */
+router.get('/:agentId/variables', authenticateToken, handleGetVariables);
+
+/**
+ * @api {post} /agent/:agentId/variables 添加变量
+ * @apiName AddAgentVariable
+ * @apiGroup Agent
+ * @apiDescription 为智能体添加变量
+ * @apiHeader {String} Authorization Bearer Token
+ *
+ * @apiParam {String} agentId 智能体ID
+ * @apiBody {Object} variable 变量信息
+ *
+ * @apiSuccess {Array} variables 更新后的变量列表
+ */
+router.post('/:agentId/variables', authenticateToken, handleAddVariable);
+
+/**
+ * @api {delete} /agent/:agentId/variables/:variableName 删除变量
+ * @apiName RemoveAgentVariable
+ * @apiGroup Agent
+ * @apiDescription 删除智能体的变量
+ * @apiHeader {String} Authorization Bearer Token
+ *
+ * @apiParam {String} agentId 智能体ID
+ * @apiParam {String} variableName 变量名
+ *
+ * @apiSuccess {Array} variables 更新后的变量列表
+ */
+router.delete('/:agentId/variables/:variableName', authenticateToken, handleRemoveVariable);
+
+/**
+ * @api {get} /agent/:agentId/tools 获取工具列表
+ * @apiName GetAgentTools
+ * @apiGroup Agent
+ * @apiDescription 获取智能体的工具列表
+ * @apiHeader {String} Authorization Bearer Token
+ *
+ * @apiParam {String} agentId 智能体ID
+ *
+ * @apiSuccess {Array} tools 工具列表
+ */
+router.get('/:agentId/tools', authenticateToken, handleGetTools);
+
+/**
+ * @api {post} /agent/:agentId/tools 添加工具
+ * @apiName AddAgentTool
+ * @apiGroup Agent
+ * @apiDescription 为智能体添加工具
+ * @apiHeader {String} Authorization Bearer Token
+ *
+ * @apiParam {String} agentId 智能体ID
+ * @apiBody {Object} tool 工具信息
+ *
+ * @apiSuccess {Array} tools 更新后的工具列表
+ */
+router.post('/:agentId/tools', authenticateToken, handleAddTool);
+
+/**
+ * @api {delete} /agent/:agentId/tools/:toolId 删除工具
+ * @apiName RemoveAgentTool
+ * @apiGroup Agent
+ * @apiDescription 删除智能体的工具
+ * @apiHeader {String} Authorization Bearer Token
+ *
+ * @apiParam {String} agentId 智能体ID
+ * @apiParam {String} toolId 工具ID
+ *
+ * @apiSuccess {Array} tools 更新后的工具列表
+ */
+router.delete('/:agentId/tools/:toolId', authenticateToken, handleRemoveTool);
+
+// 版本管理子路由 - 必须在最后，避免与其他 /:agentId/* 路由冲突
+router.use('/:agentId/versions', agentVersionRoutes);
 
 export default router;

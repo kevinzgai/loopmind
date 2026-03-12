@@ -22,6 +22,7 @@ const AgentCapabilitiesPage = () =>
   import("@/views/agent/AgentCapabilitiesPage.vue");
 const VoiceTestPage = () => import("@/views/VoiceTest.vue");
 const UserManagementPage = () => import("@/views/settings/UserManagementPage.vue");
+const AnalyticsPage = () => import("@/views/analytics/AnalyticsPage.vue");
 
 const routes = [
   {
@@ -149,6 +150,16 @@ const routes = [
         },
       },
       {
+        path: "agent-categories",
+        name: "SettingsAgentCategories",
+        component: () => import("@/components/settings/AgentCategorySettings.vue"),
+        meta: {
+          title: "分类管理",
+          requiresAuth: true,
+          requiresAdmin: true,
+        },
+      },
+      {
         path: "users",
         name: "SettingsUsers",
         component: UserManagementPage,
@@ -261,6 +272,15 @@ const routes = [
     component: VoiceTestPage,
     meta: {
       title: "语音识别测试",
+    },
+  },
+  {
+    path: "/analytics",
+    name: "Analytics",
+    component: AnalyticsPage,
+    meta: {
+      title: "数据分析",
+      requiresAuth: true,
     },
   },
   // 404 路由
