@@ -14,8 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Fira Sans', 'system-ui', '-apple-system', 'sans-serif'],
-        heading: ['Fira Code', 'Fira Sans', 'monospace'],
+        sans: ['Nunito', 'system-ui', '-apple-system', 'sans-serif'],
+        heading: ['Nunito', 'system-ui', 'sans-serif'],
         mono: ['Fira Code', 'SF Mono', 'Monaco', 'Inconsolata', 'monospace'],
       },
       colors: {
@@ -71,13 +71,16 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       boxShadow: {
-        'soft': '0 2px 8px -2px rgba(0, 0, 0, 0.05), 0 4px 16px -4px rgba(0, 0, 0, 0.08)',
-        'soft-lg': '0 4px 12px -4px rgba(0, 0, 0, 0.08), 0 8px 24px -8px rgba(0, 0, 0, 0.12)',
-        'glow': '0 0 20px rgba(34, 197, 94, 0.15)',
-        'glow-lg': '0 0 40px rgba(34, 197, 94, 0.25)',
-        'glow-blue': '0 0 20px rgba(59, 130, 246, 0.2)',
-        'glow-purple': '0 0 20px rgba(168, 85, 247, 0.2)',
-        'neon': '0 0 10px rgba(34, 197, 94, 0.4), 0 0 20px rgba(34, 197, 94, 0.2)',
+        'soft': '0 2px 8px -2px rgba(0, 0, 0, 0.08), 0 4px 16px -4px rgba(0, 0, 0, 0.06)',
+        'soft-lg': '0 4px 12px -4px rgba(0, 0, 0, 0.1), 0 8px 24px -8px rgba(0, 0, 0, 0.08)',
+        'glow': '0 0 20px rgba(34, 85, 85, 0.2)',
+        'glow-lg': '0 0 40px rgba(34, 85, 85, 0.3)',
+        'glow-blue': '0 0 20px rgba(156, 211, 211, 0.3)',
+        'glow-purple': '0 0 20px rgba(34, 85, 85, 0.25)',
+        'neon': '3px 3px 0px rgba(34, 85, 85, 0.4)',
+        'cartoon': '4px 4px 0px #225555',
+        'cartoon-sm': '2px 2px 0px #225555',
+        'cartoon-lg': '6px 6px 0px #225555',
       },
       animation: {
         'fade-in': 'fadeIn 0.3s ease-out',

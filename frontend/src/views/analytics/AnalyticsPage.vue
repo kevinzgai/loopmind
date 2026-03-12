@@ -53,13 +53,13 @@
           <svg class="w-full h-full" viewBox="0 0 400 180" preserveAspectRatio="none">
             <defs>
               <linearGradient id="lineGrad" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stop-color="#22C55E" stop-opacity="0.3" />
-                <stop offset="100%" stop-color="#22C55E" stop-opacity="0.02" />
+                <stop offset="0%" stop-color="#6366F1" stop-opacity="0.3" />
+                <stop offset="100%" stop-color="#6366F1" stop-opacity="0.02" />
               </linearGradient>
             </defs>
             <polyline :points="trendAreaPoints" fill="url(#lineGrad)" stroke="none" />
-            <polyline :points="trendLinePoints" fill="none" stroke="#22C55E" stroke-width="2" stroke-linejoin="round" />
-            <circle v-for="(pt, i) in trendPoints" :key="i" :cx="pt.x" :cy="pt.y" r="3" fill="#22C55E" />
+            <polyline :points="trendLinePoints" fill="none" stroke="#6366F1" stroke-width="2" stroke-linejoin="round" />
+            <circle v-for="(pt, i) in trendPoints" :key="i" :cx="pt.x" :cy="pt.y" r="3" fill="#6366F1" />
           </svg>
           <div class="flex justify-between text-xs text-muted-foreground mt-1">
             <span>{{ formatDate(dailyTrend[0]?.date) }}</span>
@@ -175,7 +175,7 @@ const getWordStyle = (count, maxCount) => {
   const ratio = maxCount ? count / maxCount : 0
   const size = 12 + ratio * 10
   const opacity = 0.5 + ratio * 0.5
-  const colors = ['#22C55E', '#3B82F6', '#A855F7', '#06B6D4', '#F59E0B', '#EF4444']
+  const colors = ['#6366F1', '#8B5CF6', '#A855F7', '#06B6D4', '#F59E0B', '#EF4444']
   const color = colors[Math.floor(ratio * (colors.length - 1))]
   return { fontSize: `${size}px`, opacity, backgroundColor: color + '22', border: `1px solid ${color}55` }
 }

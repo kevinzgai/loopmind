@@ -1,17 +1,17 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-background p-4 oled-grid-bg">
-    <!-- Background glow orbs -->
+  <div class="min-h-screen flex items-center justify-center bg-background p-4 cartoon-bg">
+    <!-- Background deco -->
     <div class="fixed inset-0 overflow-hidden pointer-events-none">
-      <div class="absolute -top-40 -left-40 w-80 h-80 bg-green-500/5 rounded-full blur-3xl"></div>
-      <div class="absolute -bottom-40 -right-40 w-80 h-80 bg-blue-500/5 rounded-full blur-3xl"></div>
+      <div class="absolute -top-40 -left-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl"></div>
+      <div class="absolute -bottom-40 -right-40 w-80 h-80 bg-secondary/20 rounded-full blur-3xl"></div>
     </div>
 
     <div class="relative w-full max-w-md animate-fade-in">
       <!-- Card -->
-      <div class="bg-card border border-border rounded-2xl p-8 shadow-soft-lg">
+      <div class="bg-card border-2 border-primary rounded-2xl p-8 cartoon-shadow-lg">
         <!-- Logo -->
         <div class="flex flex-col items-center mb-8">
-          <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center mb-4 shadow-glow">
+          <div class="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center mb-4 cartoon-shadow-dark">
             <Bot class="w-7 h-7 text-white" />
           </div>
           <h1 class="text-2xl font-heading font-bold text-foreground tracking-tight">欢迎回来</h1>
