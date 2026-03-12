@@ -56,9 +56,10 @@ export async function getDashboardStats() {
       ? ((lastWeekConversations - previousWeekConversations) / previousWeekConversations * 100).toFixed(1)
       : lastWeekConversations > 0 ? 100 : 0;
 
-    const systemLoad = totalUsers > 0
-      ? Math.min(Math.round((activeUsersToday / totalUsers) * 100), 100)
-      : 0;
+    // 用 CPU 1分钟负载均值 / 核心数 计算真实系统负载
+    const cpuCount = os.cpus().length || 1;
+    const loadAvg1m = os.loadavg()[0] || 0;
+    const systemLoad = Math.min(Math.round((loadAvg1m / cpuCount) * 100), 100);
 
     return {
       agents: {
@@ -83,7 +84,9 @@ export async function getDashboardStats() {
       },
       system: {
         load: systemLoad,
-        status: systemLoad < 50 ? '运行平稳' : systemLoad < 80 ? '负载较高' : '负载过高'
+        status: systemLoad < 50 ? '运行平稳' : systemLoad < 80 ? '负载较高' : '负载过高',
+        cpuCores: cpuCount,
+        loadAvg1m: loadAvg1m.toFixed(2)
       }
     };
   } catch (error) {
@@ -211,7 +214,7 @@ export async function getSystemDetails() {
       console.warn('无法获取磁盘信息:', e.message);
     }
 
-    const uptimeSeconds = os.uptime();
+    const uptimeSeconds = (() => { try { return os.uptime(); } catch(e) { return process.uptime(); } })();
     const days = Math.floor(uptimeSeconds / 86400);
     const hours = Math.floor((uptimeSeconds % 86400) / 3600);
     const minutes = Math.floor((uptimeSeconds % 3600) / 60);

@@ -236,7 +236,7 @@ const loadKBs = async () => {
   try {
     loading.value = true;
     const res = await getKnowledgeBases();
-    kbs.value = res.kbs;
+    kbs.value = res.kbs || [];
     if (kbs.value.length > 0 && !selectedKB.value) {
       selectKB(kbs.value[0]);
     } else if (selectedKB.value) {
@@ -246,6 +246,7 @@ const loadKBs = async () => {
     }
   } catch (error) {
     console.error('获取知识库失败:', error);
+    kbs.value = [];
   } finally {
     loading.value = false;
   }
@@ -256,9 +257,10 @@ const selectKB = async (kb) => {
   docsLoading.value = true;
   try {
     const res = await getDocuments(kb.id);
-    documents.value = res.docs;
+    documents.value = res.docs || [];
   } catch (error) {
     console.error('获取文档失败:', error);
+    documents.value = [];
   } finally {
     docsLoading.value = false;
   }

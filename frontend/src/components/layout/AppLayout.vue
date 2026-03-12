@@ -74,6 +74,11 @@
             <span>系统日志</span>
           </router-link>
 
+          <router-link to="/settings/agent-categories" class="sidebar-item" exact-active-class="active">
+            <Tag class="w-5 h-5" />
+            <span>分类管理</span>
+          </router-link>
+
           <router-link to="/settings/users" class="sidebar-item" exact-active-class="active">
             <Users class="w-5 h-5" />
             <span>账号管理</span>
@@ -162,7 +167,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { isAuthenticated, currentUser, logout } from '@/stores/authStore.js'
 import {
-  Code, LayoutDashboard, Compass, Box, MessageSquare, Database, Settings, User, Search, Bell, LogOut, ChevronUp, ShieldCheck, Cpu, Brain, Mic, FileText, Users
+  Code, LayoutDashboard, Compass, Box, MessageSquare, Database, Settings, User, Search, Bell, LogOut, ChevronUp, ShieldCheck, Cpu, Brain, Mic, FileText, Users, Tag
 } from 'lucide-vue-next'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 

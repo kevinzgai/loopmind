@@ -372,4 +372,120 @@ router.post("/config/test-tts", authenticateToken, checkPermission('system:confi
   }
 });
 
+// ─── 智能体分类管理 ──────────────────────────────────────────────────────────
+// 分类数据存储在系统配置的 agentCategories 字段中
+
+/**
+ * @api {get} /admin/config/agent-categories 获取智能体分类列表
+ * @apiGroup Admin
+ */
+router.get('/config/agent-categories', authenticateToken, checkPermission('system:config:view'), async (req, res) => {
+  try {
+    const cfg = await getConfigUnmasked();
+    const categories = cfg.agentCategories || [
+      { value: '编程', label: '编程', icon: '💻', desc: '代码辅助、算法、架构设计' },
+      { value: '写作', label: '写作', icon: '✍️', desc: '文案创作、翻译、论文辅助' },
+      { value: '教育', label: '教育', icon: '🎓', desc: '语言学习、学科辅导、知识科普' },
+      { value: '生活', label: '生活', icon: '🏠', desc: '饮食健康、旅行、情感咨询' },
+      { value: '娱乐', label: '娱乐', icon: '🎮', desc: '游戏角色、同人创作、幽默段子' },
+      { value: '职场', label: '职场', icon: '💼', desc: '面试技巧、简历优化、项目管理' },
+      { value: '创意', label: '创意', icon: '🎨', desc: '灵感生成、艺术设计助手' }
+    ];
+    res.json({ categories });
+  } catch (err) {
+    console.error('❌ 获取分类列表失败:', err.message);
+    res.status(500).json({ error: { message: '服务器错误' } });
+  }
+});
+
+/**
+ * @api {put} /admin/config/agent-categories 更新整个分类列表
+ * @apiGroup Admin
+ */
+router.put('/config/agent-categories', authenticateToken, checkPermission('system:config:edit'), async (req, res) => {
+  try {
+    const { categories } = req.body;
+    if (!Array.isArray(categories)) {
+      return res.status(400).json({ error: { message: 'categories 必须是数组' } });
+    }
+    // 校验每项
+    for (const cat of categories) {
+      if (!cat.value || !cat.label) {
+        return res.status(400).json({ error: { message: '每个分类必须包含 value 和 label' } });
+      }
+    }
+    await updateConfig({ agentCategories: categories });
+    res.json({ message: '分类列表已更新', categories });
+  } catch (err) {
+    console.error('❌ 更新分类列表失败:', err.message);
+    res.status(400).json({ error: { message: err.message || '请求参数错误' } });
+  }
+});
+
+/**
+ * @api {post} /admin/config/agent-categories 新增分类
+ * @apiGroup Admin
+ */
+router.post('/config/agent-categories', authenticateToken, checkPermission('system:config:edit'), async (req, res) => {
+  try {
+    const { value, label, icon, desc } = req.body;
+    if (!value || !label) {
+      return res.status(400).json({ error: { message: 'value 和 label 不能为空' } });
+    }
+    const cfg = await getConfigUnmasked();
+    const categories = cfg.agentCategories || [];
+    if (categories.find(c => c.value === value)) {
+      return res.status(400).json({ error: { message: '分类标识已存在' } });
+    }
+    categories.push({ value, label, icon: icon || '🏷️', desc: desc || '' });
+    await updateConfig({ agentCategories: categories });
+    res.status(201).json({ message: '分类创建成功', category: { value, label, icon, desc } });
+  } catch (err) {
+    console.error('❌ 创建分类失败:', err.message);
+    res.status(400).json({ error: { message: err.message || '请求参数错误' } });
+  }
+});
+
+/**
+ * @api {put} /admin/config/agent-categories/:value 更新指定分类
+ * @apiGroup Admin
+ */
+router.put('/config/agent-categories/:value', authenticateToken, checkPermission('system:config:edit'), async (req, res) => {
+  try {
+    const { value } = req.params;
+    const { label, icon, desc } = req.body;
+    const cfg = await getConfigUnmasked();
+    const categories = cfg.agentCategories || [];
+    const idx = categories.findIndex(c => c.value === value);
+    if (idx === -1) {
+      return res.status(404).json({ error: { message: '分类不存在' } });
+    }
+    if (label) categories[idx].label = label;
+    if (icon !== undefined) categories[idx].icon = icon;
+    if (desc !== undefined) categories[idx].desc = desc;
+    await updateConfig({ agentCategories: categories });
+    res.json({ message: '分类更新成功', category: categories[idx] });
+  } catch (err) {
+    console.error('❌ 更新分类失败:', err.message);
+    res.status(400).json({ error: { message: err.message || '请求参数错误' } });
+  }
+});
+
+/**
+ * @api {delete} /admin/config/agent-categories/:value 删除指定分类
+ * @apiGroup Admin
+ */
+router.delete('/config/agent-categories/:value', authenticateToken, checkPermission('system:config:edit'), async (req, res) => {
+  try {
+    const { value } = req.params;
+    const cfg = await getConfigUnmasked();
+    const categories = (cfg.agentCategories || []).filter(c => c.value !== value);
+    await updateConfig({ agentCategories: categories });
+    res.json({ message: '分类已删除' });
+  } catch (err) {
+    console.error('❌ 删除分类失败:', err.message);
+    res.status(400).json({ error: { message: err.message || '请求参数错误' } });
+  }
+});
+
 export default router;

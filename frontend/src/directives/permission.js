@@ -7,7 +7,9 @@ export const permission = {
     
     if (value === 'admin') {
       el._unwatch = watch(user, (newUser) => {
-        if (newUser && newUser.isSuperAdmin === true) {
+        const isAdmin = newUser &&
+          (newUser.role === 'admin' || newUser.role === 'super_admin' || newUser.isSuperAdmin === true)
+        if (isAdmin) {
           el.style.display = ''
           el._permissionHidden = false
         } else {

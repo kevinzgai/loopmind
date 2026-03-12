@@ -159,6 +159,11 @@ export async function logout(userId, token) {
  */
 export async function verifyToken(token) {
   try {
+    // 快速校验 token 格式（64位十六进制），避免无效 token 触发 DB 查询
+    if (!token || !/^[0-9a-f]{64}$/i.test(token)) {
+      throw new Error('Token 无效');
+    }
+
     // 从 MongoDB 查找 Token
     const tokenDoc = await Token.findOne({ token }).populate('userId');
 

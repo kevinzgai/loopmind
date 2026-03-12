@@ -149,6 +149,16 @@ const routes = [
         },
       },
       {
+        path: "agent-categories",
+        name: "SettingsAgentCategories",
+        component: () => import("@/components/settings/AgentCategorySettings.vue"),
+        meta: {
+          title: "分类管理",
+          requiresAuth: true,
+          requiresAdmin: true,
+        },
+      },
+      {
         path: "users",
         name: "SettingsUsers",
         component: UserManagementPage,

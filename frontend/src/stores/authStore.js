@@ -236,8 +236,12 @@ export async function loadUserPermissions() {
 export function hasPermission(permission) {
   if (!user.value) return false
   
-  // isSuperAdmin 拥有所有权限
-  if (user.value.isSuperAdmin === true) return true
+  // admin / super_admin 拥有所有权限
+  if (
+    user.value.role === 'admin' ||
+    user.value.role === 'super_admin' ||
+    user.value.isSuperAdmin === true
+  ) return true
   
   // 检查权限列表
   return permissions.value.includes(permission)
@@ -251,8 +255,12 @@ export function hasPermission(permission) {
 export function hasPermissions(permissionList, requireAll = false) {
   if (!user.value) return false
   
-  // isSuperAdmin 拥有所有权限
-  if (user.value.isSuperAdmin === true) return true
+  // admin / super_admin 拥有所有权限
+  if (
+    user.value.role === 'admin' ||
+    user.value.role === 'super_admin' ||
+    user.value.isSuperAdmin === true
+  ) return true
   
   if (!Array.isArray(permissionList) || permissionList.length === 0) {
     return false
