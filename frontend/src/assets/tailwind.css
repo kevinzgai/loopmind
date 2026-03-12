@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,33 +6,33 @@
 
 @layer base {
   :root {
-    --background: 220 40% 98%;
-    --foreground: 222 47% 11%;
+    --background: 222 47% 97%;
+    --foreground: 222 47% 8%;
     
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 222 47% 8%;
     
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 222 47% 8%;
     
-    --primary: 245 58% 51%;
+    --primary: 142 71% 45%;
     --primary-foreground: 0 0% 100%;
     
-    --secondary: 250 95% 67%;
+    --secondary: 217 91% 60%;
     --secondary-foreground: 0 0% 100%;
     
-    --muted: 220 14% 96%;
+    --muted: 220 14% 93%;
     --muted-foreground: 220 9% 46%;
     
-    --accent: 245 58% 51%;
+    --accent: 142 71% 45%;
     --accent-foreground: 0 0% 100%;
     
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
     
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 245 58% 51%;
+    --border: 220 13% 88%;
+    --input: 220 13% 88%;
+    --ring: 142 71% 45%;
     
     --radius: 0.75rem;
     
@@ -42,45 +42,53 @@
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
     
-    --info: 199 89% 48%;
+    --info: 217 91% 60%;
     --info-foreground: 0 0% 100%;
     
     --glass-bg: 0 0% 100% / 0.7;
     --glass-border: 0 0% 100% / 0.2;
     --glass-blur: 16px;
+    
+    /* OLED accent colors */
+    --neon-green: #22C55E;
+    --neon-blue: #3B82F6;
+    --neon-purple: #A855F7;
+    --neon-cyan: #06B6D4;
   }
 
   .dark {
-    --background: 222 47% 6%;
+    /* OLED Deep Black */
+    --background: 222 84% 2%;
     --foreground: 210 40% 98%;
     
-    --card: 222 47% 9%;
+    --card: 222 47% 5%;
     --card-foreground: 210 40% 98%;
     
-    --popover: 222 47% 9%;
+    --popover: 222 47% 6%;
     --popover-foreground: 210 40% 98%;
     
-    --primary: 245 58% 51%;
-    --primary-foreground: 0 0% 100%;
+    /* Green as primary in dark mode */
+    --primary: 142 71% 45%;
+    --primary-foreground: 0 0% 0%;
     
-    --secondary: 250 95% 67%;
+    --secondary: 217 91% 60%;
     --secondary-foreground: 0 0% 100%;
     
-    --muted: 222 47% 15%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 222 47% 10%;
+    --muted-foreground: 215 20% 55%;
     
-    --accent: 245 58% 51%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 142 71% 45%;
+    --accent-foreground: 0 0% 0%;
     
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
     
-    --border: 222 47% 15%;
-    --input: 222 47% 15%;
-    --ring: 245 58% 51%;
+    --border: 222 47% 12%;
+    --input: 222 47% 10%;
+    --ring: 142 71% 45%;
     
-    --glass-bg: 222 47% 9% / 0.8;
-    --glass-border: 255 255 255 / 0.1;
+    --glass-bg: 222 47% 5% / 0.8;
+    --glass-border: 255 255 255 / 0.06;
   }
 }
 
@@ -91,11 +99,11 @@
   
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+    font-family: 'Fira Sans', system-ui, -apple-system, sans-serif;
   }
   
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+    font-family: 'Fira Code', 'Fira Sans', monospace;
     @apply font-semibold tracking-tight;
   }
 }
@@ -323,17 +331,17 @@
 
 .markdown-content h1 {
   @apply text-2xl font-bold my-4 pb-2 border-b border-border;
-  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-family: 'Fira Code', monospace;
 }
 
 .markdown-content h2 {
   @apply text-xl font-bold my-3 pb-1.5 border-b border-border;
-  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-family: 'Fira Code', monospace;
 }
 
 .markdown-content h3 {
   @apply text-lg font-semibold my-2;
-  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-family: 'Fira Code', monospace;
 }
 
 .markdown-content p {
@@ -408,4 +416,57 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* OLED Dark 专属工具类 */
+.neon-text-green {
+  color: #22C55E;
+  text-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+}
+
+.neon-text-blue {
+  color: #3B82F6;
+  text-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+
+.neon-text-purple {
+  color: #A855F7;
+  text-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+}
+
+.dark .stat-card {
+  background: hsl(222 47% 5%);
+  border-color: hsl(222 47% 12%);
+}
+
+.dark .stat-card:hover {
+  border-color: rgba(34, 197, 94, 0.3);
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.08);
+}
+
+.dark .card-base {
+  background: hsl(222 47% 5%);
+  border-color: hsl(222 47% 12%);
+}
+
+.dark .card-base:hover {
+  border-color: rgba(34, 197, 94, 0.25);
+}
+
+.dark .sidebar-item:hover {
+  background: hsl(222 47% 8%);
+}
+
+.dark .sidebar-item.active {
+  background: rgba(34, 197, 94, 0.08);
+  color: #22C55E;
+  border-left: 2px solid #22C55E;
+}
+
+/* OLED 扫描线效果 (可选，轻量) */
+.dark .oled-grid-bg {
+  background-image: 
+    linear-gradient(rgba(34, 197, 94, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 197, 94, 0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
 }

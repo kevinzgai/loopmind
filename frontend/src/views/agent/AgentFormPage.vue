@@ -72,7 +72,7 @@
           <div v-if="form.enableKnowledgeBase" class="space-y-2">
             <div class="grid grid-cols-2 gap-2">
               <label v-for="kb in knowledgeBases" :key="kb.id" class="flex items-center gap-2 p-2 bg-white dark:bg-slate-900 rounded cursor-pointer hover:bg-accent transition-colors">
-                <CheckboxRoot :model-value="form.knowledgeBaseIds.includes(kb.id)" @update:model-value="toggleKnowledgeBase(kb.id)" class="w-3.5 h-3.5 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 data-[state=checked]:bg-primary data-[state=checked]:border-primary flex items-center justify-center shrink-0 transition-colors">
+                <CheckboxRoot :model-value="form.knowledgeBaseIds.includes(kb.id)" @update:model-value="toggleKnowledgeBase(kb.id)" class="w-3.5 h-3.5 rounded border border-border bg-background data-[state=checked]:bg-primary data-[state=checked]:border-primary flex items-center justify-center shrink-0 transition-colors">
                   <CheckboxIndicator><Check class="w-2.5 h-2.5 text-primary-foreground" /></CheckboxIndicator>
                 </CheckboxRoot>
                 <span class="text-xs font-medium">{{ kb.name }} <span class="text-slate-400">({{ kb.documentCount }} 条)</span></span>

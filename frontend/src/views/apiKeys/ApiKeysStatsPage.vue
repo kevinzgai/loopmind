@@ -12,7 +12,7 @@
     </div>
 
     <div v-if="isLoading" class="py-12 flex justify-center">
-      <div class="w-8 h-8 border-4 border-violet-200 dark:border-violet-800 border-t-violet-600 dark:border-t-violet-400 rounded-full animate-spin"></div>
+      <Loader2 class="w-8 h-8 animate-spin text-primary" />
     </div>
 
     <div v-else class="space-y-6">
