@@ -41,7 +41,9 @@
 
         <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-4">
           <label class="flex items-center gap-2 mb-3 cursor-pointer">
-            <input v-model="form.greeting.enabled" type="checkbox" class="w-4 h-4 rounded border-slate-300 text-blue-600" />
+            <CheckboxRoot v-model="form.greeting.enabled" class="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 data-[state=checked]:bg-primary data-[state=checked]:border-primary flex items-center justify-center transition-colors">
+              <CheckboxIndicator><Check class="w-3 h-3 text-primary-foreground" /></CheckboxIndicator>
+            </CheckboxRoot>
             <span class="font-bold text-sm">开场白</span>
           </label>
           <div v-if="form.greeting.enabled" class="space-y-2">
@@ -62,15 +64,18 @@
 
         <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-4">
           <label class="flex items-center gap-2 mb-3 cursor-pointer">
-            <input v-model="form.enableKnowledgeBase" type="checkbox" class="w-4 h-4 rounded border-slate-300 text-blue-600" />
+            <CheckboxRoot v-model="form.enableKnowledgeBase" class="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 data-[state=checked]:bg-primary data-[state=checked]:border-primary flex items-center justify-center transition-colors">
+              <CheckboxIndicator><Check class="w-3 h-3 text-primary-foreground" /></CheckboxIndicator>
+            </CheckboxRoot>
             <span class="font-bold text-sm">启用知识库</span>
           </label>
           <div v-if="form.enableKnowledgeBase" class="space-y-2">
             <div class="grid grid-cols-2 gap-2">
-              <label v-for="kb in knowledgeBases" :key="kb.id " class="flex items-center gap-2 p-2 bg-white dark:bg-slate-900 rounded cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20">
-                <input :checked="form.knowledgeBaseIds.includes(kb.id)" @change="toggleKnowledgeBase(kb.id)" type="checkbox" class="w-3 h-3 rounded border-slate-300 text-blue-600" />
-                <span class="text-xs font-medium">{{ kb.name }} <span class="text-xs font-medium text-slate-500 dark:text-slate-400"> (文档数: {{ kb.documentCount }} 条)</span> </span>
-                
+              <label v-for="kb in knowledgeBases" :key="kb.id" class="flex items-center gap-2 p-2 bg-white dark:bg-slate-900 rounded cursor-pointer hover:bg-accent transition-colors">
+                <CheckboxRoot :model-value="form.knowledgeBaseIds.includes(kb.id)" @update:model-value="toggleKnowledgeBase(kb.id)" class="w-3.5 h-3.5 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 data-[state=checked]:bg-primary data-[state=checked]:border-primary flex items-center justify-center shrink-0 transition-colors">
+                  <CheckboxIndicator><Check class="w-2.5 h-2.5 text-primary-foreground" /></CheckboxIndicator>
+                </CheckboxRoot>
+                <span class="text-xs font-medium">{{ kb.name }} <span class="text-slate-400">({{ kb.documentCount }} 条)</span></span>
               </label>
             </div>
           </div>
@@ -79,20 +84,28 @@
         <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-4">
           <h3 class="font-bold text-sm mb-3">功能</h3>
           <div class="grid grid-cols-2 gap-2">
-            <label class="flex items-center gap-2 p-2 bg-white dark:bg-slate-900 rounded cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20">
-              <input v-model="form.features.conversationOperator" type="checkbox" class="w-3 h-3 rounded border-slate-300 text-blue-600" />
-              <span class="text-xs font-medium">对话开启白</span>
+            <label class="flex items-center gap-2 p-2 bg-white dark:bg-slate-900 rounded cursor-pointer hover:bg-accent transition-colors">
+              <CheckboxRoot v-model="form.features.conversationOperator" class="w-3.5 h-3.5 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 data-[state=checked]:bg-primary data-[state=checked]:border-primary flex items-center justify-center shrink-0 transition-colors">
+                <CheckboxIndicator><Check class="w-2.5 h-2.5 text-primary-foreground" /></CheckboxIndicator>
+              </CheckboxRoot>
+              <span class="text-xs font-medium">对话引导</span>
             </label>
-            <label class="flex items-center gap-2 p-2 bg-white dark:bg-slate-900 rounded cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20">
-              <input v-model="form.features.nextQuestionSuggestion" type="checkbox" class="w-3 h-3 rounded border-slate-300 text-blue-600" />
+            <label class="flex items-center gap-2 p-2 bg-white dark:bg-slate-900 rounded cursor-pointer hover:bg-accent transition-colors">
+              <CheckboxRoot v-model="form.features.nextQuestionSuggestion" class="w-3.5 h-3.5 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 data-[state=checked]:bg-primary data-[state=checked]:border-primary flex items-center justify-center shrink-0 transition-colors">
+                <CheckboxIndicator><Check class="w-2.5 h-2.5 text-primary-foreground" /></CheckboxIndicator>
+              </CheckboxRoot>
               <span class="text-xs font-medium">下一步建议</span>
             </label>
-            <label class="flex items-center gap-2 p-2 bg-white dark:bg-slate-900 rounded cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20">
-              <input v-model="form.features.textToSpeech" type="checkbox" class="w-3 h-3 rounded border-slate-300 text-blue-600" />
+            <label class="flex items-center gap-2 p-2 bg-white dark:bg-slate-900 rounded cursor-pointer hover:bg-accent transition-colors">
+              <CheckboxRoot v-model="form.features.textToSpeech" class="w-3.5 h-3.5 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 data-[state=checked]:bg-primary data-[state=checked]:border-primary flex items-center justify-center shrink-0 transition-colors">
+                <CheckboxIndicator><Check class="w-2.5 h-2.5 text-primary-foreground" /></CheckboxIndicator>
+              </CheckboxRoot>
               <span class="text-xs font-medium">文字转语音</span>
             </label>
-            <label class="flex items-center gap-2 p-2 bg-white dark:bg-slate-900 rounded cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20">
-              <input v-model="form.features.speechToText" type="checkbox" class="w-3 h-3 rounded border-slate-300 text-blue-600" />
+            <label class="flex items-center gap-2 p-2 bg-white dark:bg-slate-900 rounded cursor-pointer hover:bg-accent transition-colors">
+              <CheckboxRoot v-model="form.features.speechToText" class="w-3.5 h-3.5 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 data-[state=checked]:bg-primary data-[state=checked]:border-primary flex items-center justify-center shrink-0 transition-colors">
+                <CheckboxIndicator><Check class="w-2.5 h-2.5 text-primary-foreground" /></CheckboxIndicator>
+              </CheckboxRoot>
               <span class="text-xs font-medium">语音转文字</span>
             </label>
           </div>
@@ -135,8 +148,10 @@
               <Play v-else class="w-3.5 h-3.5" />
               <span>{{ isPreviewPlaying ? '播放中...' : '预览音色' }}</span>
             </Button>
-            <label class="flex items-center gap-2 p-2 bg-white dark:bg-slate-900 rounded cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20">
-              <input v-model="form.ttsConfig.autoPlay" type="checkbox" class="w-3 h-3 rounded border-slate-300 text-blue-600" />
+            <label class="flex items-center gap-2 p-2 bg-white dark:bg-slate-900 rounded cursor-pointer hover:bg-accent transition-colors">
+              <CheckboxRoot v-model="form.ttsConfig.autoPlay" class="w-3.5 h-3.5 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 data-[state=checked]:bg-primary data-[state=checked]:border-primary flex items-center justify-center shrink-0 transition-colors">
+                <CheckboxIndicator><Check class="w-2.5 h-2.5 text-primary-foreground" /></CheckboxIndicator>
+              </CheckboxRoot>
               <span class="text-xs font-medium">自动播放</span>
             </label>
           </div>
@@ -144,12 +159,14 @@
 
         <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-4">
           <label class="flex items-center gap-2 mb-3 cursor-pointer">
-            <input v-model="form.features.contentModeration" type="checkbox" class="w-4 h-4 rounded border-slate-300 text-blue-600" />
+            <CheckboxRoot v-model="form.features.contentModeration" class="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 data-[state=checked]:bg-primary data-[state=checked]:border-primary flex items-center justify-center transition-colors">
+              <CheckboxIndicator><Check class="w-3 h-3 text-primary-foreground" /></CheckboxIndicator>
+            </CheckboxRoot>
             <span class="font-bold text-sm">内容审查</span>
           </label>
           <div v-if="form.features.contentModeration" class="space-y-2">
-            <textarea v-model="sensitiveWordsText" placeholder="每行一个敏感词" rows="3" class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded text-xs resize-none font-mono" />
-            <button @click="importSensitiveWords" class="w-full px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700">导入敏感词</button>
+            <Textarea v-model="sensitiveWordsText" placeholder="每行一个敏感词" :rows="3" class="resize-none font-mono text-xs" />
+            <Button variant="outline" size="sm" class="w-full" @click="importSensitiveWords">导入敏感词</Button>
           </div>
         </div>
       </div>
@@ -331,14 +348,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, Trash2, MessageSquare, Send, Mic, Volume2, VolumeX, Bot, User, Keyboard, RotateCcw, Loader2, Sparkles, Play, Pause, Plus } from 'lucide-vue-next'
+import { ArrowLeft, Trash2, MessageSquare, Send, Mic, Volume2, VolumeX, Bot, User, Keyboard, RotateCcw, Loader2, Sparkles, Play, Pause, Plus, Check } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { CheckboxRoot as Checkbox } from 'reka-ui'
+import { CheckboxRoot, CheckboxIndicator } from 'reka-ui'
 
 // Markdown 渲染
 const markdownToHtml = (markdown: string): string => {
@@ -718,11 +735,25 @@ const handleSubmit = async () => {
   if (!form.value.name) return
   isSubmitting.value = true
   try {
-    const url = isEditMode ? `/api/agent/${agentId}` : '/api/agent/create'
+    const url = isEditMode.value ? `/api/agent/${agentId}` : '/api/agent/create'
+    // 确保 knowledgeBaseIds 只含字符串 ID
+    const cleanIds = form.value.knowledgeBaseIds
+      .map((k: any) => typeof k === 'object' ? (k.id || k._id || '').toString() : k)
+      .filter((k: string) => k.length === 24)
+    const payload: Record<string, any> = {
+      ...form.value,
+      knowledgeBaseIds: cleanIds,
+    }
+    // 只在有值时才传 knowledgeBaseId，避免空字符串导致后端报错
+    if (cleanIds.length > 0) {
+      payload.knowledgeBaseId = cleanIds[0]
+    } else {
+      delete payload.knowledgeBaseId
+    }
     const res = await fetch(url, {
-      method: isEditMode ? 'PUT' : 'POST',
+      method: isEditMode.value ? 'PUT' : 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-      body: JSON.stringify(form.value)
+      body: JSON.stringify(payload)
     })
     if (res.ok) router.push('/agent/my-agents')
   } finally {
@@ -735,9 +766,15 @@ const loadAgent = async () => {
   try {
     const res = await fetch(`/api/agent/${agentId}`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } })
     const data = await res.json()
+    // knowledgeBaseId 可能被 populate 成对象，需提取 id
+    const kb = data.agent.knowledgeBaseId
+    const knowledgeBaseIdStr = kb ? (typeof kb === 'object' ? (kb.id || kb._id || '').toString() : kb.toString()) : ''
     form.value = {
       ...data.agent,
-      knowledgeBaseIds: Array.isArray(data.agent.knowledgeBaseIds) ? data.agent.knowledgeBaseIds : [],
+      knowledgeBaseId: knowledgeBaseIdStr,
+      knowledgeBaseIds: Array.isArray(data.agent.knowledgeBaseIds)
+        ? data.agent.knowledgeBaseIds.map((k: any) => typeof k === 'object' ? (k.id || k._id || '').toString() : k.toString())
+        : (knowledgeBaseIdStr ? [knowledgeBaseIdStr] : []),
       enableKnowledgeBase: data.agent.enableKnowledgeBase ?? false,
       ttsConfig: data.agent.ttsConfig || { voice: 'Cherry', speechRate: 150, autoPlay: false }
     }
@@ -786,6 +823,6 @@ const getDefaultVoices = (): Voice[] => [
 onMounted(() => {
   loadKnowledgeBases()
   loadVoices()
-  if (isEditMode) loadAgent()
+  if (isEditMode.value) loadAgent()
 })
 </script>

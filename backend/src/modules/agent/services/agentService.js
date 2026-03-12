@@ -136,7 +136,15 @@ export async function updateAgent(agentId, creatorId, updateData) {
 
     // 不允许修改已发布的智能体的名称
     // 其他配置均允许修改
-    Object.assign(agent, updateData);
+    // 过滤掉空字符串的 ObjectId 字段，避免 Mongoose cast 报错
+    const safeData = { ...updateData };
+    if (safeData.knowledgeBaseId === '' || safeData.knowledgeBaseId === null) {
+      delete safeData.knowledgeBaseId;
+    }
+    if (Array.isArray(safeData.knowledgeBaseIds)) {
+      safeData.knowledgeBaseIds = safeData.knowledgeBaseIds.filter(id => id && id.toString().length === 24);
+    }
+    Object.assign(agent, safeData);
     agent.updatedAt = new Date();
 
     await agent.save();
