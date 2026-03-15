@@ -222,7 +222,7 @@
 <script setup>
 import { ref, onMounted, reactive } from 'vue'
 import { currentUser, updateProfile, changePassword } from '@/stores/authStore'
-import { getUserAgents } from '@/services/agentService'
+import { getMyAgents } from '@/api/agent.api.ts'
 import { getKnowledgeBases } from '@/services/knowledgeService'
 import { getMyApiKey, resetMyApiKey } from '@/services/apiKeyService'
 import { 
@@ -263,8 +263,8 @@ const passwordForm = reactive({
 
 onMounted(async () => {
   try {
-    const response = await getUserAgents()
-    agentCount.value = response.total || response.agents?.length || 0
+    const response = await getMyAgents()
+    agentCount.value = response.data?.data?.total || response.data?.data?.agents?.length || 0
     
     const kbResponse = await getKnowledgeBases()
     kbCount.value = kbResponse.kbs?.length || 0

@@ -243,6 +243,19 @@ function handleGlobalTouchEnd() {
   }
 }
 
+async function waitForWebSocket(timeout = 3000) {
+  if (ws && ws.readyState === WebSocket.OPEN) return true
+  return new Promise((resolve) => {
+    const start = Date.now()
+    const check = () => {
+      if (ws && ws.readyState === WebSocket.OPEN) return resolve(true)
+      if (Date.now() - start > timeout) return resolve(false)
+      setTimeout(check, 100)
+    }
+    check()
+  })
+}
+
 async function startRecording() {
   if (isRecording.value || isConnecting.value) return
   
@@ -254,6 +267,15 @@ async function startRecording() {
     isConnecting.value = true
     recognizedText.value = ''
     intermediateText.value = ''
+
+    // 等待 WebSocket 就绪（最多 3 秒）
+    const wsReady = await waitForWebSocket(3000)
+    if (!wsReady) {
+      isConnecting.value = false
+      alert('语音服务连接失败，请稍后重试')
+      return
+    }
+
     mediaStream = await navigator.mediaDevices.getUserMedia({
       audio: { channelCount: 1, sampleRate: 16000, echoCancellation: true, noiseSuppression: true, autoGainControl: true }
     })
@@ -264,9 +286,8 @@ async function startRecording() {
     source.connect(analyser)
     visualizeAudio()
     
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'start' }))
-    }
+    // 通知服务端开始录音
+    ws.send(JSON.stringify({ type: 'start' }))
 
     await audioContext.audioWorklet.addModule('/src/worklets/AudioProcessor.js')
     processor = new AudioWorkletNode(audioContext, 'audio-streaming-processor')

@@ -35,7 +35,7 @@
             <h1 class="agent-name">{{ agent.name }}</h1>
             <div class="agent-meta-row">
               <p class="agent-model">{{ getModelName(agent.model) }}</p>
-              <span v-if="agent.knowledgeBaseId && agent.knowledgeBaseId.name" class="kb-badge" title="已关联知识库">
+              <span v-if="agent?.knowledgeBaseId && agent.knowledgeBaseId.name" class="kb-badge" title="已关联知识库">
                 📚 {{ agent.knowledgeBaseId.name }}
               </span>
             </div>
@@ -43,8 +43,9 @@
         </div>
         
         <div class="header-info">
-          <!-- TTS 开关 -->
+        <!-- TTS 开关：仅当智能体开启了文字转语音时显示 -->
           <button 
+            v-if="agent?.features?.textToSpeech"
             @click="toggleTTS" 
             class="tts-toggle-btn"
             :class="{ 'active': ttsEnabled, 'speaking': isSpeaking }"
@@ -118,7 +119,7 @@
               >
                 <div class="bubble-content" v-html="renderMessageContent(message.content)"></div>
                 <button
-                  v-if="message.role === 'assistant' && message.content"
+                  v-if="message.role === 'assistant' && agent?.features?.textToSpeech && message.content"
                   class="play-btn"
                   :class="{ 'playing': playingMessageId === message.id }"
                   @click="playMessageAudio(message)"
@@ -153,6 +154,7 @@
                 />
                 <div class="input-actions">
                   <button
+                    v-if="agent?.features?.speechToText"
                     type="button"
                     class="action-btn voice-btn"
                     :class="{ 'recording': isVoiceRecording }"
@@ -210,15 +212,15 @@ import McIntroduction from '@/components/chat/McIntroduction.vue'
 import PromptShortcut from '@/components/chat/PromptShortcut.vue'
 import { Mic, MicOff, Send } from 'lucide-vue-next'
 import { token } from '@/stores/authStore.js'
-import { 
-  getAgent, 
-  getMemory, 
-  getAgentChatHistory, 
-  listAgentConversations, 
-  createAgentConversation, 
+import {
+  getAgent,
+  getAgentMemory,
+  getAgentChatHistory,
+  listAgentConversations,
+  createAgentConversation,
   getAgentConversationMessages,
-  deleteAgentConversation
-} from '@/services/agentService.js'
+  deleteAgentConversation,
+} from '@/api/agent.api.ts'
 
 const route = useRoute()
 const agentId = route.params.agentId
@@ -332,22 +334,26 @@ const loadAgent = async () => {
     agentError.value = null
 
     // 获取智能体信息
-    const agentData = await getAgent(agentId)
-    agent.value = agentData.agent
+    const res = await getAgent(agentId)
+    agent.value = res.data.data.agent
 
     // 如果用户已登录，获取记忆
     if (token.value) {
       try {
-        const memoryData = await getMemory(agentId, token.value)
-        memory.value = memoryData
+        const memRes = await getAgentMemory(agentId)
+        memory.value = memRes.data.data.memory
       } catch (err) {
         console.warn('获取记忆失败:', err.message)
-        // 记忆获取失败不影响聊天
       }
     }
 
     // 初始化对话
     initializeChat()
+
+    // 根据智能体设置自动开启 TTS
+    if (agent.value.features?.textToSpeech && agent.value.ttsConfig?.autoPlay) {
+      ttsEnabled.value = true
+    }
   } catch (err) {
     agentError.value = err.message
     console.error('❌ 加载智能体失败:', err.message)
@@ -359,12 +365,12 @@ const loadAgent = async () => {
 // 加载历史对话
 const loadHistory = async () => {
   try {
-    const userIdParam = token.value ? null : userId
-    const data = await getAgentChatHistory(agentId, userIdParam)
-    
-    if (data.history && data.history.length > 0) {
-      messages.value = data.history.map((msg, index) => ({
-        id: Date.now() - (data.history.length - index) * 1000,
+    const userIdParam = token.value ? undefined : userId
+    const res = await getAgentChatHistory(agentId, userIdParam)
+    const history = res.data.data.history
+    if (history && history.length > 0) {
+      messages.value = history.map((msg, index) => ({
+        id: Date.now() - (history.length - index) * 1000,
         role: msg.role,
         content: msg.content
       }))
@@ -382,17 +388,14 @@ const initializeChat = async () => {
   if (token.value) {
     await loadConversations()
     if (conversations.value.length > 0) {
-      // 如果有会话，加载第一个会话
       activeConversationId.value = conversations.value[0].id
       await loadConversationMessages(activeConversationId.value)
     } else {
-      // 如果没有会话，创建一个并加载
-      const created = await createAgentConversation(agentId, '新对话')
-      activeConversationId.value = created.conversation.id
+      const res = await createAgentConversation(agentId, '新对话')
+      activeConversationId.value = res.data.data.conversation.id
       await loadConversationMessages(activeConversationId.value)
     }
   } else {
-    // 如果未登录，尝试加载匿名历史记录
     await loadHistory()
   }
 
@@ -489,6 +492,7 @@ function playAudio(audio) {
 // 文本转语音（使用智能体的语音设置）
 async function textToSpeech(text) {
   if (!ttsEnabled.value || !text.trim()) return
+  if (!agent.value?.features?.textToSpeech) return
   
   const ttsTask = async () => {
     try {
@@ -568,69 +572,114 @@ function adjustTextareaHeight() {
   }
 }
 
-let voiceMediaRecorder = null
-let voiceAudioChunks = []
+let voiceWs = null
+let voiceReconnectTimer = null
+let voiceAudioContext = null
+let voiceAnalyser = null
+let voiceProcessor = null
+let voiceMediaStream = null
+let voiceAnimationId = null
+const voiceRecognizedText = ref('')
+const voiceIntermediateText = ref('')
+
+function setupVoiceWebSocket() {
+  if (voiceWs && (voiceWs.readyState === WebSocket.OPEN || voiceWs.readyState === WebSocket.CONNECTING)) return
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  const wsUrl = `${protocol}//${window.location.host}/ws-asr-stream`
+  voiceWs = new WebSocket(wsUrl)
+  voiceWs.onopen = () => {
+    if (voiceReconnectTimer) { clearTimeout(voiceReconnectTimer); voiceReconnectTimer = null }
+  }
+  voiceWs.onclose = () => { voiceWs = null }
+  voiceWs.onerror = () => { voiceWs && voiceWs.close() }
+  voiceWs.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data)
+      if (data.type === 'started') {
+        isVoiceRecording.value = true
+      } else if (data.type === 'intermediate') {
+        voiceIntermediateText.value = data.text
+      } else if (data.type === 'result') {
+        if (data.text) {
+          voiceRecognizedText.value += (voiceRecognizedText.value ? ' ' : '') + data.text
+          voiceIntermediateText.value = ''
+        }
+      } else if (data.type === 'error') {
+        console.error('ASR Error:', data.message)
+        stopVoiceRecording()
+      }
+    } catch {}
+  }
+}
+
+function waitForVoiceWS(timeout = 3000) {
+  if (voiceWs && voiceWs.readyState === WebSocket.OPEN) return Promise.resolve(true)
+  return new Promise((resolve) => {
+    const start = Date.now()
+    const check = () => {
+      if (voiceWs && voiceWs.readyState === WebSocket.OPEN) return resolve(true)
+      if (Date.now() - start > timeout) return resolve(false)
+      setTimeout(check, 100)
+    }
+    check()
+  })
+}
 
 async function startVoiceRecording() {
-  if (isLoading.value) return
-  
+  if (isLoading.value || isVoiceRecording.value) return
+  if (!voiceWs || voiceWs.readyState !== WebSocket.OPEN) setupVoiceWebSocket()
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    voiceMediaRecorder = new MediaRecorder(stream)
-    voiceAudioChunks = []
-    
-    voiceMediaRecorder.ondataavailable = (e) => {
-      voiceAudioChunks.push(e.data)
-    }
-    
-    voiceMediaRecorder.onstop = async () => {
-      stream.getTracks().forEach(track => track.stop())
-      
-      const audioBlob = new Blob(voiceAudioChunks, { type: 'audio/webm' })
-      const formData = new FormData()
-      formData.append('file', audioBlob, 'recording.webm')
-      
-      try {
-        const response = await fetch('/api/asr', {
-          method: 'POST',
-          body: formData
-        })
-        
-        const result = await response.json()
-        
-        if (response.ok && result.text) {
-          inputText.value = result.text
-          adjustTextareaHeight()
-        } else {
-          console.error('语音识别失败:', result)
-          alert('语音识别失败: ' + (result.message || result.error || '未知错误'))
-        }
-      } catch (err) {
-        console.error('语音识别失败:', err)
-        alert('语音识别失败: ' + err.message)
+    const wsReady = await waitForVoiceWS(3000)
+    if (!wsReady) { alert('语音服务连接失败，请稍后重试'); return }
+    voiceRecognizedText.value = ''
+    voiceIntermediateText.value = ''
+    voiceMediaStream = await navigator.mediaDevices.getUserMedia({
+      audio: { channelCount: 1, sampleRate: 16000, echoCancellation: true, noiseSuppression: true }
+    })
+    voiceAudioContext = new AudioContext({ sampleRate: 16000 })
+    const source = voiceAudioContext.createMediaStreamSource(voiceMediaStream)
+    voiceWs.send(JSON.stringify({ type: 'start' }))
+    await voiceAudioContext.audioWorklet.addModule('/src/worklets/AudioProcessor.js')
+    voiceProcessor = new AudioWorkletNode(voiceAudioContext, 'audio-streaming-processor')
+    voiceProcessor.port.onmessage = (event) => {
+      if (event.data.type === 'audioData' && voiceWs && voiceWs.readyState === WebSocket.OPEN) {
+        voiceWs.send(event.data.data)
       }
     }
-    
-    voiceMediaRecorder.start()
-    isVoiceRecording.value = true
-  } catch (err) {
-    console.error('无法访问麦克风:', err)
-    alert('无法访问麦克风，请检查权限设置')
+    source.connect(voiceProcessor)
+    voiceProcessor.connect(voiceAudioContext.destination)
+  } catch (error) {
+    isVoiceRecording.value = false
+    alert('无法访问麦克风：' + (error?.message || '未知错误'))
   }
 }
 
 function stopVoiceRecording() {
-  if (voiceMediaRecorder && voiceMediaRecorder.state !== 'inactive') {
-    voiceMediaRecorder.stop()
-    isVoiceRecording.value = false
+  if (!isVoiceRecording.value && !voiceMediaStream) return
+  if (voiceWs && voiceWs.readyState === WebSocket.OPEN) {
+    voiceWs.send(JSON.stringify({ type: 'stop' }))
+    setTimeout(() => {
+      let finalText = voiceRecognizedText.value
+      if (voiceIntermediateText.value) finalText += (finalText ? ' ' : '') + voiceIntermediateText.value
+      if (finalText.trim()) {
+        inputText.value = finalText.trim()
+        adjustTextareaHeight()
+      }
+      voiceRecognizedText.value = ''
+      voiceIntermediateText.value = ''
+    }, 800)
   }
+  if (voiceProcessor) { voiceProcessor.disconnect(); voiceProcessor = null }
+  if (voiceAudioContext) { voiceAudioContext.close(); voiceAudioContext = null }
+  if (voiceMediaStream) { voiceMediaStream.getTracks().forEach(t => t.stop()); voiceMediaStream = null }
+  isVoiceRecording.value = false
 }
 
 function cancelVoiceRecording() {
-  if (isVoiceRecording.value) {
-    voiceAudioChunks = []
-    stopVoiceRecording()
-  }
+  if (!isVoiceRecording.value) return
+  voiceRecognizedText.value = ''
+  voiceIntermediateText.value = ''
+  stopVoiceRecording()
 }
 
 async function playMessageAudio(message) {
@@ -808,8 +857,8 @@ async function sendMessageToAI(text) {
 
 async function loadConversations() {
   try {
-    const data = await listAgentConversations(agentId)
-    conversations.value = (data.conversations || []).map(c => ({
+    const res = await listAgentConversations(agentId)
+    conversations.value = (res.data.data.conversations || []).map(c => ({
       id: c.id, title: c.title, messageCount: c.messageCount, updatedAt: c.updatedAt
     }))
   } catch (err) {
@@ -819,8 +868,8 @@ async function loadConversations() {
 
 async function loadConversationMessages(conversationId) {
   try {
-    const data = await getAgentConversationMessages(agentId, conversationId)
-    const list = data.messages || []
+    const res = await getAgentConversationMessages(agentId, conversationId)
+    const list = res.data.data.messages || []
     if (list.length > 0) {
       messages.value = list.map((msg, index) => ({
         id: Date.now() - (list.length - index) * 1000,
@@ -850,9 +899,10 @@ async function selectConversation(id) {
 
 async function handleNewConversation() {
   try {
-    const created = await createAgentConversation(agentId, '新对话')
-    conversations.value.unshift(created.conversation)
-    activeConversationId.value = created.conversation.id
+    const res = await createAgentConversation(agentId, '新对话')
+    const conv = res.data.data.conversation
+    conversations.value.unshift(conv)
+    activeConversationId.value = conv.id
     messages.value = []
   } catch (err) {
     // 忽略新建会话失败
@@ -926,10 +976,15 @@ onMounted(() => {
 
 onUnmounted(() => {
   stopAllAudio()
+  stopVoiceRecording()
+  if (voiceWs) { voiceWs.close(); voiceWs = null }
+  if (voiceReconnectTimer) clearTimeout(voiceReconnectTimer)
 })
 
 onBeforeRouteLeave((to, from, next) => {
   stopAllAudio()
+  stopVoiceRecording()
+  if (voiceWs) { voiceWs.close(); voiceWs = null }
   next && next()
 })
 </script>

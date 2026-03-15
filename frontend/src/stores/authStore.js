@@ -110,10 +110,10 @@ export async function getCurrentUser() {
     }
 
     const response = await apiService.get('/auth/me')
-    
     user.value = response.user
     return response.user
   } catch (err) {
+    // 401 已由 apiService 拦截器统一处理跳转
     return null
   }
 }
@@ -205,7 +205,12 @@ export async function initializeAuth() {
         user.value = response.user
         localStorage.setItem('user', JSON.stringify(response.user))
       } catch (err) {
-        // 忽略获取最新用户信息失败
+        // 401 已由 apiService 拦截器统一处理跳转，此处只需清除本地缓存
+        token.value = null
+        user.value = null
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        return
       }
       
       await loadUserPermissions()

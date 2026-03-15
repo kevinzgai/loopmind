@@ -18,10 +18,10 @@
       class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
       <!-- Categories -->
       <div class="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto no-scrollbar">
-        <button v-for="cat in ['全部', ...categories]" :key="cat" @click="selectedCategory = cat; loadAgents()" :class="[
+        <button v-for="cat in ['全部', ...dynamicCategories]" :key="cat" @click="selectedCategory = cat; page = 1; loadAgents()" :class="[
           'px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors',
           selectedCategory === cat
-            ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300'
+            ? 'bg-primary/10 text-primary'
             : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
         ]">
           {{ getCategoryLabel(cat) }}
@@ -125,8 +125,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
-import { getPublishedAgents } from '@/services/agentService.js'
+import { ref, onMounted } from 'vue'
+import { getPublishedAgents, getAgentCategories } from '@/api/agent.api.ts'
 import { AGENT_CATEGORIES } from '@/constants/agent.js'
 import { Plus, Search, Compass, User, MessageSquare, ChevronLeft, ChevronRight } from 'lucide-vue-next'
 
@@ -147,37 +147,46 @@ const limit = ref(12)
 const totalPages = ref(1)
 const selectedCategory = ref('全部')
 const searchQuery = ref('')
-const categories = AGENT_CATEGORIES.map(c => c.value)
+const dynamicCategories = ref([])
 
 const getCategoryLabel = (val) => {
   if (val === '全部') return '全部'
   return AGENT_CATEGORIES.find(c => c.value === val)?.label || val
 }
 
+const loadCategories = async () => {
+  try {
+    const res = await getAgentCategories()
+    dynamicCategories.value = res.data.data.categories || []
+  } catch {
+    dynamicCategories.value = AGENT_CATEGORIES.map(c => c.value)
+  }
+}
+
 const loadAgents = async () => {
   try {
     isLoading.value = true
     error.value = null
-    // Assuming backend supports search query in future, for now client side filtering might be needed if API doesn't support it
-    // But let's assume getPublishedAgents can take category. Search might need API update or client filter.
-    // For MVP, let's pass category.
-    const result = await getPublishedAgents(page.value, limit.value, selectedCategory.value)
+    const res = await getPublishedAgents({
+      page: page.value,
+      limit: limit.value,
+      category: selectedCategory.value !== '全部' ? selectedCategory.value : undefined,
+      search: searchQuery.value || undefined
+    })
+    const data = res.data.data
+    let list = data.agents || data.list || []
 
-    // Simple client-side search if API doesn't support it yet (API usually returns paginated data so client search is imperfect but better than nothing)
-    // Ideally API should support 'q' parameter.
-    // For now, let's just use what we get.
-    agents.value = result.agents
-
-    // If search query exists, filter locally (limited to current page, which is not ideal, but acceptable for MVP)
-    if (searchQuery.value) {
+    // 客户端兜底搜索（API 已支持时此处不会再过滤）
+    if (searchQuery.value && !data.search) {
       const q = searchQuery.value.toLowerCase()
-      agents.value = agents.value.filter(a =>
+      list = list.filter(a =>
         a.name.toLowerCase().includes(q) ||
         (a.description && a.description.toLowerCase().includes(q))
       )
     }
 
-    totalPages.value = result.pages || 1
+    agents.value = list
+    totalPages.value = data.pages || data.totalPages || 1
   } catch (err) {
     console.error('Failed to load agents:', err)
     error.value = '加载失败，请稍后重试'
@@ -200,6 +209,7 @@ const changePage = (newPage) => {
 }
 
 onMounted(() => {
+  loadCategories()
   loadAgents()
 })
 </script>

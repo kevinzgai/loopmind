@@ -68,18 +68,10 @@
         <p v-if="agent.description" class="text-sm text-muted-foreground line-clamp-2 mb-5 flex-1 leading-relaxed">{{ agent.description }}</p>
         <div v-else class="flex-1 mb-5"></div>
 
-        <div class="grid grid-cols-3 gap-3 p-3 bg-muted/30 rounded-xl mb-5 border border-border">
-          <div class="text-center">
-            <p class="text-lg font-bold font-heading">{{ agent.usageCount || 0 }}</p>
-            <p class="text-xs text-muted-foreground mt-0.5">使用次数</p>
-          </div>
+        <div class="p-3 bg-muted/30 rounded-xl mb-5 border border-border">
           <div class="text-center">
             <p class="text-lg font-bold font-heading">{{ agent.userCount || 0 }}</p>
-            <p class="text-xs text-muted-foreground mt-0.5">用户数</p>
-          </div>
-          <div class="text-center">
-            <p class="text-lg font-bold font-heading">{{ agent.conversationCount || 0 }}</p>
-            <p class="text-xs text-muted-foreground mt-0.5">对话数</p>
+            <p class="text-xs text-muted-foreground mt-0.5">对话用户数</p>
           </div>
         </div>
 
@@ -173,7 +165,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { token } from '@/stores/authStore.js'
-import { getUserAgents, publishAgent, unpublishAgent, deleteAgent } from '@/services/agentService.js'
+import { getMyAgents, publishAgent, unpublishAgent, deleteAgent } from '@/api/agent.api.ts'
 import {
   Plus, Bot, MessageSquare, Edit, MoreVertical, Code, Upload, Download, Trash2,
   ChevronLeft, ChevronRight, X, Copy, Lightbulb, AlertCircle, Loader2
@@ -234,17 +226,14 @@ const loadAgents = async () => {
   try {
     isLoading.value = true
     error.value = null
-
-    const result = await getUserAgents(page.value, limit.value)
-    agents.value = result.agents
-    total.value = result.total
-    pages.value = result.pages
+    const res = await getMyAgents({ page: page.value, limit: limit.value })
+    const data = res.data.data
+    agents.value = data.agents || data.list || []
+    total.value = data.total || 0
+    pages.value = data.pages || data.totalPages || 1
   } catch (err) {
     error.value = err.message
-    
-    if (err.message.includes('登录已失效')) {
-      router.push('/login')
-    }
+    if (err.message.includes('登录已失效')) router.push('/login')
   } finally {
     isLoading.value = false
   }
@@ -253,54 +242,39 @@ const loadAgents = async () => {
 const handlePublish = async (agentId) => {
   try {
     publishingId.value = agentId
-    await publishAgent(agentId, token.value)
+    await publishAgent(agentId)
     await loadAgents()
   } catch (err) {
     error.value = err.message
-    
-    if (err.message.includes('登录已失效')) {
-      router.push('/login')
-    }
+    if (err.message.includes('登录已失效')) router.push('/login')
   } finally {
     publishingId.value = null
   }
 }
 
 const handleUnpublish = async (agentId) => {
-  if (!confirm('确定要下架这个智能体吗？下架后将从广场中移除。')) {
-    return
-  }
-
+  if (!confirm('确定要下架这个智能体吗？下架后将从广场中移除。')) return
   try {
     unpublishingId.value = agentId
-    await unpublishAgent(agentId, token.value)
+    await unpublishAgent(agentId)
     await loadAgents()
   } catch (err) {
     error.value = err.message
-    
-    if (err.message.includes('登录已失效')) {
-      router.push('/login')
-    }
+    if (err.message.includes('登录已失效')) router.push('/login')
   } finally {
     unpublishingId.value = null
   }
 }
 
 const handleDelete = async (agentId) => {
-  if (!confirm('确定要删除这个智能体吗？')) {
-    return
-  }
-
+  if (!confirm('确定要删除这个智能体吗？')) return
   try {
     deletingId.value = agentId
-    await deleteAgent(agentId, token.value)
+    await deleteAgent(agentId)
     await loadAgents()
   } catch (err) {
     error.value = err.message
-    
-    if (err.message.includes('登录已失效')) {
-      router.push('/login')
-    }
+    if (err.message.includes('登录已失效')) router.push('/login')
   } finally {
     deletingId.value = null
   }

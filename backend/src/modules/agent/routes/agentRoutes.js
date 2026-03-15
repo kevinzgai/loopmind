@@ -3,6 +3,7 @@ import {
   handleCreateAgent,
   handleGetUserAgents,
   handleGetPublishedAgents,
+  handleGetAgentCategories,
   handleGetAgent,
   handleUpdateAgent,
   handlePublishAgent,
@@ -46,6 +47,9 @@ const router = express.Router();
  * @apiSuccess {Array} agents 智能体列表
  */
 router.get('/published', handleGetPublishedAgents);
+
+// 已发布智能体的实际分类列表
+router.get('/categories', handleGetAgentCategories);
 
 // preview 专用路由（纯前端预览，不需要真实 agentId）
 router.post('/preview/chat', optionalAuthenticateToken, handleAgentChat);

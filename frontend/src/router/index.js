@@ -3,7 +3,6 @@ import { isAuthenticated, token } from "@/stores/authStore.js";
 import { isAdmin } from "@/stores/authStore.js";
 
 // 导入页面组件
-const ChatPage = () => import("@/views/chat/ChatPage.vue");
 const HomePage = () => import("@/views/home/HomePage.vue");
 const LoginPage = () => import("@/views/auth/LoginPage.vue");
 const RegisterPage = () => import("@/views/auth/RegisterPage.vue");
@@ -23,6 +22,7 @@ const AgentCapabilitiesPage = () =>
 const VoiceTestPage = () => import("@/views/VoiceTest.vue");
 const UserManagementPage = () => import("@/views/settings/UserManagementPage.vue");
 const AnalyticsPage = () => import("@/views/analytics/AnalyticsPage.vue");
+const DevDocsPage = () => import("@/views/developer/DevDocsPage.vue");
 
 const routes = [
   {
@@ -49,15 +49,7 @@ const routes = [
       title: "注册",
     },
   },
-  {
-    path: "/chat",
-    name: "Chat",
-    component: ChatPage,
-    meta: {
-      title: "AI 对话",
-      requiresAuth: true,
-    },
-  },
+
   {
     path: "/profile",
     name: "Profile",
@@ -281,6 +273,14 @@ const routes = [
     meta: {
       title: "数据分析",
       requiresAuth: true,
+    },
+  },
+  {
+    path: "/developer/docs",
+    name: "DevDocs",
+    component: DevDocsPage,
+    meta: {
+      title: "开发者文档",
     },
   },
   // 404 路由

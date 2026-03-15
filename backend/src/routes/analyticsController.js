@@ -3,6 +3,21 @@ import { success, error } from '../utils/response.js';
 
 class AnalyticsController {
   /**
+   * 获取 Token 消耗统计
+   */
+  async getTokenUsage(req, res) {
+    try {
+      const userId = req.user?.id;
+      const { days = 30 } = req.query;
+      const result = await analyticsService.getTokenUsage(userId, parseInt(days));
+      return success(res, result, '获取 Token 消耗统计成功');
+    } catch (err) {
+      console.error('❌ 获取 Token 消耗统计失败:', err.message);
+      return error(res, '获取 Token 消耗统计失败', -1, 500);
+    }
+  }
+
+  /**
    * 获取概览统计
    */
   async getOverview(req, res) {

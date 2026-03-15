@@ -84,6 +84,46 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div class="card-base p-6">
+        <h3 class="font-bold font-heading mb-1">Token 消耗统计</h3>
+        <p class="text-xs text-muted-foreground mb-4">基于字符数估算（中文 1.5字/token，英文 4字/token）</p>
+        <div class="grid grid-cols-3 gap-3 mb-5">
+          <div class="p-3 rounded-xl bg-primary/5 border border-primary/10 text-center">
+            <p class="text-xs text-muted-foreground mb-1">输入 Token</p>
+            <p class="text-xl font-bold font-heading text-primary">{{ (tokenUsage.totalPrompt || 0).toLocaleString() }}</p>
+          </div>
+          <div class="p-3 rounded-xl bg-purple-500/5 border border-purple-500/10 text-center">
+            <p class="text-xs text-muted-foreground mb-1">输出 Token</p>
+            <p class="text-xl font-bold font-heading text-purple-600 dark:text-purple-400">{{ (tokenUsage.totalCompletion || 0).toLocaleString() }}</p>
+          </div>
+          <div class="p-3 rounded-xl bg-green-500/5 border border-green-500/10 text-center">
+            <p class="text-xs text-muted-foreground mb-1">合计 Token</p>
+            <p class="text-xl font-bold font-heading text-green-600 dark:text-green-400">{{ (tokenUsage.totalAll || 0).toLocaleString() }}</p>
+          </div>
+        </div>
+        <div v-if="tokenUsage.daily && tokenUsage.daily.length" class="relative h-32">
+          <svg class="w-full h-full" viewBox="0 0 400 120" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="tokenGrad" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stop-color="#8B5CF6" stop-opacity="0.3" />
+                <stop offset="100%" stop-color="#8B5CF6" stop-opacity="0.02" />
+              </linearGradient>
+            </defs>
+            <polyline
+              :points="tokenAreaPoints"
+              fill="url(#tokenGrad)" stroke="none" />
+            <polyline
+              :points="tokenLinePoints"
+              fill="none" stroke="#8B5CF6" stroke-width="2" stroke-linejoin="round" />
+          </svg>
+          <div class="flex justify-between text-xs text-muted-foreground mt-1">
+            <span>{{ formatDate(tokenUsage.daily[0]?.date) }}</span>
+            <span>{{ formatDate(tokenUsage.daily[tokenUsage.daily.length - 1]?.date) }}</span>
+          </div>
+        </div>
+        <div v-else class="h-32 flex items-center justify-center text-muted-foreground text-sm">暂无 Token 消耗数据</div>
+      </div>
+
+      <div class="card-base p-6">
         <h3 class="font-bold font-heading mb-4">热门智能体</h3>
         <div v-if="topAgents.length" class="space-y-3">
           <div v-for="(agent, idx) in topAgents.slice(0, 6)" :key="agent.agentId" class="flex items-center gap-3">
@@ -128,8 +168,27 @@ const dailyTrend = ref([])
 const topAgents = ref([])
 const hotWords = ref([])
 const hourlyActivity = ref([])
+const tokenUsage = ref({ daily: [], totalPrompt: 0, totalCompletion: 0, totalAll: 0 })
 
 const maxHourCount = computed(() => Math.max(...hourlyActivity.value.map((h) => h.count), 1))
+
+const tokenPoints = computed(() => {
+  if (!tokenUsage.value.daily?.length) return []
+  const max = Math.max(...tokenUsage.value.daily.map(d => d.totalTokens), 1)
+  const len = tokenUsage.value.daily.length
+  return tokenUsage.value.daily.map((d, i) => ({
+    x: len > 1 ? (i / (len - 1)) * 400 : 200,
+    y: 100 - (d.totalTokens / max) * 90
+  }))
+})
+
+const tokenLinePoints = computed(() => tokenPoints.value.map(p => `${p.x},${p.y}`).join(' '))
+
+const tokenAreaPoints = computed(() => {
+  if (!tokenPoints.value.length) return ''
+  const pts = tokenPoints.value.map(p => `${p.x},${p.y}`).join(' ')
+  return `0,110 ${pts} 400,110`
+})
 
 const trendPoints = computed(() => {
   if (!dailyTrend.value.length) return []
@@ -148,18 +207,20 @@ const trendAreaPoints = computed(() => {
 
 const loadAll = async () => {
   const days = Number(selectedDays.value)
-  const [ov, trend, agents, words, hourly] = await Promise.allSettled([
+  const [ov, trend, agents, words, hourly, tokens] = await Promise.allSettled([
     analyticsService.getOverview(days),
     analyticsService.getDailyTrend(days),
     analyticsService.getTopAgents(10, days),
     analyticsService.getHotWords(40, days),
     analyticsService.getActivityByHour(days),
+    analyticsService.getTokenUsage(days),
   ])
   if (ov.status === 'fulfilled') overview.value = ov.value.data
   if (trend.status === 'fulfilled') dailyTrend.value = trend.value.data
   if (agents.status === 'fulfilled') topAgents.value = agents.value.data
   if (words.status === 'fulfilled') hotWords.value = words.value.data
   if (hourly.status === 'fulfilled') hourlyActivity.value = hourly.value.data
+  if (tokens.status === 'fulfilled') tokenUsage.value = tokens.value.data || { daily: [], totalPrompt: 0, totalCompletion: 0, totalAll: 0 }
 }
 
 const formatDate = (dateStr) => {
