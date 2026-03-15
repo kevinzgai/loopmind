@@ -158,16 +158,14 @@ export async function getAgentConversationMessagesById(userId, conversationId) {
     return conversation.messages.map(m => ({ role: m.role, content: m.content }));
 }
 
-export async function appendMessagesByConversationId(conversationId, messages) {
+export async function appendMessagesByConversationId(conversationId, messages, totalTokens = 0, promptTokens = 0, completionTokens = 0) {
     if (!messages || messages.length === 0) return null;
     const conversation = await Conversation.findById(conversationId);
     if (!conversation) return null;
 
-    // 如果是新对话（messageCount 为 0），且 title 为 "新对话"，尝试使用第一条用户消息更新标题
     if (conversation.messageCount === 0 && conversation.title === '新对话') {
         const firstUserMsg = messages.find(m => m.role === 'user');
         if (firstUserMsg && firstUserMsg.content) {
-            // 截取前 20 个字符作为标题
             let newTitle = firstUserMsg.content.substring(0, 20);
             if (firstUserMsg.content.length > 20) newTitle += '...';
             conversation.title = newTitle;
@@ -177,6 +175,16 @@ export async function appendMessagesByConversationId(conversationId, messages) {
     conversation.messages.push(...messages);
     conversation.messageCount = conversation.messages.length;
     conversation.updatedAt = new Date();
+    // 累加 token 消耗
+    if (totalTokens > 0) {
+        if (!conversation.tokenUsage) {
+            conversation.tokenUsage = { prompt: 0, completion: 0, total: 0 };
+        }
+        conversation.tokenUsage.prompt = (conversation.tokenUsage.prompt || 0) + promptTokens;
+        conversation.tokenUsage.completion = (conversation.tokenUsage.completion || 0) + completionTokens;
+        conversation.tokenUsage.total = (conversation.tokenUsage.total || 0) + totalTokens;
+        conversation.markModified('tokenUsage');
+    }
     await conversation.save();
     return conversation;
 }

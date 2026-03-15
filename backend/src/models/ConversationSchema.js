@@ -50,6 +50,12 @@ const conversationSchema = new mongoose.Schema(
       type: Number,
       default: 0
     },
+    // Token 消耗估算
+    tokenUsage: {
+      prompt: { type: Number, default: 0 },
+      completion: { type: Number, default: 0 },
+      total: { type: Number, default: 0 }
+    },
     createdAt: {
       type: Date,
       default: Date.now

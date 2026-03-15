@@ -1,3 +1,5 @@
+import { success, error as errorResp } from '../../../utils/response.js';
+import Agent from '../models/AgentSchema.js';
 import {
   createAgent,
   getUserAgents,
@@ -25,12 +27,7 @@ export async function handleGenerateAgentConfig(req, res, next) {
     const { prompt, type = 'personality' } = req.body;
 
     if (!prompt) {
-      return res.status(400).json({
-        error: {
-          message: "请描述你想要的智能体",
-          code: "MISSING_PROMPT",
-        },
-      });
+      return errorResp(res, '请描述你想要的智能体', -1, 400);
     }
 
     let systemPrompt = '';
@@ -72,28 +69,35 @@ Return ONLY the raw JSON string. Do not include markdown formatting like \`\`\`j
     const content = aiResponse.choices[0].message.content.trim();
 
     if (type === 'personality') {
-      res.status(200).json({
-        message: "人设生成成功",
-        personality: content,
-      });
+      return success(res, { personality: content }, '人设生成成功');
     } else {
       let configStr = content;
-      if (configStr.startsWith("```json")) {
-        configStr = configStr.replace(/^```json\s*/, "").replace(/\s*```$/, "");
-      } else if (configStr.startsWith("```")) {
-        configStr = configStr.replace(/^```\s*/, "").replace(/\s*```$/, "");
+      if (configStr.startsWith('```json')) {
+        configStr = configStr.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+      } else if (configStr.startsWith('```')) {
+        configStr = configStr.replace(/^```\s*/, '').replace(/\s*```$/, '');
       }
-
       const config = JSON.parse(configStr);
-
-      res.status(200).json({
-        message: "Agent config generated",
-        config,
-      });
+      return success(res, { config }, 'Agent config generated');
     }
-  } catch (error) {
-    console.error("❌ Failed to generate agent config:", error);
-    next(error);
+  } catch (err) {
+    console.error('❌ Failed to generate agent config:', err);
+    return errorResp(res, 'Internal server error', -1, 500);
+  }
+}
+
+/**
+ * 获取已发布智能体的实际分类列表
+ * GET /api/agent/categories
+ */
+export async function handleGetAgentCategories(req, res, next) {
+  try {
+    const categories = await Agent.distinct('category', { isPublished: true });
+    const sorted = categories.filter(Boolean).sort();
+    return success(res, { categories: sorted }, '获取分类列表成功');
+  } catch (err) {
+    console.error('❌ 获取分类列表失败:', err.message);
+    return errorResp(res, 'Internal server error', -1, 500);
   }
 }
 
@@ -126,17 +130,15 @@ export async function handleCreateAgent(req, res, next) {
     } = req.body;
 
     if (!name) {
-      return res.status(400).json({
-        error: { message: "智能体名称不能为空", code: "MISSING_NAME" }
-      });
+      return errorResp(res, '智能体名称不能为空', -1, 400);
     }
 
     const agent = await createAgent(userId, req.user.username, {
       name,
       description,
       avatar,
-      category: category || "生活",
-      model: model || "deepseek",
+      category: category || '生活',
+      model: model || 'deepseek',
       personality,
       initialMemory,
       voice,
@@ -158,13 +160,10 @@ export async function handleCreateAgent(req, res, next) {
       }
     });
 
-    res.status(201).json({
-      message: "智能体创建成功",
-      agent
-    });
-  } catch (error) {
-    console.error("❌ 创建智能体失败:", error.message);
-    next(error);
+    return success(res, { agent }, '智能体创建成功', 201);
+  } catch (err) {
+    console.error('❌ 创建智能体失败:', err.message);
+    return errorResp(res, 'Internal server error', -1, 500);
   }
 }
 
@@ -176,169 +175,95 @@ export async function handleGetUserAgents(req, res, next) {
   try {
     const userId = req.user.userId;
     const { page = 1, limit = 10 } = req.query;
-
-    const result = await getUserAgents(userId, {
-      page: parseInt(page),
-      limit: parseInt(limit),
-    });
-
-    res.status(200).json({
-      message: "获取用户智能体列表成功",
-      ...result,
-    });
-  } catch (error) {
-    console.error("❌ 获取用户智能体列表失败:", error.message);
-    next(error);
+    const result = await getUserAgents(userId, { page: parseInt(page), limit: parseInt(limit) });
+    return success(res, result, '获取用户智能体列表成功');
+  } catch (err) {
+    console.error('❌ 获取用户智能体列表失败:', err.message);
+    return errorResp(res, 'Internal server error', -1, 500);
   }
 }
 
-/**
- * 获取已发布的智能体列表（广场）
- * GET /api/agent/published
- */
 export async function handleGetPublishedAgents(req, res, next) {
   try {
     const { page = 1, limit = 10, category, search } = req.query;
-
-    const result = await getPublishedAgents({
-      page: parseInt(page),
-      limit: parseInt(limit),
-      category,
-      search,
-    });
-
-    res.status(200).json({
-      message: "获取已发布智能体列表成功",
-      ...result,
-    });
-  } catch (error) {
-    console.error("❌ 获取已发布智能体列表失败:", error.message);
-    next(error);
+    const result = await getPublishedAgents({ page: parseInt(page), limit: parseInt(limit), category, search });
+    return success(res, result, '获取已发布智能体列表成功');
+  } catch (err) {
+    console.error('❌ 获取已发布智能体列表失败:', err.message);
+    return errorResp(res, 'Internal server error', -1, 500);
   }
 }
 
-/**
- * 获取智能体详情
- * GET /api/agent/:agentId
- */
 export async function handleGetAgent(req, res, next) {
   try {
     const { agentId } = req.params;
-
     const agent = await getAgent(agentId);
-
-    res.status(200).json({
-      message: "获取智能体详情成功",
-      agent,
-    });
-  } catch (error) {
-    console.error("❌ 获取智能体详情失败:", error.message);
-    next(error);
+    return success(res, { agent }, '获取智能体详情成功');
+  } catch (err) {
+    console.error('❌ 获取智能体详情失败:', err.message);
+    return errorResp(res, 'Internal server error', -1, 500);
   }
 }
 
-/**
- * 更新智能体
- * PUT /api/agent/:agentId
- */
 export async function handleUpdateAgent(req, res, next) {
   try {
     const userId = req.user.userId;
     const { agentId } = req.params;
-    const updateData = req.body;
-
-    const agent = await updateAgent(agentId, userId, updateData);
-
-    res.status(200).json({
-      message: "智能体更新成功",
-      agent,
-    });
-  } catch (error) {
-    console.error("❌ 更新智能体失败:", error.message);
-    next(error);
+    const agent = await updateAgent(agentId, userId, req.body);
+    return success(res, { agent }, '智能体更新成功');
+  } catch (err) {
+    console.error('❌ 更新智能体失败:', err.message);
+    return errorResp(res, 'Internal server error', -1, 500);
   }
 }
 
-/**
- * 发布智能体
- * POST /api/agent/:agentId/publish
- */
 export async function handlePublishAgent(req, res, next) {
   try {
     const userId = req.user.userId;
     const { agentId } = req.params;
-
     const agent = await publishAgent(agentId, userId);
-
-    res.status(200).json({
-      message: "智能体发布成功",
-      agent,
-    });
-  } catch (error) {
-    console.error("❌ 发布智能体失败:", error.message);
-    next(error);
+    return success(res, { agent }, '智能体发布成功');
+  } catch (err) {
+    console.error('❌ 发布智能体失败:', err.message);
+    return errorResp(res, 'Internal server error', -1, 500);
   }
 }
 
-/**
- * 下架智能体
- * POST /api/agent/:agentId/unpublish
- */
 export async function handleUnpublishAgent(req, res, next) {
   try {
     const userId = req.user.userId;
     const { agentId } = req.params;
-
     const agent = await unpublishAgent(agentId, userId);
-
-    res.status(200).json({
-      message: "智能体下架成功",
-      agent,
-    });
-  } catch (error) {
-    console.error("❌ 下架智能体失败:", error.message);
-    next(error);
+    return success(res, { agent }, '智能体下架成功');
+  } catch (err) {
+    console.error('❌ 下架智能体失败:', err.message);
+    return errorResp(res, 'Internal server error', -1, 500);
   }
 }
+
 export async function handleDeleteAgent(req, res, next) {
   try {
     const userId = req.user.userId;
     const { agentId } = req.params;
-
-    const result = await deleteAgent(agentId, userId);
-
-    res.status(200).json(result);
-  } catch (error) {
-    console.error("❌ 删除智能体失败:", error.message);
-    next(error);
+    await deleteAgent(agentId, userId);
+    return success(res, null, '智能体删除成功');
+  } catch (err) {
+    console.error('❌ 删除智能体失败:', err.message);
+    return errorResp(res, 'Internal server error', -1, 500);
   }
 }
 
-/**
- * 获取用户与智能体的记忆
- * GET /api/agent/:agentId/memory
- */
 export async function handleGetMemory(req, res, next) {
   try {
     const userId = req.user.userId;
     const { agentId } = req.params;
-
     const memory = await getUserMemory(agentId, userId);
-
-    res.status(200).json({
-      message: "获取记忆成功",
-      memory: memory || {
-        agentId,
-        userId,
-        content: "",
-        contentLength: 0,
-        conversationCount: 0,
-        keywords: [],
-      },
-    });
-  } catch (error) {
-    console.error("❌ 获取记忆失败:", error.message);
-    next(error);
+    return success(res, {
+      memory: memory || { agentId, userId, content: '', contentLength: 0, conversationCount: 0, keywords: [] }
+    }, '获取记忆成功');
+  } catch (err) {
+    console.error('❌ 获取记忆失败:', err.message);
+    return errorResp(res, 'Internal server error', -1, 500);
   }
 }
 

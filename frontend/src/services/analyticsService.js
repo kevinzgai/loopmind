@@ -25,4 +25,7 @@ export const analyticsService = {
   getAgentAnalytics(agentId, days = 30) {
     return apiService.get(`/analytics/agent/${agentId}?days=${days}`);
   },
+  getTokenUsage(days = 30) {
+    return apiService.get(`/analytics/tokens/usage?days=${days}`);
+  },
 };

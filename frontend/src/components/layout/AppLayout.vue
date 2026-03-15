@@ -31,14 +31,14 @@
           <span>我的智能体</span>
         </router-link>
 
-        <router-link to="/chat" v-if="isAuthenticated" class="sidebar-item" active-class="active">
-          <MessageSquare class="w-5 h-5" />
-          <span>对话记录</span>
-        </router-link>
-
         <router-link to="/developer/api" v-if="isAuthenticated" class="sidebar-item" active-class="active">
           <Code class="w-5 h-5" />
           <span>开发者中心</span>
+        </router-link>
+
+        <router-link to="/developer/docs" class="sidebar-item" active-class="active">
+          <BookOpen class="w-5 h-5" />
+          <span>开发者文档</span>
         </router-link>
 
         <router-link to="/knowledge" v-if="isAuthenticated" class="sidebar-item" active-class="active">
@@ -172,7 +172,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { isAuthenticated, currentUser, logout } from '@/stores/authStore.js'
 import {
-  Code, LayoutDashboard, Compass, Box, MessageSquare, Database, Settings, User, Search, Bell, LogOut, ChevronUp, ShieldCheck, Cpu, Brain, Mic, FileText, Users, Tag, BarChart2
+  Code, LayoutDashboard, Compass, Box, Database, Settings, User, Search, Bell, LogOut, ChevronUp, ShieldCheck, Cpu, Brain, Mic, FileText, Users, Tag, BarChart2, BookOpen
 } from 'lucide-vue-next'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 
@@ -206,7 +206,7 @@ const toggleUserMenu = (e: Event) => {
 }
 
 const isFullScreenPage = computed(() => {
-  return route.path.includes('/chat')
+  return route.path.includes('/agent/') && route.path.includes('/chat')
 })
 
 const currentRouteName = computed(() => {
@@ -214,7 +214,6 @@ const currentRouteName = computed(() => {
     'Home': '概览',
     'Marketplace': '探索发现',
     'MyAgents': '我的智能体',
-    'Chat': '对话记录',
     'Knowledge': '知识库',
     'Analytics': '数据分析',
     'Profile': '个人设置',
@@ -223,7 +222,8 @@ const currentRouteName = computed(() => {
     'ApiKeysStats': 'API Key 统计',
     'Login': '登录',
     'Register': '注册',
-    'ApiDocs': '开发者中心'
+    'ApiDocs': '开发者中心',
+    'DevDocs': '开发者文档'
   }
   return map[route.name as string] || 'AI Pilot'
 })

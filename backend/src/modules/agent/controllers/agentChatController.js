@@ -8,7 +8,7 @@ import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts
 import { RunnableSequence, RunnablePassthrough } from "@langchain/core/runnables";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { HumanMessage, AIMessage, SystemMessage } from "@langchain/core/messages";
-import { getAgent, getOrCreateMemory, updateMemory, incrementUsageCount } from '../services/agentService.js';
+import { getAgent, getOrCreateMemory, updateMemory, incrementUsageCount, updateUserCount } from '../services/agentService.js';
 import { 
     getAgentConversationMessages, 
     appendAgentConversationMessages,
@@ -27,20 +27,20 @@ import {
  * 删除指定的智能体会话
  * DELETE /api/agent/:agentId/conversations/:conversationId
  */
+import { success, error as errorResp } from '../../../utils/response.js';
+
 export async function handleDeleteAgentConversation(req, res) {
     try {
         const { agentId, conversationId } = req.params;
         const dbUserId = req.user?.userId;
-        if (!dbUserId) return res.status(401).json({ error: '未授权' });
+        if (!dbUserId) return errorResp(res, '未授权', -1, 401);
 
-        const success = await deleteAgentConversation(dbUserId, agentId, conversationId);
-        if (!success) {
-            return res.status(404).json({ error: '会话不存在或无权删除' });
-        }
-        res.status(200).json({ message: '会话已删除' });
-    } catch (error) {
-        console.error('❌ 删除智能体会话失败:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        const ok = await deleteAgentConversation(dbUserId, agentId, conversationId);
+        if (!ok) return errorResp(res, '会话不存在或无权删除', -1, 404);
+        return success(res, null, '会话已删除');
+    } catch (err) {
+        console.error('❌ 删除智能体会话失败:', err);
+        return errorResp(res, 'Internal server error', -1, 500);
     }
 }
 
@@ -51,36 +51,28 @@ export async function handleDeleteAgentConversation(req, res) {
 export async function handleGetAgentChatHistory(req, res) {
     try {
         const { agentId } = req.params;
-        const { userId } = req.query; // 用于匿名用户的 history
+        const { userId } = req.query;
         
         const dbUserId = req.user ? req.user.userId : null;
         const effectiveUserId = dbUserId || userId;
 
         if (!effectiveUserId) {
-             return res.status(200).json({ message: 'No user identified', history: [] });
+            return success(res, { history: [] }, 'No user identified');
         }
 
         let history = [];
         
         if (dbUserId) {
-            // 已登录用户，从数据库获取
             history = await getAgentConversationMessages(dbUserId, agentId);
         } else {
-            // 匿名用户，从内存获取
-            // 使用 agent_前缀作为 provider key 区分普通对话
             history = getConversationHistory(effectiveUserId, `agent_${agentId}`);
         }
         
-        // 过滤掉系统提示词，只返回用户和助手的对话
         const filteredHistory = history.filter(msg => msg.role !== 'system');
-
-        res.status(200).json({
-            message: '获取对话历史成功',
-            history: filteredHistory
-        });
-    } catch (error) {
-        console.error('❌ 获取对话历史失败:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        return success(res, { history: filteredHistory }, '获取对话历史成功');
+    } catch (err) {
+        console.error('❌ 获取对话历史失败:', err);
+        return errorResp(res, 'Internal server error', -1, 500);
     }
 }
 
@@ -182,13 +174,24 @@ async function handleAgentChatLangChain(req, res, agent, conversationHistory, me
     }
     console.log(`\n--- ✅ LangChain Agent Pipeline End (Response: ${fullResponse.length} chars) ---\n`);
 
-    // 6. 保存结果
+    // 6. 保存结果（含 token 估算）
     const assistantMsg = { role: "assistant", content: fullResponse };
     const userMsg = { role: "user", content: message };
+
+    // 估算 token：中文约 1.5 字/token，英文约 4 字/token
+    function estimateTokens(text) {
+        if (!text) return 0;
+        const chineseChars = (text.match(/[\u4e00-\u9fa5]/g) || []).length;
+        const otherChars = text.length - chineseChars;
+        return Math.ceil(chineseChars / 1.5 + otherChars / 4);
+    }
+    const promptTokens = estimateTokens(message);
+    const completionTokens = estimateTokens(fullResponse);
+    const totalTokens = promptTokens + completionTokens;
     
     if (dbUserId) {
         if (conversationId) {
-            await appendMessagesByConversationId(conversationId, [userMsg, assistantMsg]);
+            await appendMessagesByConversationId(conversationId, [userMsg, assistantMsg], totalTokens, promptTokens, completionTokens);
         } else {
             await appendAgentConversationMessages(dbUserId, agent._id, [userMsg, assistantMsg]);
         }
@@ -197,9 +200,10 @@ async function handleAgentChatLangChain(req, res, agent, conversationHistory, me
         addMessageToHistory(req.body.userId || 'anonymous', assistantMsg, `agent_${agent._id}`);
     }
 
-    // 更新智能体使用次数
+    // 更新智能体使用次数和用户数
     try {
         await incrementUsageCount(agent.id || agent._id);
+        await updateUserCount(agent.id || agent._id);
     } catch (error) {}
 
     res.end();
@@ -218,7 +222,7 @@ export async function handleAgentChat(req, res) {
         const effectiveUserId = dbUserId || userId;
 
         if (!message || !effectiveUserId) {
-            return res.status(400).json({ error: 'Missing message or userId' });
+            return errorResp(res, 'Missing message or userId', -1, 400);
         }
         
         // 获取智能体信息（preview 模式只用 previewConfig）
@@ -241,7 +245,7 @@ export async function handleAgentChat(req, res) {
         } else {
             agent = await getAgent(agentId);
             if (!agent) {
-                return res.status(404).json({ error: '智能体不存在' });
+                return errorResp(res, '智能体不存在', -1, 404);
             }
             // 用 previewConfig 覆盖（未保存的最新修改实时生效）
             if (previewConfig) {
@@ -281,13 +285,10 @@ export async function handleAgentChat(req, res) {
 
         console.log(`🦜 LangChain Flow triggered for model: ${agent.model}`);
         return await handleAgentChatLangChain(req, res, agent, conversationHistory, message, dbUserId && agentId !== 'preview' ? dbUserId : null, conversationId);
-    } catch (error) {
-        console.error('❌ 智能体对话错误:', error);
-        if (!res.headersSent) {
-            res.status(500).json({ error: 'Internal server error' });
-        } else {
-            res.end();
-        }
+    } catch (err) {
+        console.error('❌ 智能体对话错误:', err);
+        if (!res.headersSent) return errorResp(res, 'Internal server error', -1, 500);
+        else res.end();
     }
 }
 
@@ -303,49 +304,41 @@ export async function handleListAgentConversations(req, res) {
     try {
         const { agentId } = req.params;
         const dbUserId = req.user?.userId;
-        if (!dbUserId) return res.status(401).json({ error: '未授权' });
+        if (!dbUserId) return errorResp(res, '未授权', -1, 401);
         const list = await listAgentConversations(dbUserId, agentId);
-        res.status(200).json({ conversations: list });
-    } catch (error) {
-        console.error('❌ 列出智能体会话失败:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        return success(res, { conversations: list }, '获取会话列表成功');
+    } catch (err) {
+        console.error('❌ 列出智能体会话失败:', err);
+        return errorResp(res, 'Internal server error', -1, 500);
     }
 }
 
-/**
- * 创建新的智能体会话
- * POST /api/agent/:agentId/conversations
- */
 export async function handleCreateAgentConversation(req, res) {
     try {
         const { agentId } = req.params;
         const { title } = req.body || {};
         const dbUserId = req.user?.userId;
-        if (!dbUserId) return res.status(401).json({ error: '未授权' });
+        if (!dbUserId) return errorResp(res, '未授权', -1, 401);
         const conv = await createAgentConversation(dbUserId, agentId, title || '新对话');
-        res.status(201).json({ conversation: conv });
-    } catch (error) {
-        console.error('❌ 创建智能体会话失败:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        return success(res, { conversation: conv }, '创建会话成功', 201);
+    } catch (err) {
+        console.error('❌ 创建智能体会话失败:', err);
+        return errorResp(res, 'Internal server error', -1, 500);
     }
 }
 
-/**
- * 获取指定会话的消息
- * GET /api/agent/:agentId/conversations/:conversationId
- */
 export async function handleGetAgentConversationMessages(req, res) {
     try {
-        const { agentId, conversationId } = req.params;
+        const { conversationId } = req.params;
         const dbUserId = req.user?.userId;
-        if (!dbUserId) return res.status(401).json({ error: '未授权' });
+        if (!dbUserId) return errorResp(res, '未授权', -1, 401);
         const msgs = await getAgentConversationMessagesById(dbUserId, conversationId);
-        if (!msgs) return res.status(404).json({ error: '会话不存在' });
+        if (!msgs) return errorResp(res, '会话不存在', -1, 404);
         const filtered = msgs.filter(m => m.role !== 'system');
-        res.status(200).json({ messages: filtered });
-    } catch (error) {
-        console.error('❌ 获取智能体会话消息失败:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        return success(res, { messages: filtered }, '获取消息成功');
+    } catch (err) {
+        console.error('❌ 获取智能体会话消息失败:', err);
+        return errorResp(res, 'Internal server error', -1, 500);
     }
 }
 
@@ -358,25 +351,21 @@ export async function handleAgentChatInConversation(req, res) {
         const { agentId, conversationId } = req.params;
         const { message } = req.body;
         const dbUserId = req.user?.userId;
-        if (!dbUserId) return res.status(401).json({ error: '未授权' });
-        if (!message) return res.status(400).json({ error: '缺少消息' });
+        if (!dbUserId) return errorResp(res, '未授权', -1, 401);
+        if (!message) return errorResp(res, '缺少消息', -1, 400);
 
         const agent = await getAgent(agentId);
-        if (!agent) return res.status(404).json({ error: '智能体不存在' });
+        if (!agent) return errorResp(res, '智能体不存在', -1, 404);
 
         const dbHistory = await getAgentConversationMessagesById(dbUserId, conversationId);
-        if (dbHistory === null) return res.status(404).json({ error: '会话不存在' });
+        if (dbHistory === null) return errorResp(res, '会话不存在', -1, 404);
         const conversationHistory = [...dbHistory];
 
-        // 全部切换到 LangChain 处理
         console.log(`🦜 LangChain Flow triggered for model: ${agent.model} (in conversation)`);
         return await handleAgentChatLangChain(req, res, agent, conversationHistory, message, dbUserId, conversationId);
-    } catch (error) {
-        console.error('❌ 智能体指定会话聊天错误:', error);
-        if (!res.headersSent) {
-            res.status(500).json({ error: 'Internal server error' });
-        } else {
-            res.end();
-        }
+    } catch (err) {
+        console.error('❌ 智能体指定会话聊天错误:', err);
+        if (!res.headersSent) return errorResp(res, 'Internal server error', -1, 500);
+        else res.end();
     }
 }

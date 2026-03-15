@@ -6,6 +6,9 @@ const router = express.Router();
 
 router.use(authMiddleware);
 
+// Token 消耗统计
+router.get('/tokens/usage', analyticsController.getTokenUsage.bind(analyticsController));
+
 // 概览统计
 router.get('/overview', analyticsController.getOverview.bind(analyticsController));
 

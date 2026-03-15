@@ -8,6 +8,51 @@ import User from '../../models/UserSchema.js';
  */
 class AnalyticsService {
   /**
+   * 获取 Token 消耗统计（按时段）
+   */
+  async getTokenUsage(userId = null, days = 30) {
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+
+    const matchStage = { createdAt: { $gte: since }, 'tokenUsage.total': { $gt: 0 } };
+    if (userId) matchStage.userId = userId;
+
+    // 按天聚合
+    const daily = await Conversation.aggregate([
+      { $match: matchStage },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$createdAt' },
+            month: { $month: '$createdAt' },
+            day: { $dayOfMonth: '$createdAt' },
+          },
+          promptTokens: { $sum: '$tokenUsage.prompt' },
+          completionTokens: { $sum: '$tokenUsage.completion' },
+          totalTokens: { $sum: '$tokenUsage.total' },
+        },
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } },
+      {
+        $project: {
+          date: { $dateFromParts: { year: '$_id.year', month: '$_id.month', day: '$_id.day' } },
+          promptTokens: 1,
+          completionTokens: 1,
+          totalTokens: 1,
+          _id: 0,
+        },
+      },
+    ]);
+
+    // 汇总
+    const totalPrompt = daily.reduce((s, d) => s + d.promptTokens, 0);
+    const totalCompletion = daily.reduce((s, d) => s + d.completionTokens, 0);
+    const totalAll = daily.reduce((s, d) => s + d.totalTokens, 0);
+
+    return { daily, totalPrompt, totalCompletion, totalAll, period: `${days}天` };
+  }
+
+  /**
    * 获取全局概览统计
    */
   async getOverviewStats(userId = null, days = 30) {

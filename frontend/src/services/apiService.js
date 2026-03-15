@@ -38,11 +38,13 @@ apiClient.interceptors.response.use(
       const { status, data } = error.response
       
       // 处理无效 token
-      if (data.error?.code === 'INVALID_TOKEN') {
+      if (data.error?.code === 'INVALID_TOKEN' || status === 401) {
         // 清除本地存储并跳转登录
         localStorage.removeItem('token')
         localStorage.removeItem('user')
-        window.location.href = '/login'
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login'
+        }
         return Promise.reject(new Error('登录已失效，请重新登录'))
       }
       
@@ -50,8 +52,6 @@ apiClient.interceptors.response.use(
       switch (status) {
         case 400:
           return Promise.reject(new Error(data.error?.message || '请求参数错误'))
-        case 401:
-          return Promise.reject(new Error(data.error?.message || '未授权，请重新登录'))
         case 403:
           return Promise.reject(new Error(data.error?.message || '拒绝访问'))
         case 404:

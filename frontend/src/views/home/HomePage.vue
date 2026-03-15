@@ -148,16 +148,16 @@
           <h3 class="font-bold font-heading mb-4">分类浏览</h3>
           <div class="space-y-1">
             <button 
-              v-for="cat in ['全部', ...AGENT_CATEGORIES.map(c => c.value)]" 
+              v-for="cat in ['全部', ...dynamicCategories]" 
               :key="cat"
-              @click="handleCategoryChange(cat === '全部' ? '全部' : cat)"
+              @click="handleCategoryChange(cat)"
               :class="[
                 'w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer',
                 selectedCategory === cat 
                   ? 'bg-primary/10 text-primary' 
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               ]">
-              <span>{{ cat === '全部' ? '全部智能体' : AGENT_CATEGORIES.find(c => c.value === cat)?.label }}</span>
+              <span>{{ cat === '全部' ? '全部智能体' : (AGENT_CATEGORIES.find(c => c.value === cat)?.label || cat) }}</span>
               <ChevronRight class="w-4 h-4" />
             </button>
           </div>
@@ -374,7 +374,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { getPublishedAgents } from '@/services/agentService.js'
+import { getPublishedAgents, getAgentCategories } from '@/api/agent.api.ts'
 import { getDashboardStats, getSystemDetails } from '@/services/dashboardService.js'
 import { AGENT_CATEGORIES } from '@/constants/agent.js'
 import {
@@ -388,6 +388,7 @@ const agents = ref([])
 const selectedCategory = ref('全部')
 const isLoadingAgents = ref(false)
 const isLoadingStats = ref(false)
+const dynamicCategories = ref([])
 const stats = ref({
   agents: { total: 0, weeklyGrowth: 0 },
   conversations: { total: 0, weeklyGrowth: 0 },
@@ -454,9 +455,14 @@ const loadStats = async () => {
 const loadAgents = async () => {
   try {
     isLoadingAgents.value = true
-    const result = await getPublishedAgents(1, 9, selectedCategory.value)
-    // 后端 controller 用 ...result 展开，返回 { message, agents, total, pages }
-    agents.value = Array.isArray(result?.agents) ? result.agents : []
+    const res = await getPublishedAgents({
+      page: 1,
+      limit: 9,
+      category: selectedCategory.value !== '全部' ? selectedCategory.value : undefined
+    })
+    const data = res.data.data
+    agents.value = Array.isArray(data?.agents) ? data.agents :
+                   Array.isArray(data?.list)   ? data.list   : []
   } catch (error) {
     console.error('加载智能体失败:', error.message)
     agents.value = []
@@ -500,9 +506,20 @@ const refreshSystemDetails = async () => {
   }, 500)
 }
 
+const loadCategories = async () => {
+  try {
+    const res = await getAgentCategories()
+    dynamicCategories.value = res.data.data.categories || []
+  } catch {
+    // 降级使用静态分类
+    dynamicCategories.value = AGENT_CATEGORIES.map(c => c.value)
+  }
+}
+
 onMounted(() => {
   loadStats()
   loadAgents()
+  loadCategories()
 })
 </script>
 
