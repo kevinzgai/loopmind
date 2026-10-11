@@ -1,6 +1,8 @@
-# 🤖 AI 智能对话语音项目 (Chart AI)
+# 🧠 LoopMind
 
 一个集成了 AI 对话、语音识别（ASR）、语音合成（TTS）以及 **智能体知识库（RAG）** 的现代化 Web 应用。
+
+> 路线图：Agent Loop 自主任务循环 → 任务分解（Task Decomposition）→ 知识库高级应用（RAG 增强）。
 
 ## ✨ 功能特性
 

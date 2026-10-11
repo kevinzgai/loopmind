@@ -1,7 +1,7 @@
 {
-  "name": "aichat-fullstack",
+  "name": "loopmind",
   "version": "1.1.0",
-  "description": "AI 智能对话语音项目 - 集成 AI 对话、语音识别和语音合成",
+  "description": "LoopMind - AI 智能体平台：对话、语音、知识库 RAG，规划中支持 Agent Loop 与任务分解",
   "scripts": {
     "dev": "concurrently \"pnpm run dev:backend\" \"pnpm run dev:frontend\"",
     "dev:backend": "cd backend && pnpm run dev",
